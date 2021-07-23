@@ -1,0 +1,13 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@AvrToolchain//platforms/cpu_frequency:cpu_frequency.bzl", "cpu_frequency_flag")
+
+cc_library(
+    name = "simplefoc_lib",
+    srcs = glob(["**/*.h"]) + glob(["**/*.cpp"]),
+    copts = cpu_frequency_flag(),
+    deps = [
+        "@arduino//:arduino_core",
+        "@arduino//:arduino_wire_lib",
+        "@arduino//:arduino_spi_lib"
+    ],
+)

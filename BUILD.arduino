@@ -1,0 +1,73 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@AvrToolchain//platforms/cpu_frequency:cpu_frequency.bzl", "cpu_frequency_flag")
+
+package(default_visibility = ["//visibility:public"], features = ["--nogcc99")
+
+cc_library(
+    name = "variants_standard",
+    hdrs = glob(["variants/standard/*.h"]),
+    copts = cpu_frequency_flag(),
+    strip_include_prefix = "variants/standard",
+)
+
+cc_library(
+    name = "arduino_core",
+    srcs = glob(["cores/arduino/*.cpp"]) + glob(["cores/arduino/*.c"]),
+    hdrs = glob(["cores/arduino/*.h"]),
+    copts = cpu_frequency_flag(),
+    strip_include_prefix = "cores/arduino",
+    deps = [":variants_standard"],
+)
+
+cc_library(
+    name = "arduino_eeprom_lib",
+    srcs = glob(["libraries/EEPROM/src/*.cpp"]),
+    hdrs = glob(["libraries/EEPROM/src/*.h"]),
+    copts = cpu_frequency_flag(),
+    strip_include_prefix = "libraries/EEPROM/src",
+)
+
+cc_library(
+    name = "arduino_hid_lib",
+    srcs = glob(["libraries/HID/src/*.cpp"]),
+    hdrs = glob(["libraries/HID/src/*.h"]),
+    copts = cpu_frequency_flag(),
+    strip_include_prefix = "libraries/HID/src",
+)
+
+cc_library(
+    name = "arduino_software_serial_lib",
+    srcs = glob(["libraries/SoftwareSerial/src/*.cpp"]),
+    hdrs = glob(["libraries/SoftwareSerial/src/*.h"]),
+    copts = cpu_frequency_flag(),
+    strip_include_prefix = "libraries/SoftwareSerial/src",
+)
+
+cc_library(
+    name = "arduino_spi_lib",
+    srcs = glob(["libraries/SPI/src/*.cpp"]),
+    hdrs = glob(["libraries/SPI/src/*.h"]),
+    copts = cpu_frequency_flag(),
+    strip_include_prefix = "libraries/SPI/src",
+)
+
+cc_library(
+    name = "arduino_wire_utility_lib",
+    srcs = glob(["libraries/Wire/src/utility/*.c"]),
+    hdrs = glob(["libraries/Wire/src/utility/*.h"]),
+    copts = cpu_frequency_flag(),
+    strip_include_prefix = "libraries/Wire/src/utility",
+    deps = [":arduino_core"],
+)
+
+cc_library(
+    name = "arduino_wire_lib",
+    srcs = glob(["libraries/Wire/src/*.cpp"]),
+    hdrs = glob(["libraries/Wire/src/*.h"]) + glob(["libraries/Wire/src/utility/*.h"]),
+    copts = cpu_frequency_flag(),
+    strip_include_prefix = "libraries/Wire/src",
+    deps = [
+        ":arduino_core",
+        ":arduino_wire_utility_lib",
+    ],
+)
