@@ -1,7 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@AvrToolchain//platforms/cpu_frequency:cpu_frequency.bzl", "cpu_frequency_flag")
 
-package(default_visibility = ["//visibility:public"], features = ["--nogcc99")
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "variants_standard",
@@ -25,6 +25,7 @@ cc_library(
     hdrs = glob(["libraries/EEPROM/src/*.h"]),
     copts = cpu_frequency_flag(),
     strip_include_prefix = "libraries/EEPROM/src",
+    deps = [":arduino_core"],
 )
 
 cc_library(
@@ -33,6 +34,7 @@ cc_library(
     hdrs = glob(["libraries/HID/src/*.h"]),
     copts = cpu_frequency_flag(),
     strip_include_prefix = "libraries/HID/src",
+    deps = [":arduino_core"],
 )
 
 cc_library(
@@ -41,6 +43,7 @@ cc_library(
     hdrs = glob(["libraries/SoftwareSerial/src/*.h"]),
     copts = cpu_frequency_flag(),
     strip_include_prefix = "libraries/SoftwareSerial/src",
+    deps = [":arduino_core"],
 )
 
 cc_library(
@@ -49,6 +52,7 @@ cc_library(
     hdrs = glob(["libraries/SPI/src/*.h"]),
     copts = cpu_frequency_flag(),
     strip_include_prefix = "libraries/SPI/src",
+    deps = [":arduino_core"],
 )
 
 cc_library(

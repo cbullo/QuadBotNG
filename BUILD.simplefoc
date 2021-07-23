@@ -1,6 +1,8 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@AvrToolchain//platforms/cpu_frequency:cpu_frequency.bzl", "cpu_frequency_flag")
 
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "simplefoc_lib",
     srcs = glob(["**/*.h"]) + glob(["**/*.cpp"]),

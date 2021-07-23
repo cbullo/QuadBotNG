@@ -15,19 +15,20 @@ http_archive(
 
 http_archive(
     name = "yaml-cpp",
-    strip_prefix="yaml-cpp-master",
+    strip_prefix = "yaml-cpp-master",
     urls = ["https://github.com/bazelregistry/yaml-cpp/archive/master.zip"],
 )
 
 http_archive(
     name = "simplefoc",
     urls = ["https://github.com/simplefoc/Arduino-FOC/archive/refs/tags/v2.1.1.zip"],
-    build_file = "@//:BUILD.simplefoc"
+    build_file = "@//:BUILD.simplefoc",
+    strip_prefix = "Arduino-FOC-2.1.1/src"
 )
 
 http_archive(
     name = "arduino",
-    strip_prefix="ArduinoCore-avr-1.8.3",
+    strip_prefix = "ArduinoCore-avr-1.8.3",
     urls = ["https://github.com/arduino/ArduinoCore-avr/archive/refs/tags/1.8.3.zip"],
     build_file = "@//:BUILD.arduino"
 )
