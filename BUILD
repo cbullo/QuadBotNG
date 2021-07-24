@@ -18,3 +18,11 @@ platform(
     ],
     parents = ["@AvrToolchain//platforms:avr_common"],
 )
+
+platform(
+    name = "Odroid-C4",
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:linux"
+    ]
+)

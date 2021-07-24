@@ -10,7 +10,7 @@ http_archive(
 http_archive(
     name = "EmbeddedSystemsBuildScripts",
     strip_prefix = "EmbeddedSystemsBuildScripts-1.0.2",
-    urls = ["https://github.com/es-ude/EmbeddedSystemsBuildScripts/archive/v1.0.2.tar.gz"]
+    urls = ["https://github.com/es-ude/EmbeddedSystemsBuildScripts/archive/v1.0.2.tar.gz"],
 )
 
 http_archive(
@@ -21,19 +21,22 @@ http_archive(
 
 http_archive(
     name = "simplefoc",
-    urls = ["https://github.com/simplefoc/Arduino-FOC/archive/refs/tags/v2.1.1.zip"],
     build_file = "@//:BUILD.simplefoc",
-    strip_prefix = "Arduino-FOC-2.1.1/src"
+    strip_prefix = "Arduino-FOC-2.1.1/src",
+    urls = ["https://github.com/simplefoc/Arduino-FOC/archive/refs/tags/v2.1.1.zip"],
 )
 
 http_archive(
     name = "arduino",
+    build_file = "@//:BUILD.arduino",
     strip_prefix = "ArduinoCore-avr-1.8.3",
     urls = ["https://github.com/arduino/ArduinoCore-avr/archive/refs/tags/1.8.3.zip"],
-    build_file = "@//:BUILD.arduino"
 )
 
 load("@EmbeddedSystemsBuildScripts//Toolchains/Avr:avr.bzl", "avr_toolchain")
 
 avr_toolchain()
 
+load("//toolchain:toolchain.bzl", "register_all_toolchains")
+
+register_all_toolchains()
