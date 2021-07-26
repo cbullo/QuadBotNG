@@ -7,8 +7,9 @@ sh_binary(
     name = "deploy",
     srcs = ["scripts/deploy.sh"],
     data = [
-        ":controller",
+        "config/robot_config.yaml",
         "scripts/upload_firmware.sh",
-        "//src/mcu_firmware:mcu_firmware"
+        ":controller",
+        "//src/mcu_firmware",
     ],
 )

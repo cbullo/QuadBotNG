@@ -22,7 +22,7 @@ cc_library(
 
 transitioning_rule(
     name = "mcu_firmware",
-    actual_binary = ":mcu_firmware_bin",
+    actual_binary = ":leg_hex",
 )
 
 cc_binary(
@@ -34,5 +34,5 @@ cc_binary(
 
 generate_hex(
     name = "leg_hex",
-    input = "mcu_firmware",
+    input = "mcu_firmware_bin",
 )
