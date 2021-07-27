@@ -22,7 +22,7 @@ CustomMagneticSensorI2C sensor2 = CustomMagneticSensorI2C(AS5600_I2C, A1, A0);
 
 void setup() {
   // monitoring port
-  Serial.begin(115200);
+  Serial.begin(57600);
 
   // configure i2C
   Wire.setClock(400000);
@@ -44,7 +44,7 @@ void loop() {
   // display the angle and the angular velocity to the terminal
   Serial.print(sensor1.getAngle());
   Serial.print("\t");
-  Serial.println(sensor1.getVelocity());
+  Serial.print(sensor1.getVelocity());
   Serial.print("\t");
   Serial.print(sensor2.getAngle());
   Serial.print("\t");
