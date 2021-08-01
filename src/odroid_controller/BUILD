@@ -13,3 +13,8 @@ sh_binary(
         "//src/mcu_firmware",
     ],
 )
+
+sh_binary(
+    name = "run",
+    srcs = ["scripts/run.sh"],
+)

@@ -110,7 +110,7 @@ def _impl(ctx):
 
     return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
-        cxx_builtin_include_directories = ["/usr/aarch64-linux-gnu/include/"],
+        cxx_builtin_include_directories = ["/usr/aarch64-linux-gnu/include/", "/usr/lib/gcc-cross/aarch64-linux-gnu/9/include"],
         features = features,
         toolchain_identifier = "aarch64-toolchain",
         host_system_name = "local",
