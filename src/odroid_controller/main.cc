@@ -105,6 +105,13 @@ int main() {
     if (trigger_estop) {
       EStop();
     }
+
+    if (estop_triggered) {
+      for (auto controller : controllers) {
+        controller->HardwareReset();
+        usleep(100000);
+      }
+    }
   }
 
   return 0;
