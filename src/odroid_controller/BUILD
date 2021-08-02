@@ -1,6 +1,20 @@
 cc_binary(
     name = "controller",
-    srcs = ["main.cc"],
+    srcs = [
+        "angle.h",
+        "controller.cc",
+        "controller.h",
+        "controller_board.cc",
+        "controller_board.h",
+        "leg.cc",
+        "leg.h",
+        "main.cc",
+        "motor.cc",
+        "motor.h",
+    ],
+    data = ["config/robot_config.yaml"],
+    linkopts = ["-lpthread"],
+    deps = ["@yaml-cpp//:yaml-cpp"],
 )
 
 sh_binary(
