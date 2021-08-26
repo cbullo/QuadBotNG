@@ -5,6 +5,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <unordered_map>
 #include <vector>
 
 #include "controller.h"
@@ -12,7 +13,20 @@
 #include "leg.h"
 
 volatile bool estop_triggered = false;
-void EStop() { estop_triggered = true; }
+bool select_pressed = false;
+bool start_pressed = false;
+
+void EStop() {
+  if (!estop_triggered) {
+    std::cout << "EStop triggered!" << std::endl;
+    estop_triggered = true;
+  }
+}
+
+void ReleaseEStop() {
+  estop_triggered = false;
+  std::cout << "EStop released!" << std::endl;
+}
 
 std::vector<ControllerBoard*> controllers;
 std::vector<Motor*> motors;
@@ -22,21 +36,22 @@ std::unique_ptr<Controller> main_controller;
 
 void ReadControllers(
     const YAML::Node& config,
-    std::unordered_map<std::string, ControllerBoard*>* controllers) {
+    std::unordered_map<std::string, ControllerBoard*>& controllers) {
   const YAML::Node& controllers_yaml = config["controllers"];
   for (auto& controller_yaml : controllers_yaml) {
     auto name = controller_yaml.first.as<std::string>();
+    std::cout << "Reading " << name << std::endl;
     auto controller = new ControllerBoard();
     controller->SetName(name);
     controller->UpdateConfig(controller_yaml.second);
-    (*controllers)[name] = controller;
+    controllers[name] = controller;
   }
 }
 
 void ReadMotors(
     const YAML::Node& config,
     const std::unordered_map<std::string, ControllerBoard*>& controllers,
-    std::unordered_map<std::string, Motor*>* motors) {
+    std::unordered_map<std::string, Motor*>& motors) {
   const YAML::Node& motors_yaml = config["motors"];
   for (auto& motor_yaml : motors_yaml) {
     auto name = motor_yaml.first.as<std::string>();
@@ -46,7 +61,7 @@ void ReadMotors(
     auto motor = new Motor(controller, index);
     motor->SetName(name);
     motor->UpdateConfig(motor_yaml.second);
-    (*motors)[name] = motor;
+    motors[name] = motor;
     if (controller) {
       controller->SetMotor(index, motor);
     }
@@ -55,7 +70,7 @@ void ReadMotors(
 
 void ReadLegs(const YAML::Node& config,
               const std::unordered_map<std::string, Motor*>& motors,
-              std::unordered_map<std::string, Leg*>* legs) {
+              std::unordered_map<std::string, Leg*>& legs) {
   const YAML::Node& legs_yaml = config["legs"];
   for (auto& leg_yaml : legs_yaml) {
     auto name = leg_yaml.first.as<std::string>();
@@ -70,22 +85,47 @@ void ReadLegs(const YAML::Node& config,
 
     auto leg = new Leg(m_f, m_b, m_z);
     leg->UpdateConfig(leg_yaml.second);
-    (*legs)[name] = leg;
+    legs[name] = leg;
   }
 }
 
 int main() {
-  bool trigger_estop = true;
+  YAML::Node config = YAML::LoadFile("config/robot_config.yaml");
 
-  auto device = "/dev/input/js0";
-  int joystick_fd = open(device, O_RDONLY | O_NONBLOCK);
-  if (joystick_fd == -1) {
-    std::cout << "Can't open joystick." << std::endl;
-    trigger_estop = true;
+  std::unordered_map<std::string, ControllerBoard*> controllers_map;
+
+  ReadControllers(config, controllers_map);
+
+  std::transform(controllers_map.begin(), controllers_map.end(),
+                 back_inserter(controllers),
+                 [](const auto& val) { return val.second; });
+
+  for (auto controller : controllers) {
+    if (!controller->Connect()) {
+      std::cout << "Failed to connect to controller " << controller->GetName()
+                << std::endl;
+    } else {
+      std::cout << "Connected to controller " << controller->GetName()
+                << std::endl;
+    }
   }
 
+  bool trigger_estop = false;
+
+  auto device = "/dev/input/js0";
+
+  int joystick_fd = -1;
+
   while (true) {
-    while (true) {
+    if (joystick_fd == -1) {
+      joystick_fd = open(device, O_RDONLY | O_NONBLOCK);
+      if (joystick_fd == -1) {
+        std::cout << "Can't connect to joystick.." << std::endl;
+        trigger_estop = true;
+      }
+    }
+
+    while (joystick_fd != -1) {
       int bytes;
       js_event event;
       bytes = read(joystick_fd, &event, sizeof(event));
@@ -93,24 +133,49 @@ int main() {
       if (bytes == -1) {
         if (errno != EAGAIN) {
           trigger_estop = true;
+          close(joystick_fd);
+          joystick_fd = -1;
         }
         break;
       }
 
-      if (event.type == JS_EVENT_BUTTON && event.value == 0x1) {
-        trigger_estop = true;
-        break;
+      if (event.type == JS_EVENT_BUTTON) {
+        std::cout << static_cast<int>(event.number) << std::endl;
+      }
+
+      if (estop_triggered) {
+        if (event.type == JS_EVENT_BUTTON) {
+          if (event.number == 0x0) {
+            select_pressed = event.value;
+          } else if (event.number == 0x3) {
+            start_pressed = event.value;
+          }
+        }
+      } else {
+        if (event.type == JS_EVENT_BUTTON && event.number == 0x0 &&
+            event.value == 1) {
+          trigger_estop = true;
+          break;
+        }
       }
     }
+
     if (trigger_estop) {
       EStop();
+      trigger_estop = false;
+    }
+
+    if (select_pressed && start_pressed) {
+      ReleaseEStop();
+      select_pressed = false;
+      start_pressed = false;
     }
 
     if (estop_triggered) {
       for (auto controller : controllers) {
         controller->HardwareReset();
-        usleep(100000);
       }
+      usleep(100000);
     }
   }
 

@@ -29,6 +29,14 @@ BLDCMotor motor2 = BLDCMotor(7);
 
 volatile bool stopped = true;
 
+void do_enable() {
+  stopped = false;
+}
+
+void do_disable() {
+  stopped = true;
+}
+
 void setup() {
 
 
@@ -38,24 +46,24 @@ void setup() {
   // configure i2C
   Wire.setClock(400000);
   
-  // // initialise magnetic sensor hardware
-  // sensor1.activate();
-  // sensor1.init();
+  // initialise magnetic sensor hardware
+  sensor1.activate();
+  sensor1.init();
 
   // Serial.println("Sensor 1 ready");
   // _delay(1000);
 
-  // sensor2.activate();
-  // sensor2.init();
+  sensor2.activate();
+  sensor2.init();
 
   // Serial.println("Sensor 2 ready");
   // _delay(1000);
 
-  driver1.voltage_power_supply = 13;
-  driver2.voltage_power_supply = 13;
+  driver1.voltage_power_supply = 28;
+  driver2.voltage_power_supply = 28;
 
-  driver1.voltage_limit = 7;
-  driver2.voltage_limit = 7;
+  driver1.voltage_limit = 4;
+  driver2.voltage_limit = 4;
 
   driver1.init();
   driver2.init();
@@ -66,8 +74,6 @@ void setup() {
   motor1.controller = MotionControlType::velocity_openloop;
   motor2.controller = MotionControlType::velocity_openloop;
 
-  
-
   motor1.target = 6.28;
   motor2.target = 6.28;
 
@@ -77,8 +83,8 @@ void setup() {
   motor1.init();
   motor2.init();
 
-  //driver1.enable();
-  //driver2.enable();
+  driver1.enable();
+  driver2.enable();
    _delay(1000);
 }
 
