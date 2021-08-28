@@ -13,8 +13,15 @@
 #include "leg.h"
 
 volatile bool estop_triggered = false;
+bool stopped = true;
+
 bool select_pressed = false;
 bool start_pressed = false;
+
+std::vector<ControllerBoard*> controllers;
+std::vector<Motor*> motors;
+std::vector<Leg*> legs;
+std::unique_ptr<Controller> main_controller;
 
 void EStop() {
   if (!estop_triggered) {
@@ -28,11 +35,21 @@ void ReleaseEStop() {
   std::cout << "EStop released!" << std::endl;
 }
 
-std::vector<ControllerBoard*> controllers;
-std::vector<Motor*> motors;
-std::vector<Leg*> legs;
+void Run() {
+  for (auto controller : controllers) {
+    controller->SendCommand("R");
+  }
+  std::cout << "Running!" << std::endl;
+  stopped = false;
+}
 
-std::unique_ptr<Controller> main_controller;
+void Stop() {
+  for (auto controller : controllers) {
+    controller->SendCommand("S");
+  }
+  std::cout << "Stopped!" << std::endl;
+  stopped = true;
+}
 
 void ReadControllers(
     const YAML::Node& config,
@@ -120,7 +137,7 @@ int main() {
     if (joystick_fd == -1) {
       joystick_fd = open(device, O_RDONLY | O_NONBLOCK);
       if (joystick_fd == -1) {
-        std::cout << "Can't connect to joystick.." << std::endl;
+        // std::cout << "Can't connect to joystick.." << std::endl;
         trigger_estop = true;
       }
     }
@@ -140,22 +157,23 @@ int main() {
       }
 
       if (event.type == JS_EVENT_BUTTON) {
-        std::cout << static_cast<int>(event.number) << std::endl;
-      }
-
-      if (estop_triggered) {
-        if (event.type == JS_EVENT_BUTTON) {
+        if (estop_triggered) {
           if (event.number == 0x0) {
             select_pressed = event.value;
           } else if (event.number == 0x3) {
             start_pressed = event.value;
           }
-        }
-      } else {
-        if (event.type == JS_EVENT_BUTTON && event.number == 0x0 &&
-            event.value == 1) {
-          trigger_estop = true;
-          break;
+        } else {
+          if (event.number == 0x0 && event.value == 1) {
+            trigger_estop = true;
+            break;
+          } else if (event.number == 0x3 && event.value == 1) {
+            if (stopped) {
+              Run();
+            } else {
+              Stop();
+            }
+          }
         }
       }
     }
@@ -165,13 +183,13 @@ int main() {
       trigger_estop = false;
     }
 
-    if (select_pressed && start_pressed) {
-      ReleaseEStop();
-      select_pressed = false;
-      start_pressed = false;
-    }
-
     if (estop_triggered) {
+      if (select_pressed && start_pressed) {
+        ReleaseEStop();
+        select_pressed = false;
+        start_pressed = false;
+      }
+
       for (auto controller : controllers) {
         controller->HardwareReset();
       }

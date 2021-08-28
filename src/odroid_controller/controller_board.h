@@ -32,6 +32,8 @@ class ControllerBoard {
 
   void HardwareReset() const;
 
+  void SendCommand(const std::string& command) const;
+
  private:
   void StartProcessThread();
 

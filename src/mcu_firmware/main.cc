@@ -24,28 +24,41 @@ CustomMagneticSensorI2C sensor2 = CustomMagneticSensorI2C(AS5600_I2C, A1, A0);
 BLDCDriver3PWM driver1 = BLDCDriver3PWM(5, 3, 6);
 BLDCDriver3PWM driver2 = BLDCDriver3PWM(9, 11, 10);
 
-BLDCMotor motor1 = BLDCMotor(7);
-BLDCMotor motor2 = BLDCMotor(7);
+BLDCMotor motor1 = BLDCMotor(7, 5);
+BLDCMotor motor2 = BLDCMotor(7, 5);
+
+Commander commander = Commander(Serial, '\n', false);
+
+void on_motor1(char *cmd) { commander.motor(&motor1, cmd); }
+void on_motor2(char *cmd) { commander.motor(&motor2, cmd); }
 
 volatile bool stopped = true;
+bool foc_initialized = false;
 
-void do_enable() {
-  stopped = false;
+void on_stop(char *) {
+  stopped = true;
+  motor1.disable();
+  motor2.disable();
 }
 
-void do_disable() {
-  stopped = true;
+void on_run(char *) {
+  stopped = false;
+  motor1.enable();
+  motor2.enable();
 }
 
 void setup() {
-
-
   // monitoring port
   Serial.begin(57600);
 
   // configure i2C
   Wire.setClock(400000);
-  
+
+  commander.add('M', on_motor1, "on motor 1");
+  commander.add('N', on_motor2, "on motor 2");
+  commander.add('S', on_stop, "STOP");
+  commander.add('R', on_run, "RUN");
+
   // initialise magnetic sensor hardware
   sensor1.activate();
   sensor1.init();
@@ -71,11 +84,11 @@ void setup() {
   motor1.linkDriver(&driver1);
   motor2.linkDriver(&driver2);
 
-  motor1.controller = MotionControlType::velocity_openloop;
-  motor2.controller = MotionControlType::velocity_openloop;
+  motor1.controller = MotionControlType::angle;
+  motor2.controller = MotionControlType::angle;
 
-  motor1.target = 6.28;
-  motor2.target = 6.28;
+  motor1.target = 0;
+  motor2.target = 0;
 
   motor1.velocity_limit = 10;
   motor2.velocity_limit = 10;
@@ -85,29 +98,30 @@ void setup() {
 
   driver1.enable();
   driver2.enable();
-   _delay(1000);
+  _delay(1000);
 }
 
 void loop() {
   if (stopped) {
     motor1.disable();
     motor2.disable();
+  } else {
+    if (!foc_initialized) {
+      if (!motor1.initFOC() || !motor2.initFOC()) {
+        stopped = true;
+      } else {
+        foc_initialized = true;
+      }
+    }
+
+    motor1.loopFOC();
+    motor2.loopFOC();
+
+    motor1.move();
+    motor2.move();
   }
+  // motor1.monitor();
+  // motor2.monitor();
 
-  // display the angle and the angular velocity to the terminal
-  // Serial.print(sensor1.getAngle());
-  // Serial.print("\t");
-  // Serial.print(sensor1.getVelocity());
-  // Serial.print("\t");
-  // Serial.print(sensor2.getAngle());
-  // Serial.print("\t");
-  // Serial.println(sensor2.getVelocity());
-
-  motor1.move();
-  motor2.move();
-
-  //motor1.monitor();
-  //motor2.monitor();
-
-
+  commander.run();
 }

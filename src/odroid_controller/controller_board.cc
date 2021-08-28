@@ -78,13 +78,14 @@ void ControllerBoard::Disconnect() {
 bool ControllerBoard::IsConnected() const { return serial_ != -1; }
 
 void ControllerBoard::StartProcessThread() {
-  communication_thread =
-      std::make_unique<std::thread>(&ControllerBoard::ProcessLoop, this);
+  //communication_thread =
+  //    std::make_unique<std::thread>(&ControllerBoard::ProcessLoop, this);
 }
 
 void ControllerBoard::ProcessLoop() {
-  while (IsConnected()) {
-  }
+  //while (IsConnected()) {
+
+  //}
 }
 
 void ControllerBoard::HardwareReset() const {
@@ -92,4 +93,10 @@ void ControllerBoard::HardwareReset() const {
   ioctl(serial_, TIOCMBIS, &RTS_flag);  // Set RTS pin
   usleep(10000);
   ioctl(serial_, TIOCMBIC, &RTS_flag);  // Clear RTS pin
+}
+
+void ControllerBoard::SendCommand(const std::string& command) const {
+  write(serial_, command.c_str(), command.size());
+  const auto eol = "\n";
+  write(serial_, &eol, 1);
 }
