@@ -23,6 +23,10 @@ std::vector<Motor*> motors;
 std::vector<Leg*> legs;
 std::unique_ptr<Controller> main_controller;
 
+struct axis_state {
+  short x, y;
+};
+
 void EStop() {
   if (!estop_triggered) {
     std::cout << "EStop triggered!" << std::endl;
@@ -106,7 +110,21 @@ void ReadLegs(const YAML::Node& config,
   }
 }
 
+size_t get_axis_state(struct js_event* event, axis_state axes[3]) {
+  size_t axis = event->number;
+
+  if (axis < 6) {
+      axes[axis].x = event->value;
+  }
+
+  return axis;
+}
+
 int main() {
+
+  std::cout << "Running controller" << std::endl;
+  axis_state axes[6] = {0};
+
   YAML::Node config = YAML::LoadFile("config/robot_config.yaml");
 
   std::unordered_map<std::string, ControllerBoard*> controllers_map;
@@ -173,6 +191,18 @@ int main() {
             } else {
               Stop();
             }
+          }
+        }
+      } else if (event.type == JS_EVENT_AXIS) {
+        size_t axis = get_axis_state(&event, axes);
+        if (axis < 6) {
+          double x = axes[1].x / 32768.0;
+          double y = -axes[0].x / 32768.0;
+          double z = axes[3].x / 32768.0;
+          auto theta = atan2(y, x);
+          auto gamma = sqrt(x * x + y * y);
+          if (gamma > 0.1) {
+            main_controller->SetThetaGamma(theta, gamma, z);
           }
         }
       }

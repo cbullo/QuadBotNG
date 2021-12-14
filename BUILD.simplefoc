@@ -6,7 +6,7 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "simplefoc_lib",
     srcs = glob(["**/*.h"]) + glob(["**/*.cpp"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
     deps = [
         "@arduino//:arduino_core",
         "@arduino//:arduino_wire_lib",

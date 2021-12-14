@@ -22,8 +22,8 @@ http_archive(
 http_archive(
     name = "simplefoc",
     build_file = "@//:BUILD.simplefoc",
-    strip_prefix = "Arduino-FOC-2.1.1/src",
-    urls = ["https://github.com/simplefoc/Arduino-FOC/archive/refs/tags/v2.1.1.zip"],
+    strip_prefix = "Arduino-FOC-2.2/src",
+    urls = ["https://github.com/simplefoc/Arduino-FOC/archive/refs/tags/v2.2.zip"],
 )
 
 http_archive(

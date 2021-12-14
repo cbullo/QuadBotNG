@@ -9,8 +9,11 @@ TARGET_ADDRESS=robot@192.168.0.12
 ssh ${TARGET_ADDRESS} "sudo systemctl stop robot"
 
 RSYNC_OUTPUT=$(rsync -irvzPLt --exclude=odroid_controller/scripts/deploy.sh ${DATA_FILES}/ ${TARGET_ADDRESS}:/home/robot/control)
-if [[ $RSYNC_OUTPUT == *"mcu_firmware/leg_hex.hex"* ]]; then
-  ssh ${TARGET_ADDRESS} "cd /home/robot/control/odroid_controller/scripts; ./upload_firmware.sh"
+RSYNC_ERROR_CODE=$?
+if [ $RSYNC_ERROR_CODE -eq 0 ]; then
+  ssh ${TARGET_ADDRESS} "cd /home/robot/control/odroid_controller/scripts; ./upload_firmware.sh $1 $2"
 fi
 
-ssh ${TARGET_ADDRESS} "sudo systemctl start robot"
+#if [[ $RSYNC_OUTPUT == *"mcu_firmware/leg_hex.hex"* ]]; then
+
+#ssh ${TARGET_ADDRESS} "sudo systemctl start robot"

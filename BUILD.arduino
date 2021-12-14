@@ -6,7 +6,7 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "variants_standard",
     hdrs = glob(["variants/standard/*.h"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
     strip_include_prefix = "variants/standard",
 )
 
@@ -14,7 +14,7 @@ cc_library(
     name = "arduino_core",
     srcs = glob(["cores/arduino/*.cpp"]) + glob(["cores/arduino/*.c"]),
     hdrs = glob(["cores/arduino/*.h"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
     strip_include_prefix = "cores/arduino",
     deps = [":variants_standard"],
 )
@@ -23,7 +23,7 @@ cc_library(
     name = "arduino_eeprom_lib",
     srcs = glob(["libraries/EEPROM/src/*.cpp"]),
     hdrs = glob(["libraries/EEPROM/src/*.h"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
     strip_include_prefix = "libraries/EEPROM/src",
     deps = [":arduino_core"],
 )
@@ -32,7 +32,7 @@ cc_library(
     name = "arduino_hid_lib",
     srcs = glob(["libraries/HID/src/*.cpp"]),
     hdrs = glob(["libraries/HID/src/*.h"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag()+ ["-Os"],
     strip_include_prefix = "libraries/HID/src",
     deps = [":arduino_core"],
 )
@@ -41,7 +41,7 @@ cc_library(
     name = "arduino_software_serial_lib",
     srcs = glob(["libraries/SoftwareSerial/src/*.cpp"]),
     hdrs = glob(["libraries/SoftwareSerial/src/*.h"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag()+ ["-Os"],
     strip_include_prefix = "libraries/SoftwareSerial/src",
     deps = [":arduino_core"],
 )
@@ -50,7 +50,7 @@ cc_library(
     name = "arduino_spi_lib",
     srcs = glob(["libraries/SPI/src/*.cpp"]),
     hdrs = glob(["libraries/SPI/src/*.h"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag()+ ["-Os"],
     strip_include_prefix = "libraries/SPI/src",
     deps = [":arduino_core"],
 )
@@ -59,7 +59,7 @@ cc_library(
     name = "arduino_wire_utility_lib",
     srcs = glob(["libraries/Wire/src/utility/*.c"]),
     hdrs = glob(["libraries/Wire/src/utility/*.h"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
     strip_include_prefix = "libraries/Wire/src/utility",
     deps = [":arduino_core"],
 )
@@ -68,7 +68,7 @@ cc_library(
     name = "arduino_wire_lib",
     srcs = glob(["libraries/Wire/src/*.cpp"]),
     hdrs = glob(["libraries/Wire/src/*.h"]) + glob(["libraries/Wire/src/utility/*.h"]),
-    copts = cpu_frequency_flag(),
+    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
     strip_include_prefix = "libraries/Wire/src",
     deps = [
         ":arduino_core",

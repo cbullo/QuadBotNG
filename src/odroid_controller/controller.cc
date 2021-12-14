@@ -33,3 +33,6 @@ void Controller::SetMode(ControllerMode new_mode) {
       break;
   }
 }
+
+void Controller::SetThetaGamma(double theta, double gamma, double z) {
+}

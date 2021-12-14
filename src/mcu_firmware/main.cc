@@ -1,7 +1,9 @@
 #include "Arduino.h"
-#include "SimpleFOC.h"
+//#include "SimpleFOC.h"
+#include "BLDCMotor.h"
 #include "custom_magnetic_sensor_i2c.h"
 #include "drivers/BLDCDriver3PWM.h"
+#include "communication/Commander.h"
 
 // MagneticSensorI2C(uint8_t _chip_address, float _cpr, uint8_t
 // _angle_register_msb)
@@ -48,6 +50,7 @@ void on_run(char *) {
 }
 
 void setup() {
+  
   // monitoring port
   Serial.begin(57600);
 
@@ -63,13 +66,13 @@ void setup() {
   sensor1.activate();
   sensor1.init();
 
-  // Serial.println("Sensor 1 ready");
+  Serial.println("Sensor 1 ready");
   // _delay(1000);
 
   sensor2.activate();
   sensor2.init();
 
-  // Serial.println("Sensor 2 ready");
+  Serial.println("Sensor 2 ready");
   // _delay(1000);
 
   driver1.voltage_power_supply = 28;
@@ -80,7 +83,7 @@ void setup() {
 
   driver1.init();
   driver2.init();
-
+  
   motor1.linkDriver(&driver1);
   motor2.linkDriver(&driver2);
 
@@ -95,6 +98,7 @@ void setup() {
 
   motor1.init();
   motor2.init();
+  motor2.init();
 
   driver1.enable();
   driver2.enable();
@@ -107,7 +111,7 @@ void loop() {
     motor2.disable();
   } else {
     if (!foc_initialized) {
-      if (!motor1.initFOC() || !motor2.initFOC()) {
+      if (!motor1.initFOC(VALUES!!!) || !motor2.initFOC(VALUES!!!)) {
         stopped = true;
       } else {
         foc_initialized = true;
@@ -120,8 +124,8 @@ void loop() {
     motor1.move();
     motor2.move();
   }
-  // motor1.monitor();
-  // motor2.monitor();
+  motor1.monitor();
+  motor2.monitor();
 
   commander.run();
 }
