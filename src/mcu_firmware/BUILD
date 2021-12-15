@@ -8,13 +8,20 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "mcu_firmware_lib",
     srcs = [
-        "analog_reader.h",
         "analog_reader.cc",
+        "analog_reader.h",
         "custom_magnetic_sensor_i2c.cc",
         "custom_magnetic_sensor_i2c.h",
+        "temperature.h",
     ],
     hdrs = glob(["*.h"]),
-    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
+    copts = cpu_frequency_flag() + [
+        "-Os",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wl,--gc-sections",
+        "-Wl,--strip-all",
+    ],
     deps = [
         "@arduino//:arduino_core",
         "@arduino//:arduino_eeprom_lib",
@@ -33,7 +40,13 @@ transitioning_rule(
 cc_binary(
     name = "mcu_firmware_bin",
     srcs = ["main.cc"],
-    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
+    copts = cpu_frequency_flag() + [
+        "-Os",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wl,--gc-sections",
+        "-Wl,--strip-all",
+    ],
     #linkopts = ["--gc-sections"],
     deps = [":mcu_firmware_lib"],
 )
@@ -53,7 +66,13 @@ transitioning_rule(
 cc_binary(
     name = "mcu_calibration_bin",
     srcs = ["utils/calibration/main.cc"],
-    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
+    copts = cpu_frequency_flag() + [
+        "-Os",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wl,--gc-sections",
+        "-Wl,--strip-all",
+    ],
     #linkopts = ["--gc-sections"],
     deps = [":mcu_firmware_lib"],
 )
@@ -73,7 +92,13 @@ transitioning_rule(
 cc_binary(
     name = "mcu_encoder_bin",
     srcs = ["utils/encoder/main.cc"],
-    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
+    copts = cpu_frequency_flag() + [
+        "-Os",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wl,--gc-sections",
+        "-Wl,--strip-all",
+    ],
     #linkopts = ["--gc-sections"],
     deps = [":mcu_firmware_lib"],
 )
@@ -93,7 +118,13 @@ transitioning_rule(
 cc_binary(
     name = "mcu_position_test_bin",
     srcs = ["utils/position_test/main.cc"],
-    copts = cpu_frequency_flag() + ["-Os", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,--strip-all"],
+    copts = cpu_frequency_flag() + [
+        "-Os",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wl,--gc-sections",
+        "-Wl,--strip-all",
+    ],
     #linkopts = ["--gc-sections"],
     deps = [":mcu_firmware_lib"],
 )
