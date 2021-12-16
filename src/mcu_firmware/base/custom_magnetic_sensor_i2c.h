@@ -19,9 +19,7 @@ class CustomMagneticSensorI2C : public MagneticSensorI2C {
   void activate();
 
   /** get current angle (rad) */
-  float getAngle() override;
-  /** get current angular velocity (rad/s)*/
-  float getVelocity() override;
+  float getSensorAngle() override;
 
  private:
   int this_sda_pin_;

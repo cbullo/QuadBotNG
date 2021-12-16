@@ -4,7 +4,7 @@
 
 #include <avr/interrupt.h>
 
-volatile int adc_reading_{-1};
+volatile int adc_reading_[2]{-1, -1};
 volatile signed char adc_working_{-1};
 
 // ADC complete ISR
@@ -18,17 +18,17 @@ ISR(ADC_vect) {
   low = ADCL;
   high = ADCH;
 
-  adc_reading_ = (high << 8) | low;
+  adc_reading_[adc_working_] = (high << 8) | low;
   adc_working_ = -1;
 }  // end of ADC_vect
 
 
-int AnalogReader::GetADCReading(byte index) { return adc_reading_; }
+int AnalogReader::GetADCReading(byte index) { return adc_reading_[index]; }
 
 bool AnalogReader::StartConversion(byte adc_pin, byte index) {
   // if we aren't taking a reading, start a new one
   if (adc_working_ == -1) {
-    adc_working_ = 0;
+    adc_working_ = index;
     ADCSRA = bit(ADEN);                              // turn ADC on
     ADCSRA |= bit(ADPS0) | bit(ADPS1) | bit(ADPS2);  // Prescaler of 128
     ADMUX = bit(REFS0) | (adc_pin & 0x07);  // select AVcc and select input port

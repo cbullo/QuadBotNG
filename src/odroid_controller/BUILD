@@ -46,11 +46,11 @@ sh_binary(
 sh_binary(
     name = "deploy_encoder",
     srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/encoder_hex.hex"],
+    args = ["../../mcu_firmware/encoder/encoder_hex.hex"],
     data = [
         "config/robot_config.yaml",
         "scripts/upload_firmware.sh",
-        "//src/mcu_firmware:mcu_encoder",
+        "//src/mcu_firmware/encoder:mcu_encoder",
     ],
 )
 
