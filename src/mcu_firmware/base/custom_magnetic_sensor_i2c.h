@@ -1,3 +1,5 @@
+#pragma once
+
 #include "sensors/MagneticSensorI2C.h"
 
 class CustomMagneticSensorI2C : public MagneticSensorI2C {

@@ -52,12 +52,10 @@ void CheckTemperature(bool first) {
   // Serial.print(F("READING: "));
 
   auto temperature = ComputeTemperature(reading);
-  // Serial.println(reading);
-  // Serial.print(F("TEMPERATURE "));
-  // Serial.print(first);
-  // Serial.println(temperature);
   if (temperature > 50) {
-    Serial.println("OVERHEAT DETECTED! RESETTING!");
+    Serial.print(F("temperature: "));
+    Serial.println(temperature);
+    Serial.println(F("OVERHEAT DETECTED! RESETTING!"));
     _delay(100000);  // This will trigger WDT reset
   }
   analog_reader.StartConversion(first ? 2 : 3, first ? 1 : 0);

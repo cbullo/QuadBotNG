@@ -35,11 +35,11 @@ sh_binary(
 sh_binary(
     name = "deploy_calibration",
     srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/calibration_hex.hex"],
+    args = ["../../mcu_firmware/calibration/calibration_hex.hex"],
     data = [
         "config/robot_config.yaml",
         "scripts/upload_firmware.sh",
-        "//src/mcu_firmware:mcu_calibration",
+        "//src/mcu_firmware/calibration:mcu_calibration",
     ],
 )
 
@@ -55,13 +55,35 @@ sh_binary(
 )
 
 sh_binary(
-    name = "deploy_position_test",
+    name = "deploy_open_loop",
     srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/position_test_hex.hex"],
+    args = ["../../mcu_firmware/open_loop/open_loop_hex.hex"],
     data = [
         "config/robot_config.yaml",
         "scripts/upload_firmware.sh",
-        "//src/mcu_firmware:mcu_position_test",
+        "//src/mcu_firmware/open_loop:mcu_open_loop",
+    ],
+)
+
+sh_binary(
+    name = "deploy_init_foc",
+    srcs = ["scripts/deploy.sh"],
+    args = ["../../mcu_firmware/init_foc/init_foc_hex.hex"],
+    data = [
+        "config/robot_config.yaml",
+        "scripts/upload_firmware.sh",
+        "//src/mcu_firmware/init_foc:mcu_init_foc",
+    ],
+)
+
+sh_binary(
+    name = "deploy_calibration_foc",
+    srcs = ["scripts/deploy.sh"],
+    args = ["../../mcu_firmware/calibration/calibration_hex.hex"],
+    data = [
+        "config/robot_config.yaml",
+        "scripts/upload_firmware.sh",
+        "//src/mcu_firmware/init_foc:mcu_calibration",
     ],
 )
 
