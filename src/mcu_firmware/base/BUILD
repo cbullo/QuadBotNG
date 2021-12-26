@@ -13,9 +13,9 @@ cc_library(
     hdrs = [
         "analog_reader.h",
         "custom_magnetic_sensor_i2c.h",
+        "debug_led.h",
         "temperature.h",
     ],
-    strip_include_prefix = "//src/mcu_firmware",
     copts = cpu_frequency_flag() + [
         "-Os",
         "-ffunction-sections",
@@ -23,6 +23,7 @@ cc_library(
         "-Wl,--gc-sections",
         "-Wl,--strip-all",
     ],
+    strip_include_prefix = "//src/mcu_firmware",
     deps = [
         "@arduino//:arduino_core",
         "@arduino//:arduino_eeprom_lib",

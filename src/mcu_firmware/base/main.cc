@@ -6,7 +6,10 @@
 #include "SimpleFOC.h"
 #include "Wire.h"
 #include "analog_reader.h"
+#include "debug_led.h"
 #include "temperature.h"
+
+#define DEBUG_WDT 0
 
 // MagneticSensorI2C(uint8_t _chip_address, float _cpr, uint8_t
 // _angle_register_msb)
@@ -31,34 +34,67 @@ void Initialize();
 void Tick();
 void Critical();
 
+uint8_t resetFlag __attribute__((section(".noinit")));
+void resetFlagsInit(void) __attribute__((naked)) __attribute__((used))
+__attribute__((section(".init0")));
+void resetFlagsInit(void) {
+  /*
+     save the reset flags passed from the bootloader
+     This is a "simple" matter of storing (STS) r2 in the special variable
+     that we have created.  We use assembler to access the right variable.
+  */
+  __asm__ __volatile__("sts %0, r2\n" : "=m"(resetFlag) :);
+}
+
 void MainInitialize() {
+  LEDPIN_PINMODE
+  LEDPIN_OFF
+
   wdt_disable();
   Serial.begin(115200);
   // while (!Serial)
   //  ;
+
+  Serial.println("Reset reason:");
+  Serial.println(resetFlag);
+  if (resetFlag & _BV(EXTRF)) {
+    // Reset button or otherwise some software reset
+    Serial.println("Reset button was pressed.");
+  }
+  if (resetFlag & (_BV(BORF) | _BV(PORF))) {
+    // Brownout or Power On
+    Serial.println("Power loss occured!");
+  }
+  if (resetFlag & _BV(WDRF)) {
+    // Watchdog Reset
+    Serial.println("Watchdog Reset");
+  }
 
   // configure i2C
   Wire.setClock(400000);
 
   analog_reader.StartConversion(2, 0);
   Serial.println(F("Done setup"));
-  wdt_enable(WDTO_1S);
+  wdt_enable(WDTO_4S);
   next_temperature_read = millis();
   Initialize();
 }
 
+float temperature[2] = {20.f, 20.f};
 void CheckTemperature(bool first) {
-  auto reading = analog_reader.GetADCReading(first ? 0 : 1);
-  // Serial.print(F("READING: "));
+  int index = first ? 0 : 1;
+  auto reading = analog_reader.GetADCReading(index);
 
-  auto temperature = ComputeTemperature(reading);
-  if (temperature > 50) {
+  temperature[index] = ComputeTemperature(reading);
+
+  if (temperature[index] > 55) {
     Serial.print(F("temperature: "));
-    Serial.println(temperature);
+    Serial.println(temperature[index]);
     Serial.println(F("OVERHEAT DETECTED! RESETTING!"));
+    wdt_enable(WDTO_15MS);
     _delay(100000);  // This will trigger WDT reset
   }
-  analog_reader.StartConversion(first ? 2 : 3, first ? 1 : 0);
+  analog_reader.StartConversion(first ? 2 : 3, 1 - index);
 }
 
 #define TEMP_CHECK_PERIOD 1000;  // ms
@@ -74,10 +110,21 @@ void MainCritical() {
   wdt_reset();
 }
 
-int main() {
-  init();
+#if DEBUG_WDT
+ISR(WDT_vect) { LEDPIN_ON }
+#endif
 
+int main() {
+  MCUSR = 0;
+  init();
   MainInitialize();
+
+#if DEBUG_WDT
+  cli();
+  WDTCSR |= _BV(WDIE);
+  sei();
+#endif
+
   while (true) {
     Tick();
     MainCritical();

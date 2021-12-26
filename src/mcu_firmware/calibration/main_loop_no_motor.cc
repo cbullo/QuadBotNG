@@ -16,56 +16,27 @@
 #include "SimpleFOC.h"
 #include "base/custom_magnetic_sensor_i2c.h"
 
-#define POLE_PAIR_NUMBER 7
-#define PHASE_RESISTANCE 5  // ohm
-
 CustomMagneticSensorI2C sensor = CustomMagneticSensorI2C(AS5600_I2C, A1, A0);
-
-// BLDC motor & driver instance
-BLDCDriver3PWM driver = BLDCDriver3PWM(5, 3, 6);
-BLDCMotor motor = BLDCMotor(POLE_PAIR_NUMBER);
 
 void Critical(){};
 
-float mean = 0.0;
-float prev_mean = 0.0;
-float stDevSum = 0;
+#define SENSOR_READ_DELAY 5000  // us
+#define MOTOR_OFF 10000         // us
+const int sample_points = 64;
 
-const int sample_points = 8192;
-const int samples_margin = 256;
+int current_reading = 0;
+int phase = -1;
 int16_t current_sample = 0;
-int test_direction = 1;
 
-extern float temperature[2];
-
-int phase = 0;
+const uint8_t N = 16;
+uint16_t readings[N];
 
 void Initialize() {
-  // driver config
-  driver.voltage_power_supply = 12;
-  driver.init();
-  motor.linkDriver(&driver);
-
-  motor.voltage_sensor_align = 8;
-  motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
-
-  motor.controller = MotionControlType::angle_openloop;
-  motor.voltage_limit = motor.voltage_sensor_align;
-  motor.velocity_limit = 100;  // pole_pairs_number * 4
-
   sensor.activate();
   sensor.init();
-  //motor.linkSensor(&sensor);
 
-  motor.useMonitoring(Serial);
-  motor.init();
-
-  motor.disable();
-  Serial.println(F("INIT"));
+  Serial.println(F("INIT1"));
 }
-
-const uint8_t N = 8;
-uint16_t readings[N];
 
 void ShiftReadings() {
   for (int i = 0; i < N - 1; ++i) {
@@ -91,10 +62,6 @@ uint16_t GetAverageReading() {
   return x + (y >= N / 2 ? 1 : 0);
 }
 
-#define MOTOR_ON_PER_SAMPLE_TIME 10  // us
-#define MOTOR_OFF 10000               // us
-int current_reading = 0;
-
 unsigned long wait_until = 0;
 bool WaitFor(unsigned long period_us) {
   if (wait_until == 0) {
@@ -115,66 +82,54 @@ void Tick() {
   }
 
   if (!can_run) {
+  } else if (phase == -1) {
+    Serial.println();
+    Serial.print(current_sample);
+    Serial.print(",");
+    phase = 0;
   } else if (phase == 0) {
     if (Serial.available()) {
       int val = Serial.read();
       if (val == '+') {
         phase = 1;
-        test_direction = 1;
-        current_sample = -samples_margin;
-        Serial.println(F("STARTING CALIB IN PLUS"));
-      } else if (val == '-') {
-        phase = 1;
-        test_direction = -1;
-        current_sample = sample_points + samples_margin;
-        Serial.println(F("STARTING CALIB IN MINUS"));
       } else {
         return;
       }
     } else {
       return;
     }
-    motor.enable();
   } else if (phase == 1) {
     // Read N samples
-    if (-samples_margin <= current_sample &&
-        current_sample <= sample_points + samples_margin) {
-      float motor_angle = current_sample * (_2PI / sample_points);
-      motor.move(motor_angle);
-      if (WaitFor(MOTOR_ON_PER_SAMPLE_TIME)) {
-        // 4096 is encoder cpr
-        sensor.update();
-        uint16_t sensor_angle = round((sensor.getSensorAngle() / _2PI) * 4096);
-        readings[current_reading] = sensor_angle;
-        ++current_reading;
-        if (current_reading == N) {
-          phase = 12;
-        }
-        ClearWait();
+    if (WaitFor(SENSOR_READ_DELAY)) {
+      // 4096 is encoder cpr
+      sensor.update();
+      uint16_t sensor_angle = round((sensor.getSensorAngle() / _2PI) * 4096);
+      readings[current_reading] = sensor_angle;
+      ++current_reading;
+      if (current_reading == N) {
+        phase = 12;
       }
-    } else {
-      phase = 2;
-      Serial.println(F("FINISHED"));
+      ClearWait();
     }
+
   } else if (phase == 12) {
     // Read samples and compare with average. Stop if diff <= 2
-
-    float motor_angle = current_sample * (_2PI / sample_points);
-    motor.move(motor_angle);
-    if (WaitFor(MOTOR_ON_PER_SAMPLE_TIME)) {
+    if (WaitFor(SENSOR_READ_DELAY)) {
       sensor.update();
       uint16_t current_sensor_angle =
           round((sensor.getSensorAngle() / _2PI) * 4096);
       uint16_t average_sensor_angle = GetAverageReading();
 
       if (abs(current_sensor_angle - average_sensor_angle) <= 3) {
-        Serial.print(current_sample);
-        Serial.print(",");
         Serial.print(average_sensor_angle);
-        Serial.print(",");
-        Serial.println(temperature[1]);
-        current_sample += test_direction;
-        phase = 13;
+        current_sample += 1;
+
+        if (current_sample == sample_points) {
+          phase = 2;
+          Serial.println(F("FINISHED"));
+          return;
+        }
+        phase = -1;
         current_reading = 0;
       } else {
         ShiftReadings();
@@ -186,19 +141,9 @@ void Tick() {
       }
       ClearWait();
     }
-  } else if (phase == 13) {
-    motor.disable();
-    if (WaitFor(MOTOR_OFF)) {
-      phase = 1;
-      ClearWait();
-      motor.enable();
-    }
   } else {
-    motor.voltage_limit = 0;
-    motor.current_limit = 0;
-    motor.disable();
   }
 
   sensor.update();
-  //motor.move();
+  // motor.move();
 }

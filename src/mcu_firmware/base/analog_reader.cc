@@ -1,8 +1,10 @@
 #include "analog_reader.h"
 
+#include "debug_led.h"
+
 //#include "Arduino.h"
 
-#include <avr/interrupt.h>
+//#include <avr/interrupt.h>
 
 volatile int adc_reading_[2]{-1, -1};
 volatile signed char adc_working_{-1};
@@ -20,10 +22,16 @@ ISR(ADC_vect) {
 
   adc_reading_[adc_working_] = (high << 8) | low;
   adc_working_ = -1;
-}  // end of ADC_vect
+}
 
-
-int AnalogReader::GetADCReading(byte index) { return adc_reading_[index]; }
+int AnalogReader::GetADCReading(byte index) {
+  // if (bit_is_clear(ADCSRA, ADSC)) {
+  //   int value = ADC;
+  //   adc_reading_[adc_working_] = value;
+  //   adc_working_ = -1;
+  // }
+  return adc_reading_[index];
+}
 
 bool AnalogReader::StartConversion(byte adc_pin, byte index) {
   // if we aren't taking a reading, start a new one
