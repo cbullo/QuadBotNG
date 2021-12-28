@@ -11,9 +11,6 @@ float CustomMagneticSensorI2C::getSensorAngle() {
   float angle = MagneticSensorI2C::getSensorAngle();
   uint16_t angle_int = round(angle * kRadToEnc);
   int16_t correction = linearization_.Value(angle_int);
-  uint16_t angle_corrected = (angle_int + correction) & (0xFFF);
-  Serial.print(angle_int);
-  Serial.print(" ");
-  Serial.println(angle_corrected);
+  uint16_t angle_corrected = static_cast<uint16_t>(angle_int + correction) & (0xFFF);
   return angle_corrected * kEncToRad;
 }

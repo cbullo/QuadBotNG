@@ -21,7 +21,7 @@
 
 CustomMagneticSensorI2C sensor = CustomMagneticSensorI2C(AS5600_I2C, A1, A0);
 
-Commander commander = Commander(Serial, '\n', true);
+Commander commander = Commander(Serial, '\n', false);
 
 void on_calib_data1(char *cmd) {
   switch (cmd[0]) {
@@ -49,6 +49,8 @@ void on_calib_data1(char *cmd) {
   }
 }
 
+
+
 // BLDC motor & driver instance
 BLDCDriver3PWM driver = BLDCDriver3PWM(5, 3, 6);
 BLDCMotor motor = BLDCMotor(POLE_PAIR_NUMBER);
@@ -59,8 +61,8 @@ float mean = 0.0;
 float prev_mean = 0.0;
 float stDevSum = 0;
 
-const int sample_points = 8192;
-const int samples_margin = 256;
+const int sample_points = 256;
+const int samples_margin = 0;
 int16_t current_sample = 0;
 int test_direction = 1;
 
@@ -68,13 +70,16 @@ extern float temperature[2];
 
 int phase = 0;
 
+void on_calib_plus(char *cmd);
+void on_calib_minus(char *cmd);
+
 void Initialize() {
   // driver config
-  driver.voltage_power_supply = 6;
+  driver.voltage_power_supply = 12;
   driver.init();
   motor.linkDriver(&driver);
 
-  motor.voltage_sensor_align = 6;
+  motor.voltage_sensor_align = 12;
   motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
 
   motor.controller = MotionControlType::angle_openloop;
@@ -83,7 +88,7 @@ void Initialize() {
 
   sensor.Activate();
   sensor.init();
-  //motor.linkSensor(&sensor);
+  // motor.linkSensor(&sensor);
 
   motor.useMonitoring(Serial);
   motor.init();
@@ -91,6 +96,8 @@ void Initialize() {
   motor.disable();
 
   commander.add('E', on_calib_data1, "encoder 1");
+  commander.add('P', on_calib_plus, "plus");
+  commander.add('M', on_calib_minus, "minus");
 
   Serial.println(F("INIT"));
 }
@@ -122,8 +129,8 @@ uint16_t GetAverageReading() {
   return x + (y >= N / 2 ? 1 : 0);
 }
 
-#define MOTOR_ON_PER_SAMPLE_TIME 10  // us
-#define MOTOR_OFF 10000               // us
+#define MOTOR_ON_PER_SAMPLE_TIME 500  // us
+#define MOTOR_OFF 10000              // us
 int current_reading = 0;
 
 unsigned long wait_until = 0;
@@ -137,6 +144,22 @@ bool WaitFor(unsigned long period_us) {
 }
 void ClearWait() { wait_until = 0; }
 
+void on_calib_plus(char *cmd) {
+  phase = 1;
+  test_direction = 1;
+  current_sample = -samples_margin;
+  Serial.println(F("STARTING CALIB IN PLUS"));
+  motor.enable();
+}
+
+void on_calib_minus(char *cmd) {
+  phase = 1;
+  test_direction = -1;
+  current_sample = sample_points + samples_margin;
+  Serial.println(F("STARTING CALIB IN MINUS"));
+  motor.enable();
+}
+
 void Tick() {
   commander.run();
 
@@ -149,25 +172,6 @@ void Tick() {
 
   if (!can_run) {
   } else if (phase == 0) {
-    if (Serial.available()) {
-      int val = Serial.read();
-      if (val == '+') {
-        phase = 1;
-        test_direction = 1;
-        current_sample = -samples_margin;
-        Serial.println(F("STARTING CALIB IN PLUS"));
-      } else if (val == '-') {
-        phase = 1;
-        test_direction = -1;
-        current_sample = sample_points + samples_margin;
-        Serial.println(F("STARTING CALIB IN MINUS"));
-      } else {
-        return;
-      }
-    } else {
-      return;
-    }
-    motor.enable();
   } else if (phase == 1) {
     // Read N samples
     if (-samples_margin <= current_sample &&
@@ -201,11 +205,11 @@ void Tick() {
       uint16_t average_sensor_angle = GetAverageReading();
 
       if (abs(current_sensor_angle - average_sensor_angle) <= 3) {
-        Serial.print(current_sample);
-        Serial.print(",");
+        // Serial.print(current_sample);
+        // Serial.print(",");
         Serial.print(average_sensor_angle);
         Serial.print(",");
-        Serial.println(temperature[1]);
+        //Serial.println(temperature[1]);
         current_sample += test_direction;
         phase = 13;
         current_reading = 0;
@@ -233,5 +237,5 @@ void Tick() {
   }
 
   sensor.update();
-  //motor.move();
+  // motor.move();
 }

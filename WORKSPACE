@@ -19,11 +19,17 @@ http_archive(
     urls = ["https://github.com/bazelregistry/yaml-cpp/archive/master.zip"],
 )
 
-http_archive(
+# http_archive(
+#     name = "simplefoc",
+#     build_file = "@//:BUILD.simplefoc",
+#     strip_prefix = "Arduino-FOC-2.2/src",
+#     urls = ["https://github.com/simplefoc/Arduino-FOC/archive/refs/tags/v2.2.zip"],
+# )
+
+new_local_repository(
     name = "simplefoc",
     build_file = "@//:BUILD.simplefoc",
-    strip_prefix = "Arduino-FOC-2.2/src",
-    urls = ["https://github.com/simplefoc/Arduino-FOC/archive/refs/tags/v2.2.zip"],
+    path = "../Arduino-FOC/src",
 )
 
 http_archive(

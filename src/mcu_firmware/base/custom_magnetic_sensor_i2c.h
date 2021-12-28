@@ -23,8 +23,6 @@ class CustomMagneticSensorI2C : public MagneticSensorI2C {
         other_sda_pin_(other_sda_pin) {}
 
   void Activate();
-
-  /** get current angle (rad) */
   float getSensorAngle() override;
 
   PiecewiseLinear<12, 4> linearization_;
