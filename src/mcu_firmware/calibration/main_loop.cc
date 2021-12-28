@@ -21,6 +21,34 @@
 
 CustomMagneticSensorI2C sensor = CustomMagneticSensorI2C(AS5600_I2C, A1, A0);
 
+Commander commander = Commander(Serial, '\n', true);
+
+void on_calib_data1(char *cmd) {
+  switch (cmd[0]) {
+    case 'C': {
+      uint8_t index = 0;
+      if (cmd[1] == '1') {
+        index += 10;
+      }
+      if ('0' <= cmd[2] && cmd[2] <= '9') {
+        index += cmd[2] - '0';
+      }
+      if (index <= 15) {
+        float value = 0;
+        commander.scalar(&value, &cmd[3]);
+        sensor.linearization_.coeffs_[index] = value;
+      }
+      break;
+    }
+    case 'O': {
+      float value = 0;
+      commander.scalar(&value, &cmd[1]);
+      sensor.linearization_.offset = value;
+      break;
+    }
+  }
+}
+
 // BLDC motor & driver instance
 BLDCDriver3PWM driver = BLDCDriver3PWM(5, 3, 6);
 BLDCMotor motor = BLDCMotor(POLE_PAIR_NUMBER);
@@ -42,18 +70,18 @@ int phase = 0;
 
 void Initialize() {
   // driver config
-  driver.voltage_power_supply = 12;
+  driver.voltage_power_supply = 6;
   driver.init();
   motor.linkDriver(&driver);
 
-  motor.voltage_sensor_align = 8;
+  motor.voltage_sensor_align = 6;
   motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
 
   motor.controller = MotionControlType::angle_openloop;
   motor.voltage_limit = motor.voltage_sensor_align;
   motor.velocity_limit = 100;  // pole_pairs_number * 4
 
-  sensor.activate();
+  sensor.Activate();
   sensor.init();
   //motor.linkSensor(&sensor);
 
@@ -61,10 +89,13 @@ void Initialize() {
   motor.init();
 
   motor.disable();
+
+  commander.add('E', on_calib_data1, "encoder 1");
+
   Serial.println(F("INIT"));
 }
 
-const uint8_t N = 8;
+const uint8_t N = 4;
 uint16_t readings[N];
 
 void ShiftReadings() {
@@ -107,6 +138,8 @@ bool WaitFor(unsigned long period_us) {
 void ClearWait() { wait_until = 0; }
 
 void Tick() {
+  commander.run();
+
   bool can_run = true;
   if (wait_until != 0) {
     if (micros() < wait_until) {

@@ -14,6 +14,7 @@ cc_library(
         "analog_reader.h",
         "custom_magnetic_sensor_i2c.h",
         "debug_led.h",
+        "piecewise_linear.h",
         "temperature.h",
     ],
     copts = cpu_frequency_flag() + [

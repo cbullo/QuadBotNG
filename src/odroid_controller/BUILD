@@ -39,6 +39,7 @@ sh_binary(
     data = [
         "config/robot_config.yaml",
         "scripts/upload_firmware.sh",
+        "scripts/update_encoder.sh",
         "//src/mcu_firmware/calibration:mcu_calibration",
     ],
 )
@@ -50,6 +51,7 @@ sh_binary(
     data = [
         "config/robot_config.yaml",
         "scripts/upload_firmware.sh",
+        "scripts/update_encoder.sh",
         "//src/mcu_firmware/encoder:mcu_encoder",
     ],
 )

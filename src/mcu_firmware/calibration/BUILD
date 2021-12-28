@@ -12,7 +12,7 @@ transitioning_rule(
 
 cc_binary(
     name = "mcu_calibration_bin",
-    srcs = ["main_loop_no_motor.cc"],
+    srcs = ["main_loop.cc"],
     copts = cpu_frequency_flag() + [
         "-Os",
         "-ffunction-sections",

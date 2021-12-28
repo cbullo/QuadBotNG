@@ -1,6 +1,10 @@
 #pragma once
 
+#include "piecewise_linear.h"
 #include "sensors/MagneticSensorI2C.h"
+
+const static float kRadToEnc = 4096.f / _2PI;
+const static float kEncToRad = _2PI / 4096.f;
 
 class CustomMagneticSensorI2C : public MagneticSensorI2C {
  public:
@@ -18,10 +22,12 @@ class CustomMagneticSensorI2C : public MagneticSensorI2C {
         this_sda_pin_(this_sda_pin),
         other_sda_pin_(other_sda_pin) {}
 
-  void activate();
+  void Activate();
 
   /** get current angle (rad) */
   float getSensorAngle() override;
+
+  PiecewiseLinear<12, 4> linearization_;
 
  private:
   int this_sda_pin_;

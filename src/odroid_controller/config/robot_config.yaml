@@ -5,6 +5,13 @@ controllers:
   controller_FZ:
     controller_address: "/dev/ardu1"
 
+encoders:
+  encoder_FRZ:
+    controller: "controller_FZ"
+    index: 1
+    linearization_offset: 13
+    linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
+
 motors:
   motor_FRF:
     controller: "controller_FR"
@@ -19,7 +26,7 @@ motors:
   motor_FRZ:
     controller: "controller_FZ"
     index: 0
-    sensor_index: 0
+    sensor: "encoder_FRZ"
     gear_ratio_inv: 9
 
 legs:
