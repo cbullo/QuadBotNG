@@ -7,11 +7,13 @@ cc_library(
     name = "mcu_firmware_base",
     srcs = [
         "analog_reader.cc",
+        "communication.cc",
         "custom_magnetic_sensor_i2c.cc",
         "main.cc",
     ],
     hdrs = [
         "analog_reader.h",
+        "communication.h",
         "custom_magnetic_sensor_i2c.h",
         "debug_led.h",
         "piecewise_linear.h",

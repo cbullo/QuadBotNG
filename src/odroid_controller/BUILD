@@ -21,14 +21,15 @@ cc_binary(
 )
 
 sh_binary(
-    name = "deploy",
+    name = "deploy_controller",
     srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/leg_hex.hex"],
+    args = ["../../mcu_firmware/controller/controller_hex.hex"],
     data = [
         "config/robot_config.yaml",
         "scripts/upload_firmware.sh",
+        "scripts/update_encoder.sh",
         ":controller",
-        "//src/mcu_firmware",
+        "//src/mcu_firmware/controller:mcu_controller",
     ],
 )
 
@@ -63,6 +64,7 @@ sh_binary(
     data = [
         "config/robot_config.yaml",
         "scripts/upload_firmware.sh",
+        "scripts/update_encoder.sh",
         "//src/mcu_firmware/open_loop:mcu_open_loop",
     ],
 )

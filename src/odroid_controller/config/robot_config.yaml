@@ -26,7 +26,9 @@ motors:
   motor_FRZ:
     controller: "controller_FZ"
     index: 0
-    sensor: "encoder_FRZ"
+    encoder: "encoder_FRZ"
+    electric_zero_offset: 3.27
+    direction: 1
     gear_ratio_inv: 9
 
 legs:

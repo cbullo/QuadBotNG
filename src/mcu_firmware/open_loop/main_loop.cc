@@ -1,13 +1,3 @@
-/**
- *
- * Position/angle motion control example
- * Steps:
- * 1) Configure the motor and magnetic sensor
- * 2) Run the code
- * 3) Set the target angle (in radians) from serial terminal
- *
- */
-
 #include "Arduino.h"
 #include "SimpleFOC.h"
 #include "base/custom_magnetic_sensor_i2c.h"
@@ -15,19 +5,55 @@
 void Critical() {}
 
 #define POLE_PAIR_NUMBER 7
-#define PHASE_RESISTANCE 5 //ohm
 
 unsigned long next_sensor_read;
 
 CustomMagneticSensorI2C sensor = CustomMagneticSensorI2C(AS5600_I2C, A1, A0);
 
+Commander commander = Commander(Serial, '\n', false);
+
+bool enabled = false;
+
+
 // BLDC motor & driver instance
 BLDCDriver3PWM driver = BLDCDriver3PWM(5, 3, 6);
-BLDCMotor motor = BLDCMotor(POLE_PAIR_NUMBER, PHASE_RESISTANCE);
+BLDCMotor motor = BLDCMotor(POLE_PAIR_NUMBER);
+
+void on_start(char *cmd) {
+  enabled = true;
+  Serial.println(F("MOTOR STARTED"));
+  motor.enable();
+}
+
+void on_calib_data1(char *cmd) {
+  switch (cmd[0]) {
+    case 'C': {
+      uint8_t index = 0;
+      if (cmd[1] == '1') {
+        index += 10;
+      }
+      if ('0' <= cmd[2] && cmd[2] <= '9') {
+        index += cmd[2] - '0';
+      }
+      if (index <= 15) {
+        float value = 0;
+        commander.scalar(&value, &cmd[3]);
+        sensor.linearization_.coeffs_[index] = value;
+      }
+      break;
+    }
+    case 'O': {
+      float value = 0;
+      commander.scalar(&value, &cmd[1]);
+      sensor.linearization_.offset = value;
+      break;
+    }
+  }
+}
 
 void Initialize() {
   // initialise magnetic sensor hardware
-  sensor.activate();
+  sensor.Activate();
   sensor.init();
   // link the motor to the sensor
   motor.linkSensor(&sensor);
@@ -40,8 +66,8 @@ void Initialize() {
   // link the motor and the driver
   motor.linkDriver(&driver);
 
-  motor.current_limit = 0.5;
-  motor.velocity_limit = 20;
+  motor.voltage_limit = 7;
+  motor.velocity_limit = 100;
 
   // set motion control loop to be used
   motor.controller = MotionControlType::velocity_openloop;
@@ -52,10 +78,20 @@ void Initialize() {
   Serial.println(F("Motor ready."));
 
   next_sensor_read = millis();
+
+  motor.disable();
+
+  commander.add('E', on_calib_data1, "encoder 1");
+  commander.add('S', on_start, "start");
 }
 
 #define SENSOR_READ_PERIOD 100;  // ms
+
+bool activated = false;
+
 void Tick() {
+  commander.run();
+
   sensor.update();
   if (millis() >= next_sensor_read) {
     Serial.print(sensor.getAngle());
@@ -68,5 +104,8 @@ void Tick() {
   // velocity, position or voltage (defined in motor.controller)
   // this function can be run at much lower frequency than loopFOC() function
   // You can also use motor.move() and set the motor.target in the code
-  motor.move(20);
+
+  if (enabled) {
+    motor.move(100);
+  }
 }
