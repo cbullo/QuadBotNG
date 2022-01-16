@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include "controller_board.h"
+#include "bldc_driver_board.h"
 #include "motor.h"
 
 Leg::Leg(Motor* m_f, Motor* m_r, Motor* m_z) {

@@ -5,22 +5,11 @@
 #include "base/custom_magnetic_sensor_i2c.h"
 #include "drivers/BLDCDriver3PWM.h"
 
-// MagneticSensorI2C(uint8_t _chip_address, float _cpr, uint8_t
-// _angle_register_msb)
-//  chip_address  I2C chip address
-//  bit_resolution  resolution of the sensor
-//  angle_register_msb  angle read register msb
-//  bits_used_msb  number of used bits in msb register
-//
-// make sure to read the chip address and the chip angle register msb value from
-// the datasheet also in most cases you will need external pull-ups on SDA and
-// SCL lines!!!!!
-//
-// For AS5058B
-// MagneticSensorI2C sensor = MagneticSensorI2C(0x40, 14, 0xFE, 8);
+#define MOTOR_AVAILABLE 0x01
+#define SENSOR_AVAILABLE 0x02
 
-// Example of AS5600 configuration
-
+uint8_t availability[2] = {MOTOR_AVAILABLE & SENSOR_AVAILABLE,
+                           MOTOR_AVAILABLE& SENSOR_AVAILABLE};
 CustomMagneticSensorI2C sensors[2] = {
     CustomMagneticSensorI2C(AS5600_I2C, A0, A1),
     CustomMagneticSensorI2C(AS5600_I2C, A1, A0)};
@@ -36,39 +25,46 @@ enum class ControllerState {
   ERROR = 4
 } controller_state = ControllerState::PRE_INIT;
 
-void Initialize() { InitCommunication(); }
+void Initialize() {}
 
 void InitController() {
   for (int i = 0; i < 2; ++i) {
-    // initialise magnetic sensor hardware
-    sensors[i].Activate();
-    sensors[i].init();
+    if (availability[i] & SENSOR_AVAILABLE) {
+      // initialise magnetic sensor hardware
+      sensors[i].Activate();
+      sensors[i].init();
 
-    Serial.print(F("Sensor "));
-    Serial.print(i);
-    Serial.println(F(" ready"));
+      // Serial.print(F("Sensor "));
+      // Serial.print(i);
+      // Serial.println(F(" ready"));
+    }
 
-    drivers[i].voltage_power_supply = 28;
-    drivers[i].voltage_limit = 4;
-    drivers[i].init();
-    drivers[i].enable();
+    if (availability[i] & MOTOR_AVAILABLE) {
+      drivers[i].voltage_power_supply = 28;
+      drivers[i].voltage_limit = 4;
+      drivers[i].init();
+      drivers[i].enable();
 
-    Serial.print(F("Driver "));
-    Serial.print(i);
-    Serial.println(F(" ready"));
+      // Serial.print(F("Driver "));
+      // Serial.print(i);
+      // Serial.println(F(" ready"));
 
-    motors[i].linkDriver(&drivers[i]);
-    motors[i].controller = MotionControlType::angle;
-    motors[i].velocity_limit = 100;
-    motors[i].init();
-    motors[i].initFOC(motors[i].zero_electric_angle,
-                      static_cast<Direction>(motors[i].sensor_direction));
+      motors[i].linkDriver(&drivers[i]);
+      if (availability[i] & MOTOR_AVAILABLE) {
+        motors[i].linkSensor(&sensors[i]);
+      }
+      motors[i].controller = MotionControlType::angle;
+      motors[i].velocity_limit = 100;
+      motors[i].init();
+      motors[i].initFOC(motors[i].zero_electric_angle,
+                        static_cast<Direction>(motors[i].sensor_direction));
 
-    motors[i].disable();
+      motors[i].disable();
 
-    Serial.print(F("Motor "));
-    Serial.print(i);
-    Serial.println(F(" ready"));
+      // Serial.print(F("Motor "));
+      // Serial.print(i);
+      // Serial.println(F(" ready"));
+    }
   }
 }
 
@@ -80,62 +76,29 @@ ControllerState InitTick() {
 }
 
 ControllerState StoppedTick() {
-  motors[0].disable();
-  motors[1].disable();
+  for (int i = 0; i < 2; ++i) {
+    if (availability[i] & MOTOR_AVAILABLE) {
+      motors[i].disable();
+    }
+  }
   return controller_state;
 }
 
 ControllerState RunningTick() {
   // TODO: alternate move calls
-  motors[0].move();
-  motors[1].move();
-
-  motors[0].loopFOC();
-  motors[1].loopFOC();
-  return controller_state;
+  for (int i = 0; i < 2; ++i) {
+    if (availability[i] & MOTOR_AVAILABLE) {
+      motors[i].move();
+      motors[i].loopFOC();
+    }
+    return controller_state;
+  }
 }
 
 ControllerState ErrorTick() { return controller_state; }
 
-void ProcessStateCommand(char *cmd) {
-  if (cmd[0] == '\n') {
-    Serial.println(static_cast<uint8_t>(controller_state));
-    return;
-  }
-
-  switch (controller_state) {
-    case ControllerState::PRE_INIT:
-      if (cmd[1] == 'I') {
-        controller_state = ControllerState::INIT;
-        return;
-      }
-      break;
-    case ControllerState::INIT:
-      break;
-    case ControllerState::STOPPED:
-      if (cmd[1] == 'R') {
-        motors[0].enable();
-        motors[1].enable();
-        controller_state = ControllerState::RUNNING;
-        return;
-      }
-      break;
-    case ControllerState::RUNNING:
-      if (cmd[1] == 'S') {
-        controller_state = ControllerState::STOPPED;
-        return;
-      }
-      break;
-    case ControllerState::ERROR:
-      break;
-  }
-
-  Serial.print(F("Unhandled state command: "));
-  Serial.println(cmd[1]);
-}
-
 void Tick() {
-  ProcessCommunication();
+  //ProcessCommunication();
 
   switch (controller_state) {
     case ControllerState::PRE_INIT:

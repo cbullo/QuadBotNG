@@ -25,11 +25,6 @@ ISR(ADC_vect) {
 }
 
 int AnalogReader::GetADCReading(byte index) {
-  // if (bit_is_clear(ADCSRA, ADSC)) {
-  //   int value = ADC;
-  //   adc_reading_[adc_working_] = value;
-  //   adc_working_ = -1;
-  // }
   return adc_reading_[index];
 }
 

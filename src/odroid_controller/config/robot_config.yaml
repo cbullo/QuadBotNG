@@ -28,7 +28,7 @@ motors:
     index: 0
     encoder: "encoder_FRZ"
     electric_zero_offset: 3.27
-    direction: 1
+    encoder_direction: 1
     gear_ratio_inv: 9
 
 legs:

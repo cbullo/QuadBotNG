@@ -1,8 +1,7 @@
 #include "motor.h"
-
 #include "angle.h"
 
-Motor::Motor(ControllerBoard* controller, int motor_index) {
+Motor::Motor(BLDCDriverBoard* controller, int motor_index) {
   controller_ = controller;
   motor_index_ = motor_index;
 }

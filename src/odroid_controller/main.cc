@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "controller.h"
-#include "controller_board.h"
+#include "bldc_driver_board.h"
 #include "leg.h"
 
 volatile bool estop_triggered = false;
@@ -18,7 +18,7 @@ bool stopped = true;
 bool select_pressed = false;
 bool start_pressed = false;
 
-std::vector<ControllerBoard*> controllers;
+std::vector<BLDCDriverBoard*> controllers;
 std::vector<Motor*> motors;
 std::vector<Leg*> legs;
 std::unique_ptr<Controller> main_controller;
@@ -57,12 +57,12 @@ void Stop() {
 
 void ReadControllers(
     const YAML::Node& config,
-    std::unordered_map<std::string, ControllerBoard*>& controllers) {
+    std::unordered_map<std::string, BLDCDriverBoard*>& controllers) {
   const YAML::Node& controllers_yaml = config["controllers"];
   for (auto& controller_yaml : controllers_yaml) {
     auto name = controller_yaml.first.as<std::string>();
     std::cout << "Reading " << name << std::endl;
-    auto controller = new ControllerBoard();
+    auto controller = new BLDCDriverBoard();
     controller->SetName(name);
     controller->UpdateConfig(controller_yaml.second);
     controllers[name] = controller;
@@ -71,7 +71,7 @@ void ReadControllers(
 
 void ReadMotors(
     const YAML::Node& config,
-    const std::unordered_map<std::string, ControllerBoard*>& controllers,
+    const std::unordered_map<std::string, BLDCDriverBoard*>& controllers,
     std::unordered_map<std::string, Motor*>& motors) {
   const YAML::Node& motors_yaml = config["motors"];
   for (auto& motor_yaml : motors_yaml) {
@@ -127,7 +127,7 @@ int main() {
 
   YAML::Node config = YAML::LoadFile("config/robot_config.yaml");
 
-  std::unordered_map<std::string, ControllerBoard*> controllers_map;
+  std::unordered_map<std::string, BLDCDriverBoard*> controllers_map;
 
   ReadControllers(config, controllers_map);
 
