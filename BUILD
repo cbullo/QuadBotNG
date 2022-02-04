@@ -1,13 +1,13 @@
-load("@com_grail_bazel_compdb//:aspects.bzl", "compilation_database")
+# load("@com_grail_bazel_compdb//:aspects.bzl", "compilation_database")
 
-compilation_database(
-    name = "example_compdb",
-    targets = [
-        "//leg_firmware:leg",
-    ],
-    # ideally should be the same as `bazel info execution_root`.
-    exec_root = "/home/tomasz/.cache/bazel/_bazel_tomasz/4c19095c8d368009c5130f5846cef6ca/execroot/__main__",
-)
+# compilation_database(
+#     name = "example_compdb",
+#     targets = [
+#         "//leg_firmware:leg",
+#     ],
+#     # ideally should be the same as `bazel info execution_root`.
+#     exec_root = "/home/tomasz/.cache/bazel/_bazel_tomasz/4c19095c8d368009c5130f5846cef6ca/execroot/__main__",
+# )
 
 platform(
     name = "RCTimer",

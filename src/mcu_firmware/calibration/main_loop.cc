@@ -43,7 +43,7 @@ void on_calib_data1(char *cmd) {
     case 'O': {
       float value = 0;
       commander.scalar(&value, &cmd[1]);
-      sensor.linearization_.offset = value;
+      sensor.linearization_.offset_ = value;
       break;
     }
   }

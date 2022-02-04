@@ -17,7 +17,7 @@ cc_binary(
         "-lpthread",
         "-lm",
     ],
-    deps = ["@yaml-cpp//:yaml-cpp"],
+    deps = ["@yaml-cpp//:yaml-cpp", "//src/libs/communication:binary_communication"],
 )
 
 sh_binary(

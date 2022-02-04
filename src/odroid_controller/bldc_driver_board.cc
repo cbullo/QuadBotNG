@@ -13,12 +13,12 @@
 #include <cstring>
 #include <iostream>
 
-#include "libs/communication/binary_stream.h"
 #include "motor.h"
+#include "src/libs/communication/binary_stream.h"
 
 BLDCDriverBoard::BLDCDriverBoard() {}
 
-void BLDCDriverBoard::UpdateConfig(const YAML::Node& config) {
+void BLDCDriverBoard::UpdateConfig(const YAML::Node &config) {
   usb_address_ = config["controller_address"].as<std::string>();
 }
 
@@ -103,7 +103,7 @@ void BLDCDriverBoard::ProcessSend() {
   SendCommand(to_process.command_bytes, to_process.command_length);
 }
 
-void BLDCDriverBoard::SendCommand(const uint8_t* bytes, int message_length) {
+void BLDCDriverBoard::SendCommand(const uint8_t *bytes, int message_length) {
   if (message_length == 0) {
     assert(false);
     return;
@@ -144,6 +144,41 @@ void BLDCDriverBoard::DiscardReceive() {
   }
 }
 
+uint8_t BLDCDriverBoard::CalculateReplySize(uint8_t header_byte) {
+  return GetArgumentLength(header_byte);
+}
+
+uint8_t BLDCDriverBoard::CalculateDataStreamSize(uint8_t header_byte) {
+  uint8_t data_fields = header_byte & MESSAGE_SUBTYPE_MASK;
+  uint8_t data_size = 0;
+
+  // TODO: handle this better - share data type with MCU
+  if (data_fields & DATA_STREAM_ANGLE_BIT) {
+    data_size += sizeof(float);
+  } else if (data_fields & DATA_STREAM_VELOCITY_BIT) {
+    data_size += sizeof(float);
+  } else if (data_fields & DATA_STREAM_TEMPERATURE_BIT) {
+    data_size += sizeof(float);
+  }
+  data_size *= 2;  // Always return values for both motors
+  return data_size;
+}
+
+// Returns size of dynamic message data (excluding header and static data)
+uint8_t BLDCDriverBoard::ProcessStaticData(const uint8_t *bytes) {
+  uint8_t message_type = bytes[0] & MESSAGE_TYPE_MASK;
+  switch (message_type) {
+    case MESSAGE_TYPE_STRING:
+      return bytes[1];
+    case MESSAGE_TYPE_GET_REPLY:
+      return CalculateReplySize(message_type);
+    case MESSAGE_TYPE_DATA_STREAM:
+      return CalculateDataStreamSize(message_type);
+    default:
+      return 0;
+  }
+}
+
 void BLDCDriverBoard::ProcessReceive() {
   size_t nbytes;
   ssize_t bytes_read;
@@ -171,16 +206,16 @@ void BLDCDriverBoard::ProcessReceive() {
       read_offset_ += bytes_read;
 
       if (read_offset_ == expected_msg_bytes_) {
-        switch (msg_part) {
-          case ExpectedMessagePart::kHeader:
+        switch (msg_part_) {
+          case ExpectedMessagePart::kHeaderPart:
             expected_msg_bytes_ =
                 ProcessHeader(serial_read_buffer_[0]) + read_offset_;
-            msg_part = ExpectedMessagePart::kStaticPart;
+            msg_part_ = ExpectedMessagePart::kStaticPart;
             break;
           case ExpectedMessagePart::kStaticPart:
             expected_msg_bytes_ =
                 ProcessStaticData(serial_read_buffer_) + read_offset_;
-            msg_part = ExpectedMessagePart::kDynamicPart;
+            msg_part_ = ExpectedMessagePart::kDynamicPart;
             break;
           case ExpectedMessagePart::kDynamicPart:
             ProcessMessage(serial_read_buffer_, read_offset_);
@@ -199,14 +234,15 @@ uint8_t BLDCDriverBoard::ProcessHeader(uint8_t header_byte) {
       return 0;
     case MESSAGE_TYPE_PING:
       return 0;
-    case MESSAGE_TYPE_GET_REPLY:
+    case MESSAGE_TYPE_GET_REPLY: {
       // Make sure we're waiting for this message
       auto cmd = sent_get_commands_.front();
-      if (cmd.command_bytes[0] & MESSAGE_TYPE_MASK != header_byte &
-          MESSAGE_TYPE_MASK) {
+      if ((cmd.command_bytes[0] & MESSAGE_TYPE_MASK) !=
+          (header_byte & MESSAGE_TYPE_MASK)) {
         HandleError();
       }
       return 0;
+    }
     case MESSAGE_TYPE_DATA_STREAM:
       return 0;
     case MESSAGE_TYPE_STRING:
@@ -214,41 +250,7 @@ uint8_t BLDCDriverBoard::ProcessHeader(uint8_t header_byte) {
   }
 }
 
-uint8_t BLDCDriverBoard::CalculateReplySize(uint8_t header_byte) {
-  return GetArgumentLength(header_byte);
-}
-
-uint8_t BLDCDriverBoard::CalculateDataStreamSize(uint8_t header_byte) {
-  uint8_t data_fields = header_byte & MESSAGE_SUBTYPE_MASK;
-  uint8_t data_size = 0;
-
-  // TODO: handle this better - share data type with MCU
-  if (data_fields & DATA_STREAM_ANGLE_BIT) {
-    data_size += sizeof(float);
-  } else if (data_fields & DATA_STREAM_VELOCITY_BIT) {
-    data_size += sizeof(float);
-  } else if (data_fields & DATA_STREAM_TEMPERATURE_BIT) {
-    data_size += sizeof(float);
-  }
-  data_size *= 2;  // Always return values for both motors
-  return data_size;
-}
-// Returns size of dynamic message data (excluding header and static data)
-uint8_t ProcessStaticData(const uint8_t* bytes) {
-  uint8_t message_type = bytes[0] & MESSAGE_TYPE_MASK;
-  switch (message_type) {
-    case MESSAGE_TYPE_STRING:
-      return bytes[1];
-    case MESSAGE_TYPE_GET_REPLY:
-      return CalculateReplySize(message_type);
-    case MESSAGE_TYPE_DATA_STREAM:
-      return CalculateDataStreamSize(message_type);
-    default:
-      return 0;
-  }
-}
-
-void BLDCDriverBoard::ProcessMessage(const uint8_t* message, int message_size) {
+void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
   // Make sure we're getting data that we're expecting
   switch (sync_state_) {
     case SyncState::kNotSynced:
@@ -276,7 +278,7 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t* message, int message_size) {
     std::lock_guard<std::mutex> guard(commands_mutex_);
     read_command = sent_get_commands_.front();
   }
-  read_command.callback_.Process(message, message_size);
+  read_command.callback->ReadArgs(message, message_size);
   {
     std::lock_guard<std::mutex> guard(reply_mutex_);
     replied_commands_queue_.push(read_command);
@@ -294,7 +296,7 @@ void BLDCDriverBoard::ProcessLoop() {
         DiscardReceive();
         if (std::chrono::system_clock::now() >= communication_deadline_) {
           SetState(SyncState::kSyncing);
-          BumpDeadline(3000);
+          BumpTimeout(3000);
         }
         break;
       case SyncState::kSyncing:
@@ -331,7 +333,7 @@ void BLDCDriverBoard::CheckTimeout() {
 void BLDCDriverBoard::BumpTimeout(int ms) {
   communication_deadline_ =
       std::chrono::system_clock::now() +
-      std::chrono::duration<std::chrono::milliseconds>(ms);
+      std::chrono::milliseconds{ms};
 }
 
 void BLDCDriverBoard::SetState(SyncState new_state) { sync_state_ = new_state; }
@@ -373,5 +375,3 @@ void BLDCDriverBoard::SendGetCommand(uint8_t motor_index, COMMAND_TYPE command,
     pending_commands_.push(cmd);
   }
 }
-
-void BLDCDriverBoard::SetState(SyncState new_state) { sync_state_ = new_state; }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <assert.h>
+
 #include <atomic>
 #include <functional>
 #include <mutex>
@@ -7,58 +9,60 @@
 #include <string>
 #include <thread>
 
-#include "binary_commands.h"
+#include "src/libs/communication/binary_commands.h"
+#include "src/libs/communication/binary_stream.h"
 #include "yaml-cpp/yaml.h"
 
 #define MAX_COMMAND_LENGTH 16
 #define MAX_CALLBACK_SIZE 32
 
+struct Callback {
+  virtual void operator()() = 0;
+  virtual void ReadArgs(const uint8_t *buffer, int size) = 0;
+};
+
 struct Command {
   uint8_t command_bytes[MAX_COMMAND_LENGTH];
   int command_length = 0;
   uint8_t callback_mem[MAX_CALLBACK_SIZE];
-  Callback* callback_;
+  Callback *callback;
 
   template <class CALLBACK, class FUNCTION>
   void AllocateCallback(FUNCTION f) {
-    callback_ = new (callback_mem) CALLBACK(f);
+    callback = new (callback_mem) CALLBACK(f);
   }
-};
-
-struct Callback {
-  virtual void operator()() = 0;
-  virtual void ReadArgs(uint8_t* buffer, int size) = 0;
 };
 
 template <class ARG0>
 struct SingleArgCallback : public Callback {
-  SingleArgCallback(std::function<void(ARG0)> callback) : callback_(callback){};
-  virtual void operator()() override { callback(arg0_); }
-  virtual void ReadArgs(uint8_t* buffer, int size) override {
-    arg0_ = *static_cast<ARG0*>(buffer);
+  SingleArgCallback(std::function<void(ARG0)> callback_arg)
+      : callback(callback_arg){};
+  virtual void operator()() override { callback(arg0); }
+  virtual void ReadArgs(const uint8_t *buffer, int size) override {
+    arg0 = *static_cast<ARG0 *>(buffer);
   }
 
  private:
-  ARG0 arg0_ = {};
-  std::function<void(ARG0)> callback_;
+  ARG0 arg0 = {};
+  std::function<void(ARG0)> callback;
 };
 
 template <class ARG0, class ARG1>
 struct DoubleArgCallback : public Callback {
-  DoubleArgCallback(std::function<void(ARG0, ARG1)> callback)
-      : callback_(callback){};
-  virtual void operator()() override { callback_(arg0_, arg1_); }
-  virtual void ReadArgs(uint8_t* buffer, int size) override {
+  DoubleArgCallback(std::function<void(ARG0, ARG1)> callback_arg)
+      : callback(callback_arg){};
+  virtual void operator()() override { callback_(arg0, arg1); }
+  virtual void ReadArgs(const uint8_t *buffer, int size) override {
     int offset = 0;
-    arg0_ = *(static_cast<ARG0*>(buffer) + offset);
+    arg0 = *(static_cast<ARG0 *>(buffer) + offset);
     offset += sizeof(ARG0);
-    arg1_ = *(static_cast<ARG1*>(buffer) + 1);
+    arg1 = *(static_cast<ARG1 *>(buffer) + 1);
   }
 
  private:
-  ARG0 arg0_ = {};
-  ARG1 arg1_ = {};
-  std::function<void(ARG0, ARG1)> callback_;
+  ARG0 arg0 = {};
+  ARG1 arg1 = {};
+  std::function<void(ARG0, ARG1)> callback;
 };
 
 // struct PreInitState : CommunicationState {
@@ -78,21 +82,20 @@ struct DoubleArgCallback : public Callback {
 class BLDCDriverBoard {
  public:
   BLDCDriverBoard();
-  void UpdateConfig(const YAML::Node& config);
+  void UpdateConfig(const YAML::Node &config);
 
-  void SetMotor(int index, class Motor* m) { motors_[index] = m; }
+  void SetMotor(int index, class Motor *m) { motors_[index] = m; }
 
   bool Connect();
   void Disconnect();
   bool IsConnected() const;
-  Motor* GetMotor(int m) { return motors_[m]; }
-  const Motor* GetMotor(int m) const { return motors_[m]; }
+  Motor *GetMotor(int m) { return motors_[m]; }
+  const Motor *GetMotor(int m) const { return motors_[m]; }
 
   std::string GetName() const { return name_; }
-  void SetName(const std::string& name) { name_ = name; }
+  void SetName(const std::string &name) { name_ = name; }
 
   std::string GetUSBAddress() const { return usb_address_; }
-  void ProcessLoop();
 
   void HardwareReset() const;
 
@@ -124,7 +127,7 @@ class BLDCDriverBoard {
   void ProcessReceive();
   void ProcessSend();
   void ProcessLoop();
-  void SendCommand(const uint8_t* command, int length);
+  void SendCommand(const uint8_t *command, int length);
   void SendSync();
 
   static const int kDefaultCommunicationTimeout = 10000;
@@ -133,6 +136,12 @@ class BLDCDriverBoard {
   void SetState(SyncState new_state);
 
   uint8_t ProcessHeader(uint8_t header_byte);
+  uint8_t CalculateReplySize(uint8_t header_byte);
+  uint8_t CalculateDataStreamSize(uint8_t header_byte);
+  uint8_t ProcessStaticData(const uint8_t *bytes);
+  void ProcessMessage(const uint8_t *message, int message_size);
+  void HandleError(){};
+
   std::unique_ptr<std::thread> communication_thread_;
 
   std::mutex commands_mutex_;
@@ -143,8 +152,8 @@ class BLDCDriverBoard {
   std::queue<Command> replied_commands_queue_;
 
   std::chrono::time_point<std::chrono::system_clock> communication_deadline_;
-  ExpectedMessagePart msg_part = ExpectedMessagePart::kHeaderPart;
-  int expected_msg_bytes = MESSAGE_HEADER_SIZE;
+  ExpectedMessagePart msg_part_ = ExpectedMessagePart::kHeaderPart;
+  int expected_msg_bytes_ = MESSAGE_HEADER_SIZE;
 
   static const int kReadBuffer = 256;
   uint8_t serial_read_buffer_[kReadBuffer];
@@ -156,7 +165,7 @@ class BLDCDriverBoard {
   std::string usb_address_;
   int serial_ = -1;
 
-  class Motor* motors_[2];
+  class Motor *motors_[2];
   std::string name_;
 
   SyncState sync_state_;
@@ -166,14 +175,14 @@ template <class ARGUMENT>
 void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
                                      ARGUMENT argument) {
   Command cmd;
-  cmd.bytes[0] =
+  cmd.command_bytes[0] =
       command & MAIN_COMMAND_MASK | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
-  cmd.length += 1;
+  cmd.command_length += 1;
   const int arg_size = sizeof(argument);
   memcpy(cmd.command_bytes[cmd.command_length], &argument, arg_size);
-  cmd.length += arg_size;
+  cmd.command_length += arg_size;
 
-  assert(cmd.length <= MAX_COMMAND_LENGTH);
+  assert(cmd.command_length <= MAX_COMMAND_LENGTH);
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
     pending_commands_.push(cmd);
@@ -184,12 +193,12 @@ template <class ARGUMENT0, class ARGUMENT1>
 void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
                                      ARGUMENT0 argument0, ARGUMENT1 argument1) {
   Command cmd;
-  cmd.bytes[0] =
+  cmd.command_bytes[0] =
       command & MAIN_COMMAND_MASK | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
-  cmd.length += 1;
+  cmd.command_length += 1;
   const int arg_size0 = sizeof(argument0);
   memcpy(cmd.command_bytes[cmd.command_length], &argument0, arg_size0);
-  cmd.length += arg_size0;
+  cmd.command_length += arg_size0;
   const int arg_size1 = sizeof(argument1);
   memcpy(cmd.command_bytes[cmd.command_length], &argument1, arg_size1);
   cmd.command_length += arg_size1;
@@ -206,16 +215,16 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
                                      COMMAND_TYPE subcommand,
                                      ARGUMENT argument) {
   Command cmd;
-  cmd.bytes[0] =
+  cmd.command_bytes[0] =
       command & MAIN_COMMAND_MASK | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
-  cmd.length += 1;
-  cmd.bytes[1] = subcommand;
-  cmd.length += 1;
+  cmd.command_length += 1;
+  cmd.command_bytes[1] = subcommand;
+  cmd.command_length += 1;
   const int arg_size = sizeof(argument);
-  memcpy(cmd.bytes[cmd.length], &argument, arg_size);
-  cmd.length += arg_size;
+  memcpy(cmd.command_bytes[cmd.command_length], &argument, arg_size);
+  cmd.command_length += arg_size;
 
-  assert(cmd.length <= MAX_COMMAND_LENGTH);
+  assert(cmd.command_length <= MAX_COMMAND_LENGTH);
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
     pending_commands_.push(cmd);
@@ -227,19 +236,19 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
                                      COMMAND_TYPE subcommand,
                                      ARGUMENT0 argument0, ARGUMENT1 argument1) {
   Command cmd;
-  cmd.bytes[0] =
+  cmd.command_bytes[0] =
       command & MAIN_COMMAND_MASK | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
-  cmd.length += 1;
-  cmd.bytes[1] = subcommand;
-  cmd.length += 1;
+  cmd.command_length += 1;
+  cmd.command_bytes[1] = subcommand;
+  cmd.command_length += 1;
   const int arg_size0 = sizeof(argument0);
-  memcpy(cmd.bytes[cmd.length], &argument0, arg_size0);
-  cmd.length += arg_size0;
+  memcpy(cmd.command_bytes[cmd.command_length], &argument0, arg_size0);
+  cmd.command_length += arg_size0;
   const int arg_size1 = sizeof(argument1);
-  memcpy(cmd.bytes[cmd.length], &argument1, arg_size1);
-  cmd.length += arg_size1;
+  memcpy(cmd.command_bytes[cmd.command_length], &argument1, arg_size1);
+  cmd.command_length += arg_size1;
 
-  assert(cmd.length <= MAX_COMMAND_LENGTH);
+  assert(cmd.command_length <= MAX_COMMAND_LENGTH);
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
     pending_commands_.push(cmd);

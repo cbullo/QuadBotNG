@@ -67,7 +67,7 @@ enum class SyncState {
 
 #define COMMAND_TYPE uint8_t
 
-uint8_t GetArgumentLength(uint8_t byte) {
+inline uint8_t GetArgumentLength(uint8_t byte) {
   switch (byte & MAIN_COMMAND_MASK) {
     case CMD_V_PID:
       return sizeof(float);
@@ -113,7 +113,7 @@ uint8_t GetArgumentLength(uint8_t byte) {
 //     case SCMD_PID_LIM:
 //       return sizeof(float);
 
-uint8_t GetCommandLength(uint8_t byte) {
+inline uint8_t GetCommandLength(uint8_t byte) {
   switch (byte & MAIN_COMMAND_MASK) {
     case CMD_V_PID:
       return 2 * sizeof(COMMAND_TYPE);
@@ -148,7 +148,7 @@ uint8_t GetCommandLength(uint8_t byte) {
   return 1;
 }
 
-uint8_t GetPIDSubcommandLength(uint8_t byte) {
+inline uint8_t GetPIDSubcommandLength(uint8_t byte) {
   switch (byte & MAIN_COMMAND_MASK) {
     case SCMD_PID_P:
       return sizeof(COMMAND_TYPE);
@@ -165,7 +165,7 @@ uint8_t GetPIDSubcommandLength(uint8_t byte) {
   return 1;
 }
 
-uint8_t GetPIDSubcommandLength(uint8_t byte) {
+inline uint8_t GetLPFSubcommandLength(uint8_t byte) {
   switch (byte & MAIN_COMMAND_MASK) {
     case SCMD_LPF_TF:
       return sizeof(COMMAND_TYPE);

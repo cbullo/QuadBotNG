@@ -8,8 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "controller.h"
 #include "bldc_driver_board.h"
+#include "controller.h"
 #include "leg.h"
 
 volatile bool estop_triggered = false;
@@ -41,7 +41,7 @@ void ReleaseEStop() {
 
 void Run() {
   for (auto controller : controllers) {
-    controller->SendCommand("R");
+    // controller->SendCommand("R");
   }
   std::cout << "Running!" << std::endl;
   stopped = false;
@@ -49,7 +49,7 @@ void Run() {
 
 void Stop() {
   for (auto controller : controllers) {
-    controller->SendCommand("S");
+    // controller->SendCommand("S");
   }
   std::cout << "Stopped!" << std::endl;
   stopped = true;
@@ -114,14 +114,13 @@ size_t get_axis_state(struct js_event* event, axis_state axes[3]) {
   size_t axis = event->number;
 
   if (axis < 6) {
-      axes[axis].x = event->value;
+    axes[axis].x = event->value;
   }
 
   return axis;
 }
 
 int main() {
-
   std::cout << "Running controller" << std::endl;
   axis_state axes[6] = {0};
 
