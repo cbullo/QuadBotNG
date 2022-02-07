@@ -318,6 +318,20 @@ void BLDCDriverBoard::HardwareReset() const {
   ioctl(serial_, TIOCMBIC, &RTS_flag);  // Clear RTS pin
 }
 
+void BLDCDriverBoard::Tick() { RelayMessages(); }
+
+void BLDCDriverBoard::RelayMessages() {
+  std::vector<Command> replies;
+  {
+    std::lock_guard<std::mutex> guard(reply_mutex_);
+    replies.insert(replies.begin(), replied_commands_queue_.begin(),
+                   replied_commands_queue_.end());
+  }
+  for (auto &reply : replies) {
+    (*reply.callback)();
+  }
+}
+
 void BLDCDriverBoard::SendSync() {
   SendCommand(CMD_SYNC);
   BumpTimeout(1000);
@@ -332,8 +346,7 @@ void BLDCDriverBoard::CheckTimeout() {
 
 void BLDCDriverBoard::BumpTimeout(int ms) {
   communication_deadline_ =
-      std::chrono::system_clock::now() +
-      std::chrono::milliseconds{ms};
+      std::chrono::system_clock::now() + std::chrono::milliseconds{ms};
 }
 
 void BLDCDriverBoard::SetState(SyncState new_state) { sync_state_ = new_state; }

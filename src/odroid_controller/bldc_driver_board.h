@@ -65,20 +65,6 @@ struct DoubleArgCallback : public Callback {
   std::function<void(ARG0, ARG1)> callback;
 };
 
-// struct PreInitState : CommunicationState {
-//   void ProcessCommand();
-//  private:
-//   void SendSyncRequest();
-// };
-
-// struct WaitingForHeader : CommunicationState {
-//   void ProcessCommand();
-// };
-
-// struct ReadingData : CommunicationState {
-//   void ProcessCommand();
-// };
-
 class BLDCDriverBoard {
  public:
   BLDCDriverBoard();
@@ -99,6 +85,8 @@ class BLDCDriverBoard {
 
   void HardwareReset() const;
 
+  void Tick();
+  
   void SendGetCommand(uint8_t motor_index, COMMAND_TYPE command);
   void SendGetCommand(uint8_t motor_index, COMMAND_TYPE command,
                       COMMAND_TYPE subcommand);
@@ -116,6 +104,9 @@ class BLDCDriverBoard {
   void SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
                       COMMAND_TYPE subcommand, ARGUMENT0 argument0,
                       ARGUMENT1 argument1);
+
+  void RegisterDataStreamCallback();
+  void RegisterStringMsgCallback();
 
  private:
   enum class ExpectedMessagePart { kHeaderPart, kStaticPart, kDynamicPart };
