@@ -17,6 +17,7 @@ cc_binary(
         "-lpthread",
         "-lm",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//src/libs/communication:binary_communication",
         "@fmt",

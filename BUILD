@@ -1,13 +1,19 @@
-# load("@com_grail_bazel_compdb//:aspects.bzl", "compilation_database")
+## Replace workspace_name and dir_path as per your setup.
+load("@com_grail_bazel_compdb//:defs.bzl", "compilation_database")
+load("@com_grail_bazel_output_base_util//:defs.bzl", "OUTPUT_BASE")
 
-# compilation_database(
-#     name = "example_compdb",
-#     targets = [
-#         "//leg_firmware:leg",
-#     ],
-#     # ideally should be the same as `bazel info execution_root`.
-#     exec_root = "/home/tomasz/.cache/bazel/_bazel_tomasz/4c19095c8d368009c5130f5846cef6ca/execroot/__main__",
-# )
+compilation_database(
+    name = "example_compdb",
+    # OUTPUT_BASE is a dynamic value that will vary for each user workspace.
+    # If you would like your build outputs to be the same across users, then
+    # skip supplying this value, and substitute the default constant value
+    # "__OUTPUT_BASE__" through an external tool like `sed` or `jq` (see
+    # below shell commands for usage).
+    output_base = OUTPUT_BASE,
+    targets = [
+        "//src/odroid_controller:controller",
+    ],
+)
 
 platform(
     name = "RCTimer",
@@ -23,6 +29,6 @@ platform(
     name = "Odroid-C4",
     constraint_values = [
         "@platforms//cpu:aarch64",
-        "@platforms//os:linux"
-    ]
+        "@platforms//os:linux",
+    ],
 )
