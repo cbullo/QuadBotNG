@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include <atomic>
+#include <deque>
 #include <functional>
 #include <mutex>
 #include <queue>
@@ -83,10 +84,11 @@ class BLDCDriverBoard {
 
   std::string GetUSBAddress() const { return usb_address_; }
 
-  void HardwareReset() const;
+  void ResetBoard();
+  void HardwareReset();
 
   void Tick();
-  
+
   void SendGetCommand(uint8_t motor_index, COMMAND_TYPE command);
   void SendGetCommand(uint8_t motor_index, COMMAND_TYPE command,
                       COMMAND_TYPE subcommand);
@@ -131,7 +133,9 @@ class BLDCDriverBoard {
   uint8_t CalculateDataStreamSize(uint8_t header_byte);
   uint8_t ProcessStaticData(const uint8_t *bytes);
   void ProcessMessage(const uint8_t *message, int message_size);
-  void HandleError(){};
+  void HandleCommunicationError(const std::string &message);
+
+  void RelayMessages();
 
   std::unique_ptr<std::thread> communication_thread_;
 
@@ -140,7 +144,7 @@ class BLDCDriverBoard {
   std::queue<Command> sent_get_commands_;
 
   std::mutex reply_mutex_;
-  std::queue<Command> replied_commands_queue_;
+  std::deque<Command> replied_commands_queue_;
 
   std::chrono::time_point<std::chrono::system_clock> communication_deadline_;
   ExpectedMessagePart msg_part_ = ExpectedMessagePart::kHeaderPart;
@@ -160,6 +164,9 @@ class BLDCDriverBoard {
   std::string name_;
 
   SyncState sync_state_;
+
+  bool error_state_ = false;
+  std::string error_message_;
 };
 
 template <class ARGUMENT>

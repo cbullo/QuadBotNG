@@ -2,10 +2,10 @@ cc_binary(
     name = "controller",
     srcs = [
         "angle.h",
-        "controller.cc",
-        "controller.h",
         "bldc_driver_board.cc",
         "bldc_driver_board.h",
+        "controller.cc",
+        "controller.h",
         "leg.cc",
         "leg.h",
         "main.cc",
@@ -17,7 +17,11 @@ cc_binary(
         "-lpthread",
         "-lm",
     ],
-    deps = ["@yaml-cpp//:yaml-cpp", "//src/libs/communication:binary_communication"],
+    deps = [
+        "//src/libs/communication:binary_communication",
+        "@fmt",
+        "@yaml-cpp",
+    ],
 )
 
 sh_binary(
@@ -26,8 +30,8 @@ sh_binary(
     args = ["../../mcu_firmware/controller/controller_hex.hex"],
     data = [
         "config/robot_config.yaml",
-        "scripts/upload_firmware.sh",
         "scripts/update_encoder.sh",
+        "scripts/upload_firmware.sh",
         ":controller",
         "//src/mcu_firmware/controller:mcu_controller",
     ],
@@ -39,8 +43,8 @@ sh_binary(
     args = ["../../mcu_firmware/calibration/calibration_hex.hex"],
     data = [
         "config/robot_config.yaml",
-        "scripts/upload_firmware.sh",
         "scripts/update_encoder.sh",
+        "scripts/upload_firmware.sh",
         "//src/mcu_firmware/calibration:mcu_calibration",
     ],
 )
@@ -51,8 +55,8 @@ sh_binary(
     args = ["../../mcu_firmware/encoder/encoder_hex.hex"],
     data = [
         "config/robot_config.yaml",
-        "scripts/upload_firmware.sh",
         "scripts/update_encoder.sh",
+        "scripts/upload_firmware.sh",
         "//src/mcu_firmware/encoder:mcu_encoder",
     ],
 )
@@ -63,8 +67,8 @@ sh_binary(
     args = ["../../mcu_firmware/open_loop/open_loop_hex.hex"],
     data = [
         "config/robot_config.yaml",
-        "scripts/upload_firmware.sh",
         "scripts/update_encoder.sh",
+        "scripts/upload_firmware.sh",
         "//src/mcu_firmware/open_loop:mcu_open_loop",
     ],
 )

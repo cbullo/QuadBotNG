@@ -7,6 +7,7 @@ http_archive(
 )
 
 load("@com_grail_bazel_compdb//:deps.bzl", "bazel_compdb_deps")
+
 bazel_compdb_deps()
 
 http_archive(
@@ -19,6 +20,18 @@ http_archive(
     name = "yaml-cpp",
     strip_prefix = "yaml-cpp-master",
     urls = ["https://github.com/bazelregistry/yaml-cpp/archive/master.zip"],
+)
+
+http_archive(
+    name = "fmt",
+    patch_cmds = [
+        "mv support/bazel/.bazelrc .bazelrc",
+        "mv support/bazel/.bazelversion .bazelversion",
+        "mv support/bazel/BUILD.bazel BUILD.bazel",
+        "mv support/bazel/WORKSPACE.bazel WORKSPACE.bazel",
+    ],
+    strip_prefix = "fmt-8.1.1",
+    urls = ["https://github.com/fmtlib/fmt/archive/refs/tags/8.1.1.tar.gz"],
 )
 
 # http_archive(

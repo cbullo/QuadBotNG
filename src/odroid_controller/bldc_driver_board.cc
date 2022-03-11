@@ -13,6 +13,7 @@
 #include <cstring>
 #include <iostream>
 
+#include "fmt/core.h"
 #include "motor.h"
 #include "src/libs/communication/binary_stream.h"
 
@@ -114,7 +115,9 @@ void BLDCDriverBoard::SendCommand(const uint8_t *bytes, int message_length) {
       if (errno == EAGAIN) {
         continue;
       } else {
-        HandleError();
+        HandleCommunicationError(
+            fmt::format("SendCommand write() returned error {}: {}", errno,
+                        strerror(errno)));
       }
     }
     message_length -= bytes_sent;
@@ -127,7 +130,9 @@ void BLDCDriverBoard::DiscardReceive() {
     int value;
     int error = ioctl(serial_, FIONREAD, &value);
     if (error == -1) {
-      HandleError();
+      HandleCommunicationError(
+          fmt::format("DiscardReceive: ioctl() returned error {}: {}", errno,
+                      strerror(errno)));
     }
     if (value == 0) {
       break;
@@ -137,7 +142,9 @@ void BLDCDriverBoard::DiscardReceive() {
       if (errno == EAGAIN) {
         break;
       } else {
-        HandleError();
+        HandleCommunicationError(
+            fmt::format("DiscardReceive read() returned error {}: {}", errno,
+                        strerror(errno)));
         break;
       }
     }
@@ -187,7 +194,9 @@ void BLDCDriverBoard::ProcessReceive() {
     int value;
     int error = ioctl(fd, FIONREAD, &value);
     if (error == -1) {
-      HandleError();
+      HandleCommunicationError(
+          fmt::format("ProcessReceive ioctl() returned error {}: {}", errno,
+                      strerror(errno)));
       return;
     }
     if (value == 0) {
@@ -199,7 +208,9 @@ void BLDCDriverBoard::ProcessReceive() {
       if (errno == EAGAIN) {
         break;
       } else {
-        HandleError();
+        HandleCommunicationError(
+            fmt::format("ProcessReceive read() returned error {}: {}", errno,
+                        strerror(errno)));
         return;
       }
     } else {
@@ -239,7 +250,9 @@ uint8_t BLDCDriverBoard::ProcessHeader(uint8_t header_byte) {
       auto cmd = sent_get_commands_.front();
       if ((cmd.command_bytes[0] & MESSAGE_TYPE_MASK) !=
           (header_byte & MESSAGE_TYPE_MASK)) {
-        HandleError();
+        HandleCommunicationError(fmt::format(
+            "Unexpected message type received.\nExpected: {} Received: {}",
+            cmd.command_bytes[0], header_byte));
       }
       return 0;
     }
@@ -261,7 +274,8 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
     case SyncState::kSyncing:
       if (message_size != 1 ||
           message[0] != (MESSAGE_TYPE_SYNC | MESSAGE_SUBTYPE_SYNC)) {
-        HandleError();
+        HandleCommunicationError(fmt::format(
+            "ProcessMessage: expected sync message, received: {}", message[0]));
         return;
       }
       SetState(SyncState::kSynced);
@@ -281,7 +295,7 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
   read_command.callback->ReadArgs(message, message_size);
   {
     std::lock_guard<std::mutex> guard(reply_mutex_);
-    replied_commands_queue_.push(read_command);
+    replied_commands_queue_.push_back(read_command);
   }
 }
 
@@ -311,16 +325,30 @@ void BLDCDriverBoard::ProcessLoop() {
   CheckTimeout();
 }
 
-void BLDCDriverBoard::HardwareReset() const {
+void BLDCDriverBoard::ResetBoard() {
+  HardwareReset();
+  ...
+}
+
+void BLDCDriverBoard::HardwareReset() {
   int RTS_flag = TIOCM_RTS;
   ioctl(serial_, TIOCMBIS, &RTS_flag);  // Set RTS pin
   usleep(10000);
   ioctl(serial_, TIOCMBIC, &RTS_flag);  // Clear RTS pin
 }
 
-void BLDCDriverBoard::Tick() { RelayMessages(); }
+void BLDCDriverBoard::Tick() { 
+  if (error_state_) {
+    spdlog::error("\"{}\" BLDCDriverBoard error: {}", name_, error_message_);
+    spdlog::warning("Resetting {}", name_);
+    ResetBoard();
+  }
+  RelayMessages(); 
+}
 
 void BLDCDriverBoard::RelayMessages() {
+    
+  
   std::vector<Command> replies;
   {
     std::lock_guard<std::mutex> guard(reply_mutex_);
@@ -340,7 +368,8 @@ void BLDCDriverBoard::SendSync() {
 
 void BLDCDriverBoard::CheckTimeout() {
   if (std::chrono::system_clock::now() >= communication_deadline_) {
-    HandleError();
+    HandleCommunicationError(
+        fmt::format("CheckTimeout: communication timeout"));
   }
 }
 
@@ -387,4 +416,9 @@ void BLDCDriverBoard::SendGetCommand(uint8_t motor_index, COMMAND_TYPE command,
     std::lock_guard<std::mutex> guard(commands_mutex_);
     pending_commands_.push(cmd);
   }
+}
+
+void BLDCDriverBoard::HandleCommunicationError(const std::string &message) {
+  error_message_ = message;
+  error_state_ = true;
 }
