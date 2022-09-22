@@ -74,7 +74,7 @@ void MainInitialize() {
   Wire.setClock(400000);
 
   analog_reader.StartConversion(2, 0);
-  Serial.println(F("Done setup"));
+  // Serial.println(F("Done setup"));
   wdt_enable(WDTO_4S);
   next_temperature_read = millis();
   Initialize();
@@ -88,14 +88,16 @@ void CheckTemperature(bool first) {
   temperature[index] = ComputeTemperature(reading);
 
   if (temperature[index] > 55) {
-    Serial.print(F("temperature: "));
-    Serial.println(temperature[index]);
-    Serial.println(F("OVERHEAT DETECTED! RESETTING!"));
+    // Serial.print(F("temperature: "));
+    // Serial.println(temperature[index]);
+    // Serial.println(F("OVERHEAT DETECTED! RESETTING!"));
     wdt_enable(WDTO_15MS);
     _delay(100000);  // This will trigger WDT reset
   }
   analog_reader.StartConversion(first ? 2 : 3, 1 - index);
 }
+
+void serialEventRun(){};
 
 #define TEMP_CHECK_PERIOD 1000;  // ms
 void MainCritical() {

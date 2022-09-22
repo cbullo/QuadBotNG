@@ -7,12 +7,14 @@ cc_library(
     name = "mcu_firmware_base",
     srcs = [
         "analog_reader.cc",
+        "binary_commander.cc",
         "communication.cc",
         "custom_magnetic_sensor_i2c.cc",
         "main.cc",
     ],
     hdrs = [
         "analog_reader.h",
+        "binary_commander.h",
         "communication.h",
         "custom_magnetic_sensor_i2c.h",
         "debug_led.h",
@@ -23,11 +25,17 @@ cc_library(
         "-Os",
         "-ffunction-sections",
         "-fdata-sections",
+        "-flto",
+        "-ffat-lto-objects",
+        "-fuse-linker-plugin",
+        "-nodevicelib",
         "-Wl,--gc-sections",
         "-Wl,--strip-all",
+        
     ],
     strip_include_prefix = "//src/mcu_firmware",
     deps = [
+        "//src/libs/communication:binary_communication",
         "@arduino//:arduino_core",
         "@arduino//:arduino_eeprom_lib",
         "@arduino//:arduino_wire_lib",

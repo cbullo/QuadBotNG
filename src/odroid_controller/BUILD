@@ -12,6 +12,11 @@ cc_binary(
         "motor.cc",
         "motor.h",
     ],
+    copts = [
+        "-flto",
+        "-fuse-linker-plugin",
+        "-ffat-lto-objects",
+    ],
     data = ["config/robot_config.yaml"],
     linkopts = [
         "-lpthread",

@@ -14,3 +14,6 @@ float CustomMagneticSensorI2C::getSensorAngle() {
   uint16_t angle_corrected = static_cast<uint16_t>(angle_int + correction) & (0xFFF);
   return angle_corrected * kEncToRad;
 }
+
+CustomMagneticSensorI2C::~CustomMagneticSensorI2C() {
+}

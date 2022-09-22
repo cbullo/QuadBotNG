@@ -1,4 +1,5 @@
 #include "motor.h"
+
 #include "angle.h"
 
 Motor::Motor(BLDCDriverBoard* controller, int motor_index) {
@@ -7,9 +8,12 @@ Motor::Motor(BLDCDriverBoard* controller, int motor_index) {
 }
 
 void Motor::UpdateConfig(const YAML::Node& config) {
-  //name_ = config.Tag();
-  direction_ = config["direction"].as<int>();
+  // name_ = config.Tag();
+  direction_ = config["encoder_direction"].as<int>();
   gear_ratio_ = 1.0 / config["gear_ratio_inv"].as<double>();
+  sensor_linearization_offset_ = config["linearization_offset"].as<uint8_t>();
+  sensor_linearization_coeffs_ =
+      config["linearization_coeffs"].as<std::vector<uint8_t>>();
 }
 
 static int foo = 80000;
@@ -18,7 +22,7 @@ void Motor::UpdateRawAngle(uint16_t new_angle) {
   //  if (foo-- > 0) {
   //    std::cout << name_ << " " << new_angle << std::endl;
   //  }
-  
+
   if (direction_ == -1) {
     new_angle = 4096 - new_angle;
   }
@@ -32,7 +36,7 @@ void Motor::UpdateRawAngle(uint16_t new_angle) {
   }
 
   double new_angle_rad = new_angle * kAS5600ToRadians;
-  //new_angle_rad -= zero_angle_;
+  // new_angle_rad -= zero_angle_;
 
   prev_offset_angle_ = offset_angle_;
   offset_angle_ = new_angle_rad;
@@ -46,7 +50,7 @@ void Motor::SetZeroAngle(uint16_t zero_angle) {
   if (direction_ == -1) {
     zero_angle = 4096 - zero_angle;
   }
-  //zero_angle_ = zero_angle * kAS5600ToRadians;
+  // zero_angle_ = zero_angle * kAS5600ToRadians;
   first_update = true;
   accumulated_angle_ = 0.0;
 }

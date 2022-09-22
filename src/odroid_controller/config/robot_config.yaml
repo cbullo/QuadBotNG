@@ -1,7 +1,7 @@
 ---
 controllers:
-  controller_FR:
-    controller_address: "/dev/ardu0"
+  #controller_FR:
+  #  controller_address: "/dev/ardu0"
   controller_FZ:
     controller_address: "/dev/ardu1"
 
@@ -13,19 +13,21 @@ encoders:
     linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
 
 motors:
-  motor_FRF:
-    controller: "controller_FR"
-    index: 0
-    sensor_index: 0
-    gear_ratio_inv: 9
-  motor_FRR:
-    controller: "controller_FR"
-    index: 1
-    sensor_index: 1
-    gear_ratio_inv: 9
+  #motor_FRF:
+  #  controller: "controller_FR"
+  #  index: 0
+  #  sensor_index: 0
+  #  gear_ratio_inv: 9
+  #motor_FRR:
+  #  controller: "controller_FR"
+  #  index: 1
+  #  sensor_index: 1
+  #  gear_ratio_inv: 9
   motor_FRZ:
+    linearization_offset: 13
+    linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
     controller: "controller_FZ"
-    index: 0
+    index: 1
     encoder: "encoder_FRZ"
     electric_zero_offset: 3.27
     encoder_direction: 1

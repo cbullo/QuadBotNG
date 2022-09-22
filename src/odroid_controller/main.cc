@@ -40,7 +40,7 @@ void ReleaseEStop() {
 }
 
 void Run() {
-  for (auto controller : controllers) {
+  for (const auto& controller : controllers) {
     // controller->SendCommand("R");
   }
   std::cout << "Running!" << std::endl;
@@ -48,7 +48,7 @@ void Run() {
 }
 
 void Stop() {
-  for (auto controller : controllers) {
+  for (const auto& controller : controllers) {
     // controller->SendCommand("S");
   }
   std::cout << "Stopped!" << std::endl;
@@ -127,14 +127,16 @@ int main() {
   YAML::Node config = YAML::LoadFile("config/robot_config.yaml");
 
   std::unordered_map<std::string, BLDCDriverBoard*> controllers_map;
+  std::unordered_map<std::string, Motor*> motors_map;
 
   ReadControllers(config, controllers_map);
+  ReadMotors(config, controllers_map, motors_map);
 
   std::transform(controllers_map.begin(), controllers_map.end(),
                  back_inserter(controllers),
                  [](const auto& val) { return val.second; });
 
-  for (auto controller : controllers) {
+  for (const auto& controller : controllers) {
     if (!controller->Connect()) {
       std::cout << "Failed to connect to controller " << controller->GetName()
                 << std::endl;
@@ -151,6 +153,18 @@ int main() {
   int joystick_fd = -1;
 
   while (true) {
+    for (const auto& controller : controllers) {
+      if (controller->serial_ >= 0) {
+        //   uint8_t some_byte = 'D';
+        //   int ret = write(controller->serial_, &some_byte, 1);
+        //   if (ret != 1) {
+        //     std::cout << "What's wrong???: " << ret << " " << strerror(errno)
+        //     << std::endl;
+        //   }
+        // controller->SendSync();
+      }
+    }
+
     if (joystick_fd == -1) {
       joystick_fd = open(device, O_RDONLY | O_NONBLOCK);
       if (joystick_fd == -1) {
@@ -219,7 +233,7 @@ int main() {
         start_pressed = false;
       }
 
-      for (auto controller : controllers) {
+      for (const auto& controller : controllers) {
         controller->HardwareReset();
       }
       usleep(100000);

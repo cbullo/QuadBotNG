@@ -2,6 +2,8 @@
 
 #include <math.h>
 
+#include <vector>
+
 #include "angle.h"
 #include "bldc_driver_board.h"
 
@@ -29,6 +31,10 @@ class Motor {
   void SetName(const std::string& name) { name_ = name; }
   std::string GetName() const { return name_; }
   int GetDirection() const { return direction_; }
+
+  static const int linearization_factors_count = 16;
+  uint8_t sensor_linearization_offset_ = 0;
+  std::vector<uint8_t> sensor_linearization_coeffs_;
 
  private:
   BLDCDriverBoard* controller_;

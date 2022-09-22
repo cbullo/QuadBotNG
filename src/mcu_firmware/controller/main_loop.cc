@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "BLDCMotor.h"
 #include "SimpleFOC.h"
+#include "base/binary_commander.h"
 #include "base/communication.h"
 #include "base/custom_magnetic_sensor_i2c.h"
 #include "drivers/BLDCDriver3PWM.h"
@@ -10,20 +11,20 @@
 
 uint8_t availability[2] = {MOTOR_AVAILABLE & SENSOR_AVAILABLE,
                            MOTOR_AVAILABLE& SENSOR_AVAILABLE};
+
 CustomMagneticSensorI2C sensors[2] = {
     CustomMagneticSensorI2C(AS5600_I2C, A0, A1),
     CustomMagneticSensorI2C(AS5600_I2C, A1, A0)};
+
 BLDCDriver3PWM drivers[2] = {BLDCDriver3PWM(5, 3, 6),
                              BLDCDriver3PWM(9, 11, 10)};
 BLDCMotor motors[2] = {BLDCMotor(7), BLDCMotor(7)};
 
-enum class ControllerState {
-  PRE_INIT = 0,
-  INIT = 1,
-  STOPPED = 2,
-  RUNNING = 3,
-  ERROR = 4
-} controller_state = ControllerState::PRE_INIT;
+BinaryCommander commander;
+ControllerState controller_state = ControllerState::PRE_INIT;
+FOCMotor* GetMotor(uint8_t index) { return &motors[index]; }
+
+CustomMagneticSensorI2C* GetSensor(uint8_t index) { return &sensors[index]; }
 
 void Initialize() {}
 
@@ -40,7 +41,7 @@ void InitController() {
     }
 
     if (availability[i] & MOTOR_AVAILABLE) {
-      drivers[i].voltage_power_supply = 28;
+      drivers[i].voltage_power_supply = 12;
       drivers[i].voltage_limit = 4;
       drivers[i].init();
       drivers[i].enable();
@@ -77,6 +78,10 @@ ControllerState InitTick() {
 
 ControllerState StoppedTick() {
   for (int i = 0; i < 2; ++i) {
+    if (availability[i] & SENSOR_AVAILABLE) {
+      sensors[i].update();
+    }
+    
     if (availability[i] & MOTOR_AVAILABLE) {
       motors[i].disable();
     }
@@ -87,6 +92,10 @@ ControllerState StoppedTick() {
 ControllerState RunningTick() {
   // TODO: alternate move calls
   for (int i = 0; i < 2; ++i) {
+    if (availability[i] & SENSOR_AVAILABLE) {
+      sensors[i].update();
+    }
+
     if (availability[i] & MOTOR_AVAILABLE) {
       motors[i].move();
       motors[i].loopFOC();
@@ -97,8 +106,10 @@ ControllerState RunningTick() {
 
 ControllerState ErrorTick() { return controller_state; }
 
+void ProcessCommunication() { commander.run(); }
+
 void Tick() {
-  //ProcessCommunication();
+  ProcessCommunication();
 
   switch (controller_state) {
     case ControllerState::PRE_INIT:

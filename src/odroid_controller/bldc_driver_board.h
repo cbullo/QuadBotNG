@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include <atomic>
+#include <cstring>
 #include <deque>
 #include <functional>
 #include <mutex>
@@ -23,6 +24,14 @@ struct Callback {
 };
 
 struct Command {
+  Command(){};
+  Command(const Command &other) {
+    memcpy(command_bytes, &other.command_bytes, other.command_length);
+    command_length = other.command_length;
+    memcpy(callback_mem, other.callback_mem, MAX_CALLBACK_SIZE);
+    callback = reinterpret_cast<Callback *>(callback_mem);
+  }
+
   uint8_t command_bytes[MAX_COMMAND_LENGTH];
   int command_length = 0;
   uint8_t callback_mem[MAX_CALLBACK_SIZE];
@@ -110,6 +119,9 @@ class BLDCDriverBoard {
   void RegisterDataStreamCallback();
   void RegisterStringMsgCallback();
 
+  int serial_ = -1;
+  void SendSync();
+
  private:
   enum class ExpectedMessagePart { kHeaderPart, kStaticPart, kDynamicPart };
 
@@ -121,7 +133,7 @@ class BLDCDriverBoard {
   void ProcessSend();
   void ProcessLoop();
   void SendCommand(const uint8_t *command, int length);
-  void SendSync();
+  
 
   static const int kDefaultCommunicationTimeout = 10000;
   void BumpTimeout(int ms = kDefaultCommunicationTimeout);
@@ -153,14 +165,13 @@ class BLDCDriverBoard {
   static const int kReadBuffer = 256;
   uint8_t serial_read_buffer_[kReadBuffer];
 
-  uint8_t expected_reply_bytes_;
-  uint8_t read_offset_;
+  uint8_t read_offset_ = 0;
 
   YAML::Node config_;
   std::string usb_address_;
-  int serial_ = -1;
+  
 
-  class Motor *motors_[2];
+  class Motor *motors_[2] = {nullptr, nullptr};
   std::string name_;
 
   SyncState sync_state_;
@@ -240,10 +251,10 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
   cmd.command_bytes[1] = subcommand;
   cmd.command_length += 1;
   const int arg_size0 = sizeof(argument0);
-  memcpy(cmd.command_bytes[cmd.command_length], &argument0, arg_size0);
+  memcpy(reinterpret_cast<void*>(cmd.command_bytes[cmd.command_length]), &argument0, arg_size0);
   cmd.command_length += arg_size0;
   const int arg_size1 = sizeof(argument1);
-  memcpy(cmd.command_bytes[cmd.command_length], &argument1, arg_size1);
+  memcpy(reinterpret_cast<void*>(cmd.command_bytes[cmd.command_length]), &argument1, arg_size1);
   cmd.command_length += arg_size1;
 
   assert(cmd.command_length <= MAX_COMMAND_LENGTH);

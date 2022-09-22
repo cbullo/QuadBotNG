@@ -1,15 +1,7 @@
-// #pragma once
+#pragma once
 
 // void InitCommunication();
 // void ProcessCommunication();
-
-// enum class StringType {
-//   kInfo = 0,
-//   kWarning = 1,
-//   kError = 2
-// };
-
-// using ST = StringType;
 
 // class SerialCommunication {
 //   SerialCommunication();

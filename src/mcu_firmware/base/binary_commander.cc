@@ -1,49 +1,54 @@
 #include "binary_commander.h"
 
-BinaryCommander::BinaryCommander(Stream& serial) : bytes_to_read_(1) {
-  com_port = &serial;
+#include "src/libs/communication/binary_stream.h"
+
+FOCMotor* GetMotor(uint8_t index);
+CustomMagneticSensorI2C* GetSensor(uint8_t index);
+extern uint8_t availability[2];
+
+BinaryCommander::BinaryCommander() : bytes_to_read(1) {}
+
+void BinaryCommander::BumpTimeout() {
+  micros_timeout_ = (_micros() + 500) % 1000;
 }
 
-BinaryCommander::BinaryCommander() : bytes_to_read_(1) {}
-
-// void Commander::add(char id, CommandCallback onCommand, char* label ){
-//   call_list[call_count] = onCommand;
-//   call_ids[call_count] = id;
-//   call_label[call_count] = label;
-//   call_count++;
-// }
+void BinaryCommander::CheckAndSendPing() {
+  if (!sync_sent_) {
+    return;
+  }
+  if (_micros() % 1000 < micros_timeout_) {
+    SendPing();
+  }
+}
 
 void BinaryCommander::run() {
-  if (!com_port) return;
-  run(*com_port, eol);
-}
+  // CheckAndSendPing();
 
-void BinaryCommander::run(Stream& serial) {
-  Stream* tmp = com_port;  // save the serial instance
-  char eol_tmp = this->eol;
-  this->eol = eol;
-  com_port = &serial;
-
-  while (serial.available()) {
+  while (Serial.available()) {
     // get the new byte:
-    int ch = serial.read();
+    int ch = Serial.read();
+    if (ch < 0) {
+      return;
+    }
+
     received_cmd[rec_cnt++] = (uint8_t)ch;
+    // Serial.print(ch);
 
     --bytes_to_read;
 
     if (rec_cnt == 1) {
-      bytes_to_read = GetMessageLength(received_cmd[0]) - 1;
+      bytes_to_read = GetCommandLength(received_cmd[0]) - 1;
     }
 
     bool is_get = IsGetMessage(received_cmd[0]);
     if (!is_get) {
-      bytes_to_read += GetMessageLength(received_cmd[0]);
+      bytes_to_read += GetArgumentLength(received_cmd[0]);
     }
 
     // end of user input
     if (bytes_to_read == 0) {
       // execute the user command
-      run(received_cmd);
+      process(static_cast<uint8_t*>(received_cmd));
 
       // reset the command buffer
       rec_cnt = 0;
@@ -51,30 +56,75 @@ void BinaryCommander::run(Stream& serial) {
     }
 
     if (rec_cnt >=
-        MAX_COMMAND_LENGTH) {  // prevent buffer overrun if message is too long
+        MAX_COMMAND_SIZE) {  // prevent buffer overrun if message is too long
       rec_cnt = 0;
       bytes_to_read = 1;
-      SendString(ST::kError, "CMTL");
+      SendString(STRING_MESSAGE_TYPE_ERROR, "CMTL");
     }
   }
 
-  com_port = tmp;  // reset the instance to the internal value
-  this->eol = eol_tmp;
-}
-
-void BinaryCommander::run(uint8_t* user_input) {
-  auto cmd = user_input[0];
-  auto main_command = cmd & MAIN_COMMAND_MASK;
-
-  if (call_list[main_command]) {
-    call_list[main_command](user_input);
+  if (sync_sent_) {
+    SendDataStream();
   }
 }
+
+extern float temperature[2];
+
+static uint8_t next_data = 0;
+void BinaryCommander::SendDataStream() {
+  if (Serial.availableForWrite() >= 9) {
+    // uint8_t bits[3] = {DATA_STREAM_ANGLE_BIT, DATA_STREAM_VELOCITY_BIT,
+    //                    DATA_STREAM_TEMPERATURE_BIT};
+    // float data[2] = {GetSensor(0)->getAngle(),
+    //                  GetSensor(1)->getAngle()};
+    float data;
+    uint8_t msg = MESSAGE_TYPE_DATA_STREAM;
+    switch (next_data) {
+      case 0:
+        msg |= DATA_STREAM_ANGLE_BIT;
+        Serial.write(&msg, 1);
+        data = GetSensor(0)->getSensorAngle();
+        Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(float));
+        data = GetSensor(1)->getSensorAngle();
+        Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(float));
+        break;
+      case 1:
+        msg |= DATA_STREAM_VELOCITY_BIT;
+        Serial.write(&msg, 1);
+        data = GetSensor(0)->getVelocity();
+        Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(float));
+        data = GetSensor(1)->getVelocity();
+        Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(float));
+        break;
+      case 2:
+        msg |= DATA_STREAM_TEMPERATURE_BIT;
+        Serial.write(&msg, 1);
+        data = temperature[0];
+        Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(float));
+        data = temperature[1];
+        Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(float));
+        break;
+    }
+    next_data = (next_data + 1) % 3;
+    BumpTimeout();
+  }
+}
+
+// void BinaryCommander::run(uint8_t* user_input) {
+//   auto cmd = user_input[0];
+//   auto main_command = cmd & MAIN_COMMAND_MASK;
+
+//   if (call_list[main_command]) {
+//     call_list[main_command](user_input);
+//   }
+// }
+
+extern ControllerState controller_state;
 
 void ProcessStateCommand(ControllerState new_state) {
   switch (controller_state) {
     case ControllerState::PRE_INIT:
-      if (cmd[1] == 'I') {
+      if (new_state == ControllerState::INIT) {
         controller_state = ControllerState::INIT;
         return;
       }
@@ -82,15 +132,15 @@ void ProcessStateCommand(ControllerState new_state) {
     case ControllerState::INIT:
       break;
     case ControllerState::STOPPED:
-      if (cmd[1] == 'R') {
-        motors[0].enable();
-        motors[1].enable();
+      if (new_state == ControllerState::RUNNING) {
+        GetMotor(0)->enable();
+        GetMotor(1)->enable();
         controller_state = ControllerState::RUNNING;
         return;
       }
       break;
     case ControllerState::RUNNING:
-      if (cmd[1] == 'S') {
+      if (new_state == ControllerState::STOPPED) {
         controller_state = ControllerState::STOPPED;
         return;
       }
@@ -107,15 +157,19 @@ void BinaryCommander::process(uint8_t* user_command) {
 
   // parse command letter
   uint8_t cmd = GetCommand(user_command[0]);
-  uint8_t msg_length = GetMessageLength(cmd);
+  uint8_t msg_length = GetCommandLength(cmd);
   uint8_t sub_cmd = GetCommand(user_command[1]);
   uint8_t sequence = 0;
   if (is_get) {
-    seq = user_command[msg_length];
+    uint8_t seq = user_command[msg_length];
     sub_cmd &= GET_CMD_BIT;
   }
   // check if there is a subcommand or not
   switch (cmd) {
+    case CMD_SYNC:
+      _delay(2000);
+      SendSync();
+      break;
     case CMD_V_PID:  //
       if (sub_cmd == SCMD_LPF_TF)
         lpf(&motor->LPF_velocity, &user_command[1]);
@@ -145,7 +199,7 @@ void BinaryCommander::process(uint8_t* user_command) {
                 motor->torque_controller == TorqueControlType::voltage)
               motor->PID_velocity.limit = value;
           } else {
-            SendReply(motor->voltage_limit, sequence);
+            SendReply(cmd, motor->voltage_limit, sequence);
           }
           break;
         case SCMD_LIM_CURR:  // current limit
@@ -159,7 +213,7 @@ void BinaryCommander::process(uint8_t* user_command) {
                 motor->torque_controller != TorqueControlType::voltage)
               motor->PID_velocity.limit = value;
           } else {
-            SendReply(motor->current_limit, sequence);
+            SendReply(cmd, motor->current_limit, sequence);
           }
           break;
         case SCMD_LIM_VEL:  // velocity limit
@@ -169,11 +223,11 @@ void BinaryCommander::process(uint8_t* user_command) {
             motor->velocity_limit = value;
             motor->P_angle.limit = value;
           } else {
-            SendReply(motor->velocity_limit, sequence);
+            SendReply(cmd, motor->velocity_limit, sequence);
           }
           break;
         default:
-          SendString(ST::kError, "ULCM");
+          SendString(STRING_MESSAGE_TYPE_ERROR, "ULCM");
           break;
       }
       break;
@@ -184,7 +238,8 @@ void BinaryCommander::process(uint8_t* user_command) {
             *(reinterpret_cast<uint16_t*>(user_command + msg_length));
         motor->motion_downsample = value;
       } else {
-        SendReply(static_cast<uint16_t>(motor->motion_downsample), sequence);
+        SendReply(cmd, static_cast<uint16_t>(motor->motion_downsample),
+                  sequence);
       }
       break;
     case CMD_MOTION_TYPE:
@@ -196,7 +251,7 @@ void BinaryCommander::process(uint8_t* user_command) {
           motor->controller = (MotionControlType)value;
         }
       } else {
-        SendReply(static_cast<uint8_t>(motor->controller), sequence);
+        SendReply(cmd, static_cast<uint8_t>(motor->controller), sequence);
       }
       break;
     case CMD_TORQUE_TYPE:
@@ -208,7 +263,8 @@ void BinaryCommander::process(uint8_t* user_command) {
           motor->torque_controller = (TorqueControlType)value;
         }
       } else {
-        SendReply(static_cast<uint8_t>(motor->torque_controller), sequence);
+        SendReply(cmd, static_cast<uint8_t>(motor->torque_controller),
+                  sequence);
       }
       break;
     case CMD_STATUS:
@@ -218,7 +274,7 @@ void BinaryCommander::process(uint8_t* user_command) {
             *(reinterpret_cast<uint8_t*>(user_command + msg_length));
         value ? motor->enable() : motor->disable();
       } else {
-        SendReply(static_cast<uint8_t>(motor->enabled), sequence);
+        SendReply(cmd, static_cast<uint8_t>(motor->enabled), sequence);
       }
       break;
     case CMD_PWMMOD:
@@ -230,7 +286,8 @@ void BinaryCommander::process(uint8_t* user_command) {
                 *(reinterpret_cast<uint8_t*>(user_command + msg_length));
             motor->foc_modulation = (FOCModulationType)value;
           } else {
-            SendReply(static_cast<uint8_t>(motor->foc_modulation), sequence);
+            SendReply(cmd, static_cast<uint8_t>(motor->foc_modulation),
+                      sequence);
           }
           break;
         case SCMD_PWMMOD_CENTER:  // centered modulation
@@ -239,12 +296,12 @@ void BinaryCommander::process(uint8_t* user_command) {
                 *(reinterpret_cast<uint8_t*>(user_command + msg_length));
             motor->modulation_centered = value;
           } else {
-            SendReply(static_cast<uint8_t>(motor->modulation_centered),
+            SendReply(cmd, static_cast<uint8_t>(motor->modulation_centered),
                       sequence);
           }
           break;
         default:
-          SendString(ST::kError, "UPCM");
+          SendString(STRING_MESSAGE_TYPE_ERROR, "UPCM");
           break;
       }
       break;
@@ -259,7 +316,8 @@ void BinaryCommander::process(uint8_t* user_command) {
           motor->PID_velocity.limit = motor->current_limit;
         }
       } else {
-        SendReply(_isset(motor->phase_resistance) ? motor->phase_resistance : 0,
+        SendReply(cmd,
+                  _isset(motor->phase_resistance) ? motor->phase_resistance : 0,
                   sequence);
       }
       break;
@@ -272,7 +330,7 @@ void BinaryCommander::process(uint8_t* user_command) {
                 *(reinterpret_cast<float*>(user_command + msg_length));
             motor->sensor_offset = value;
           } else {
-            SendReply(motor->sensor_offset, sequence);
+            SendReply(cmd, motor->sensor_offset, sequence);
           }
           break;
         case SCMD_SENS_ELEC_OFFSET:  // electrical zero offset - not
@@ -283,138 +341,62 @@ void BinaryCommander::process(uint8_t* user_command) {
             motor->zero_electric_angle = value;
 
           } else {
-            SendReply(motor->zero_electric_angle, sequence);
+            SendReply(cmd, motor->zero_electric_angle, sequence);
           }
           break;
         default:
-          SendString(ST::kError, "USCM");
+          SendString(STRING_MESSAGE_TYPE_ERROR, "USCM");
           break;
       }
       break;
     case CMD_SENSOR_LINEARIZATION:
       switch (sub_cmd) {
-        case SCMD_OFFSET:
+        case SCMD_OFFSET: {
           uint8_t value = *(reinterpret_cast<uint8_t*>(
               user_command + msg_length + sizeof(uint8_t)));
-          sensor[motor_index]->linearization_.offset_ = value;
-        case SCMD_FACTOR:
-          float coeff_index =
+          GetSensor(motor_index)->linearization_.offset_ = value;
+          break;
+        }
+        case SCMD_FACTOR: {
+          uint8_t coeff_index =
               *(reinterpret_cast<uint8_t*>(user_command + msg_length));
           uint8_t value = *(reinterpret_cast<uint8_t*>(
               user_command + msg_length + sizeof(uint8_t)));
-          sensor[motor_index]->linearization_.coeffs_[coeff_index] = value;
+          GetSensor(motor_index)->linearization_.coeffs_[coeff_index] = value;
           break;
+        }
       }
     case CMD_STATE: {
       uint8_t value = *(reinterpret_cast<uint8_t*>(user_command + msg_length));
       if (!is_get) {
-        ProcessStateCommand(static_cast<>(value));
+        ProcessStateCommand(static_cast<ControllerState>(value));
       } else {
-        SendReply(controller_state, sequence);
+        SendReply(cmd, static_cast<uint8_t>(controller_state), sequence);
       }
     } break;
-    case CMD_AVAILABILITY:
+    case CMD_AVAILABILITY: {
+      uint8_t value = *(reinterpret_cast<uint8_t*>(user_command + msg_length));
       if (!is_get) {
         availability[motor_index] = value;
       } else {
-        return availability[motor_index];
+        SendReply(cmd, static_cast<uint8_t>(availability[motor_index]),
+                  sequence);
       }
       break;
-
-#if FOC_USE_MONITORING
-    case CMD_MONITOR:  // get current values of the state variables
-      printVerbose(F("Monitor | "));
-      switch (sub_cmd) {
-        case SCMD_GET:  // get command
-          switch ((uint8_t)value) {
-            case 0:  // get target
-              printVerbose(F("target: "));
-              println(motor->target);
-              break;
-            case 1:  // get voltage q
-              printVerbose(F("Vq: "));
-              println(motor->voltage.q);
-              break;
-            case 2:  // get voltage d
-              printVerbose(F("Vd: "));
-              println(motor->voltage.d);
-              break;
-            case 3:  // get current q
-              printVerbose(F("Cq: "));
-              println(motor->current.q);
-              break;
-            case 4:  // get current d
-              printVerbose(F("Cd: "));
-              println(motor->current.d);
-              break;
-            case 5:  // get velocity
-              printVerbose(F("vel: "));
-              println(motor->shaft_velocity);
-              break;
-            case 6:  // get angle
-              printVerbose(F("angle: "));
-              println(motor->shaft_angle);
-              break;
-            case 7:  // get all states
-              printVerbose(F("all: "));
-              print(motor->target);
-              print(";");
-              print(motor->voltage.q);
-              print(";");
-              print(motor->voltage.d);
-              print(";");
-              print(motor->current.q);
-              print(";");
-              print(motor->current.d);
-              print(";");
-              print(motor->shaft_velocity);
-              print(";");
-              println(motor->shaft_angle);
-              break;
-            default:
-              printError();
-              break;
-          }
-          break;
-        case SCMD_DOWNSAMPLE:
-          printVerbose(F("downsample: "));
-          if (!GET) motor->monitor_downsample = value;
-          println((int)motor->monitor_downsample);
-          break;
-        case SCMD_CLEAR:
-          motor->monitor_variables = (uint8_t)0;
-          println(F("clear"));
-          break;
-        case SCMD_SET:
-          if (!GET) motor->monitor_variables = (uint8_t)0;
-          for (int i = 0; i < 7; i++) {
-            if (isSentinel(user_command[value_index + i])) break;
-            if (!GET)
-              motor->monitor_variables |= (user_command[value_index + i] - '0')
-                                          << (6 - i);
-            print((user_command[value_index + i] - '0'));
-          }
-          println("");
-          break;
-        default:
-          printError();
-          break;
-      }
-      break;
-#endif
+    }
     default:  // unknown cmd
-      SendString(ST::kError, "UCMD");
+      SendString(STRING_MESSAGE_TYPE_ERROR, "UCMD");
       break;
   }
 }
 
-void BinaryCommander::pid(PIDController* pid, char* user_cmd) {
+void BinaryCommander::pid(PIDController* pid, uint8_t* user_cmd) {
   char cmd = user_cmd[0];
   bool is_get = IsGetMessage(user_cmd[0]);
-  uint8_t msg_length = GetPIDSubmessageLength(cmd);
+  uint8_t msg_length = GetPIDSubcommandLength(cmd);
   uint8_t sequence = 0;
   if (is_get) {
-    seq = user_command[msg_length];
+    sequence = user_cmd[msg_length];
   }
   float value = *(reinterpret_cast<float*>(user_cmd + msg_length));
   float* variable = nullptr;
@@ -436,37 +418,72 @@ void BinaryCommander::pid(PIDController* pid, char* user_cmd) {
       variable = &pid->limit;
       break;
     default:
-      SendString(ST::kError, "UPID");
+      SendString(STRING_MESSAGE_TYPE_ERROR, "UPID");
       return;
   }
   if (!is_get) {
     *variable = value;
   } else {
-    SendReply(*variable, sequence);
+    SendReply(cmd, *variable, sequence);
   }
 }
 
-void BinaryCommander::lpf(LowPassFilter* lpf, char* user_cmd) {
+void BinaryCommander::lpf(LowPassFilter* lpf, uint8_t* user_cmd) {
   char cmd = user_cmd[0];
   bool is_get = IsGetMessage(user_cmd[0]);
-  uint8_t msg_length = GetMessageLength(cmd);
+  uint8_t msg_length = GetCommandLength(cmd);
   uint8_t sequence = 0;
   if (is_get) {
-    seq = user_command[msg_length];
+    sequence = user_cmd[msg_length];
   }
   float value = *(reinterpret_cast<float*>(user_cmd + msg_length));
   float* variable = nullptr;
 
   switch (cmd) {
     case SCMD_LPF_TF:  // Tf value change
-      variable = &lpf->Tf break;
+      variable = &lpf->Tf;
+      break;
     default:
-      SendString(ST::kError, "ULPF");
+      SendString(STRING_MESSAGE_TYPE_ERROR, "ULPF");
       return;
   }
   if (!is_get) {
     *variable = value;
   } else {
-    SendReply(*variable, sequence);
+    SendReply(cmd, *variable, sequence);
   }
+}
+
+void BinaryCommander::SendString(uint8_t string_type, const char* message) {
+  Serial.write(MESSAGE_TYPE_STRING & string_type);
+  uint8_t length = strlen(message);
+  Serial.write(&length, 1);
+  Serial.write(message, length);
+  BumpTimeout();
+}
+
+// void BinaryCommander::SendString(StringType level,
+//                                  const __FlashStringHelper* message) {
+//   com_port->write(MESSAGE_TYPE_STRING);
+//   uint8_t length = strlen(message);
+//   com_port->write(&length, 1);
+//   com_port->write(message, length);
+// }
+
+void BinaryCommander::SendReply(uint8_t cmd, float var, uint8_t sequence) {
+  Serial.write(cmd & MESSAGE_TYPE_GET_REPLY);
+  Serial.write(reinterpret_cast<uint8_t*>(&var), sizeof(float));
+  Serial.write(&sequence, 1);
+  BumpTimeout();
+}
+
+void BinaryCommander::SendSync() {
+  Serial.write((uint8_t)(MESSAGE_TYPE_SYNC | MESSAGE_SUBTYPE_SYNC));
+  sync_sent_ = true;
+  BumpTimeout();
+}
+
+void BinaryCommander::SendPing() {
+  Serial.write((uint8_t)(MESSAGE_TYPE_PING));
+  BumpTimeout();
 }

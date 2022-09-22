@@ -4,7 +4,7 @@ set -e
 RUNFILES=${BASH_SOURCE[0]}.runfiles
 DATA_FILES=$RUNFILES/__main__/src
 
-TARGET_ADDRESS=robot@192.168.0.12
+TARGET_ADDRESS=robot@192.168.178.126
 
 ssh ${TARGET_ADDRESS} "sudo systemctl stop robot"
 

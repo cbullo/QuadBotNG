@@ -67,6 +67,15 @@ enum class SyncState {
 
 #define COMMAND_TYPE uint8_t
 
+inline uint8_t GetCommand(uint8_t cmd) {
+  return cmd & MAIN_COMMAND_MASK;
+}
+
+inline bool IsGetMessage(uint8_t cmd) { return cmd & GET_CMD_BIT; }
+inline uint8_t GetMotorIndex(uint8_t cmd) {
+  return cmd & MOTOR_INDEX_BIT ? 1 : 0;
+};
+
 inline uint8_t GetArgumentLength(uint8_t byte) {
   switch (byte & MAIN_COMMAND_MASK) {
     case CMD_V_PID:

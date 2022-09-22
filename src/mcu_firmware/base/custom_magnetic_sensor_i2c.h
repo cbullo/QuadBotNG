@@ -21,6 +21,7 @@ class CustomMagneticSensorI2C : public MagneticSensorI2C {
       : MagneticSensorI2C(config),
         this_sda_pin_(this_sda_pin),
         other_sda_pin_(other_sda_pin) {}
+  virtual ~CustomMagneticSensorI2C();
 
   void Activate();
   float getSensorAngle() override;
