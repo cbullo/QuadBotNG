@@ -4,17 +4,24 @@ load("@AvrToolchain//platforms/cpu_frequency:cpu_frequency.bzl", "cpu_frequency_
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "mcu_firmware_base",
+    name = "simplefoc_custom",
     srcs = [
-        "analog_reader.cc",
-        "binary_commander.cc",
-        "main.cc",
+        "BLDCDriver3PWM.cc",
+        "atmega328_mcu.cc",
+        "bldc_motor.cc",
+        "custom_magnetic_sensor_i2c.cc",
+        "time_utils.cc",
     ],
     hdrs = [
-        "analog_reader.h",
-        "binary_commander.h",
-        "debug_led.h",
-        "temperature.h",
+        "BLDCDriver3PWM.h",
+        "bldc_motor.h",
+        "custom_magnetic_sensor_i2c.h",
+        "default_configuration.h",
+        "hardware_api.h",
+        "piecewise_linear.h",
+        "sin_approx.h",
+        "time_utils.h",
+        "types.h",
     ],
     copts = cpu_frequency_flag() + [
         "-Os",
@@ -29,11 +36,8 @@ cc_library(
     ],
     strip_include_prefix = "//src/mcu_firmware",
     deps = [
-        "//src/libs/communication:binary_communication",
         "@arduino//:arduino_core",
         "@arduino//:arduino_eeprom_lib",
         "@arduino//:arduino_wire_lib",
-        "//src/mcu_firmware/base/simple_foc:simplefoc_custom",
-        #"@simplefoc//:simplefoc_lib",
     ],
 )

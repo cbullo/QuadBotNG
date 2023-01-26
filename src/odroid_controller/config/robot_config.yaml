@@ -27,9 +27,9 @@ motors:
     linearization_offset: 13
     linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
     controller: "controller_FZ"
-    index: 1
+    index: 0
     encoder: "encoder_FRZ"
-    electric_zero_offset: 3.27
+    electric_zero_offset: 270
     encoder_direction: 1
     gear_ratio_inv: 9
 

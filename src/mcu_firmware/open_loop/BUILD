@@ -20,7 +20,10 @@ cc_binary(
         "-Wl,--gc-sections",
         "-Wl,--strip-all",
     ],
-    deps = ["//src/mcu_firmware/base:mcu_firmware_base"],
+    deps = [
+        "//src/mcu_firmware/base:mcu_firmware_base",
+        "@simplefoc//:simplefoc_lib",
+    ],
 )
 
 generate_hex(

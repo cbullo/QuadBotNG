@@ -6,7 +6,7 @@
 
 //#include <avr/interrupt.h>
 
-volatile int adc_reading_[2]{-1, -1};
+volatile uint16_t adc_reading_[2]{0, 0};
 volatile signed char adc_working_{-1};
 
 // ADC complete ISR

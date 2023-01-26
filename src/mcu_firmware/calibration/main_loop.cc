@@ -13,15 +13,18 @@
 #include <avr/wdt.h>
 
 #include "Arduino.h"
-#include "SimpleFOC.h"
-#include "base/custom_magnetic_sensor_i2c.h"
+// #include "SimpleFOC.h"
+#include "base/simple_foc/custom_magnetic_sensor_i2c.h"
 
 #define POLE_PAIR_NUMBER 7
 #define PHASE_RESISTANCE 5  // ohm
-
+MagneticSensorI2CConfig_s AS5600_I2C = {.chip_address = 0x36,
+                                        .bit_resolution = 12,
+                                        .angle_register = 0x0C,
+                                        .data_start_bit = 11};
 CustomMagneticSensorI2C sensor = CustomMagneticSensorI2C(AS5600_I2C, A1, A0);
 
-Commander commander = Commander(Serial, '\n', false);
+//Commander commander = Commander(Serial, '\n', false);
 
 void on_calib_data1(char *cmd) {
   switch (cmd[0]) {
@@ -49,8 +52,6 @@ void on_calib_data1(char *cmd) {
   }
 }
 
-
-
 // BLDC motor & driver instance
 BLDCDriver3PWM driver = BLDCDriver3PWM(5, 3, 6);
 BLDCMotor motor = BLDCMotor(POLE_PAIR_NUMBER);
@@ -66,7 +67,7 @@ const int samples_margin = 0;
 int16_t current_sample = 0;
 int test_direction = 1;
 
-extern float temperature[2];
+extern uint8_t temperature[2];
 
 int phase = 0;
 
@@ -130,7 +131,7 @@ uint16_t GetAverageReading() {
 }
 
 #define MOTOR_ON_PER_SAMPLE_TIME 500  // us
-#define MOTOR_OFF 10000              // us
+#define MOTOR_OFF 10000               // us
 int current_reading = 0;
 
 unsigned long wait_until = 0;
@@ -209,7 +210,7 @@ void Tick() {
         // Serial.print(",");
         Serial.print(average_sensor_angle);
         Serial.print(",");
-        //Serial.println(temperature[1]);
+        // Serial.println(temperature[1]);
         current_sample += test_direction;
         phase = 13;
         current_reading = 0;

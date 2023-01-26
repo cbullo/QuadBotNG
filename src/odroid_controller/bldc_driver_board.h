@@ -6,6 +6,7 @@
 #include <cstring>
 #include <deque>
 #include <functional>
+#include <iostream>
 #include <mutex>
 #include <queue>
 #include <string>
@@ -35,7 +36,7 @@ struct Command {
   uint8_t command_bytes[MAX_COMMAND_LENGTH];
   int command_length = 0;
   uint8_t callback_mem[MAX_CALLBACK_SIZE];
-  Callback *callback;
+  Callback *callback = nullptr;
 
   template <class CALLBACK, class FUNCTION>
   void AllocateCallback(FUNCTION f) {
@@ -109,10 +110,10 @@ class BLDCDriverBoard {
   void SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
                       ARGUMENT0 argument0, ARGUMENT1 argument1);
   template <class ARGUMENT>
-  void SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
+  void SendSetCommandAndSub(uint8_t motor_index, COMMAND_TYPE command,
                       COMMAND_TYPE subcommand, ARGUMENT argument);
   template <class ARGUMENT0, class ARGUMENT1>
-  void SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
+  void SendSetCommandAndSub(uint8_t motor_index, COMMAND_TYPE command,
                       COMMAND_TYPE subcommand, ARGUMENT0 argument0,
                       ARGUMENT1 argument1);
 
@@ -133,7 +134,6 @@ class BLDCDriverBoard {
   void ProcessSend();
   void ProcessLoop();
   void SendCommand(const uint8_t *command, int length);
-  
 
   static const int kDefaultCommunicationTimeout = 10000;
   void BumpTimeout(int ms = kDefaultCommunicationTimeout);
@@ -148,6 +148,8 @@ class BLDCDriverBoard {
   void HandleCommunicationError(const std::string &message);
 
   void RelayMessages();
+
+  void SendSetupVariables();
 
   std::unique_ptr<std::thread> communication_thread_;
 
@@ -169,12 +171,11 @@ class BLDCDriverBoard {
 
   YAML::Node config_;
   std::string usb_address_;
-  
 
   class Motor *motors_[2] = {nullptr, nullptr};
   std::string name_;
 
-  SyncState sync_state_;
+  SyncState sync_state_ = SyncState::kNotSynced;
 
   bool error_state_ = false;
   std::string error_message_;
@@ -185,10 +186,11 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
                                      ARGUMENT argument) {
   Command cmd;
   cmd.command_bytes[0] =
-      command & MAIN_COMMAND_MASK | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
+      (command & MAIN_COMMAND_MASK) | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
+  cmd.command_length = 0;
   cmd.command_length += 1;
   const int arg_size = sizeof(argument);
-  memcpy(cmd.command_bytes[cmd.command_length], &argument, arg_size);
+  memcpy(cmd.command_bytes + cmd.command_length, &argument, arg_size);
   cmd.command_length += arg_size;
 
   assert(cmd.command_length <= MAX_COMMAND_LENGTH);
@@ -204,12 +206,13 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
   Command cmd;
   cmd.command_bytes[0] =
       command & MAIN_COMMAND_MASK | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
+  cmd.command_length = 0;
   cmd.command_length += 1;
   const int arg_size0 = sizeof(argument0);
-  memcpy(cmd.command_bytes[cmd.command_length], &argument0, arg_size0);
+  memcpy(cmd.command_bytes + cmd.command_length, &argument0, arg_size0);
   cmd.command_length += arg_size0;
   const int arg_size1 = sizeof(argument1);
-  memcpy(cmd.command_bytes[cmd.command_length], &argument1, arg_size1);
+  memcpy(cmd.command_bytes + cmd.command_length, &argument1, arg_size1);
   cmd.command_length += arg_size1;
 
   assert(cmd.command_length <= MAX_COMMAND_LENGTH);
@@ -220,17 +223,18 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
 }
 
 template <class ARGUMENT>
-void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
+void BLDCDriverBoard::SendSetCommandAndSub(uint8_t motor_index, COMMAND_TYPE command,
                                      COMMAND_TYPE subcommand,
                                      ARGUMENT argument) {
   Command cmd;
   cmd.command_bytes[0] =
-      command & MAIN_COMMAND_MASK | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
+      (command & MAIN_COMMAND_MASK) | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
+  cmd.command_length = 0;
   cmd.command_length += 1;
   cmd.command_bytes[1] = subcommand;
   cmd.command_length += 1;
   const int arg_size = sizeof(argument);
-  memcpy(cmd.command_bytes[cmd.command_length], &argument, arg_size);
+  memcpy(cmd.command_bytes + cmd.command_length, &argument, arg_size);
   cmd.command_length += arg_size;
 
   assert(cmd.command_length <= MAX_COMMAND_LENGTH);
@@ -241,25 +245,39 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
 }
 
 template <class ARGUMENT0, class ARGUMENT1>
-void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
+void BLDCDriverBoard::SendSetCommandAndSub(uint8_t motor_index, COMMAND_TYPE command,
                                      COMMAND_TYPE subcommand,
                                      ARGUMENT0 argument0, ARGUMENT1 argument1) {
+  std::cout << "SSC1" << std::endl;
   Command cmd;
   cmd.command_bytes[0] =
       command & MAIN_COMMAND_MASK | (motor_index == 1 ? MOTOR_INDEX_BIT : 0);
+  std::cout << "SSC2" << std::endl;
+  cmd.command_length = 0;
   cmd.command_length += 1;
   cmd.command_bytes[1] = subcommand;
   cmd.command_length += 1;
+  std::cout << "SSC3" << std::endl;
   const int arg_size0 = sizeof(argument0);
-  memcpy(reinterpret_cast<void*>(cmd.command_bytes[cmd.command_length]), &argument0, arg_size0);
+  std::cout << arg_size0 << std::endl;
+  std::cout << cmd.command_length << std::endl;
+  memcpy(reinterpret_cast<void *>(cmd.command_bytes + cmd.command_length),
+         &argument0, arg_size0);
+  std::cout << "SSC4" << std::endl;
   cmd.command_length += arg_size0;
   const int arg_size1 = sizeof(argument1);
-  memcpy(reinterpret_cast<void*>(cmd.command_bytes[cmd.command_length]), &argument1, arg_size1);
+  std::cout << "SSC5" << std::endl;
+  memcpy(reinterpret_cast<void *>(cmd.command_bytes + cmd.command_length),
+         &argument1, arg_size1);
   cmd.command_length += arg_size1;
+  std::cout << "SSC6" << std::endl;
+  std::cout << cmd.command_length << std::endl;
 
   assert(cmd.command_length <= MAX_COMMAND_LENGTH);
+  std::cout << "SSC7" << std::endl;
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
     pending_commands_.push(cmd);
   }
+  std::cout << "SSC8" << std::endl;
 }

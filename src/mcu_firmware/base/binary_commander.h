@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Arduino.h"
-#include "BLDCMotor.h"
-#include "base/communication.h"
-#include "common/base_classes/FOCMotor.h"
-#include "common/lowpass_filter.h"
-#include "common/pid.h"
-#include "custom_magnetic_sensor_i2c.h"
+// #include "common/lowpass_filter.h"
+// #include "common/pid.h"
 #include "src/libs/communication/binary_commands.h"
+#include "src/mcu_firmware/base/simple_foc/bldc_motor.h"
+
+
+#define MESSAGE_TYPE_GET_REPLY 0x40
 
 // callback function pointer definiton
 typedef void (*BinaryCommandCallback)(
@@ -19,10 +19,13 @@ class BinaryCommander {
 
   void run();
 
-  void motor(FOCMotor* motor, uint8_t* user_cmd);
+  void motor(BLDCMotor* motor, uint8_t* user_cmd);
 
-  void lpf(LowPassFilter* lpf, uint8_t* user_cmd);
-  void pid(PIDController* pid, uint8_t* user_cmd);
+  // void lpf(LowPassFilter* lpf, uint8_t* user_cmd);
+  // void pid(PIDController* pid, uint8_t* user_cmd);
+
+  void SendString(uint8_t level, const char* message);
+  void SendString(uint8_t level, const __FlashStringHelper* message);
 
  private:
   // Subscribed command callback variables
@@ -31,14 +34,20 @@ class BinaryCommander {
 
   // helper variable for serial communication reading
   uint8_t received_cmd[PRIMARY_COMMANDS_COUNT] = {
-      0};           //!< so far received user message - waiting for newline
-  int rec_cnt = 0;  //!< number of characters received
+      0};               //!< so far received user message - waiting for newline
+  uint8_t rec_cnt = 0;  //!< number of characters received
 
-  int bytes_to_read = 0;
+  uint8_t bytes_to_read = 0;
 
-  void SendString(uint8_t level, const char* message);
-  void SendString(uint8_t level, const __FlashStringHelper* message);
-  void SendReply(uint8_t cmd, float var, uint8_t sequence);
+  //  void SendReply(uint8_t cmd, float var, uint8_t sequence);
+  template <class T>
+  void SendReply(uint8_t cmd, T var, uint8_t sequence) {
+    Serial.write(cmd | MESSAGE_TYPE_GET_REPLY);
+    Serial.write(reinterpret_cast<uint8_t*>(&var), sizeof(T));
+    Serial.write(&sequence, 1);
+    BumpTimeout();
+  }
+
   void SendDataStream();
 
   void SendSync();
@@ -47,14 +56,14 @@ class BinaryCommander {
   void CheckAndSendPing();
   void BumpTimeout();
 
-  void send(const float number);
+  //  void send(const float number);
   void send(const uint16_t number);
   void send(const uint8_t number);
 
   // void run(uint8_t* user_input);
   void process(uint8_t* user_command);
 
-  uint16_t micros_timeout_ = 0;
+  unsigned long micros_timeout_ = 0;
   bool sync_sent_ = false;
 };
 

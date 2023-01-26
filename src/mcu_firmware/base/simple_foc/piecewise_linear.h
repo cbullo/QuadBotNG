@@ -3,8 +3,8 @@
 template <uint8_t kRangePower, uint8_t kSegmentsPower>
 class PiecewiseLinear {
  private:
-  static const int kSegmentRangePower = kRangePower - kSegmentsPower;
-  static const int kCoeffsCount = 1 << kSegmentsPower;
+  static const uint8_t kSegmentRangePower = kRangePower - kSegmentsPower;
+  static const uint8_t kCoeffsCount = 1 << kSegmentsPower;
 
  public:
   PiecewiseLinear() {

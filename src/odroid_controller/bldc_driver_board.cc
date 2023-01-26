@@ -29,7 +29,8 @@ void BLDCDriverBoard::UpdateConfig(const YAML::Node &config) {
 }
 
 bool BLDCDriverBoard::Connect() {
-  ResetBoard();
+  sync_state_ = SyncState::kNotSynced;
+
   std::chrono::seconds pause_time(1);
   std::this_thread::sleep_for(pause_time);
   serial_ = open(usb_address_.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
@@ -83,6 +84,8 @@ void BLDCDriverBoard::Disconnect() {
   if (serial_ != -1) {
     close(serial_);
   }
+
+  SyncState sync_state_ = SyncState::kNotSynced;
   std::cout << "Disconnected" << std::endl;
 }
 
@@ -127,7 +130,6 @@ void BLDCDriverBoard::SendCommand(const uint8_t *bytes, int message_length) {
   }
   while (message_length) {
     int bytes_sent = write(serial_, bytes, message_length);
-    std::cout << "Bytes sent: " << bytes_sent << std::endl;
     if (bytes_sent == -1) {
       if (errno == EAGAIN) {
         std::cout << "EAGAIN" << std::endl;
@@ -189,11 +191,13 @@ uint8_t BLDCDriverBoard::CalculateDataStreamSize(uint8_t header_byte) {
   // data_fields;
 
   if (data_fields & DATA_STREAM_ANGLE_BIT) {
-    data_size += sizeof(float);
-  } else if (data_fields & DATA_STREAM_VELOCITY_BIT) {
-    data_size += sizeof(float);
-  } else if (data_fields & DATA_STREAM_TEMPERATURE_BIT) {
-    data_size += sizeof(float);
+    data_size += sizeof(uint16_t);
+    // } else if (data_fields & DATA_STREAM_VELOCITY_BIT) {
+    //   data_size += sizeof(float);
+  }
+
+  if (data_fields & DATA_STREAM_TEMPERATURE_BIT) {
+    data_size += sizeof(uint16_t);
   }
   data_size *= 2;  // Always return values for both motors
 
@@ -245,7 +249,6 @@ void BLDCDriverBoard::ProcessReceive() {
       // for (int i = 0; i < no_data.size(); ++i) {
       //   std::cout << "\b";
       // }
-      // std::cout << "No data available";
       break;
     }
     bytes_read = read(
@@ -258,13 +261,6 @@ void BLDCDriverBoard::ProcessReceive() {
       //             << std::hex
       //             << (unsigned int)(serial_read_buffer_[read_offset_ + i]);
       // }
-
-      // std::cout << std::endl;
-      // std::cout << "Sync stateL: " << std::dec << (int)sync_state_ <<
-      // std::endl; std::cout.flush(); std::cout << "Debug: " <<
-      // (int)read_offset_ << " " << (int)msg_part_
-      //           << " " << expected_msg_bytes_ << std::endl;
-      // std::cout.flush();
     } else {
       break;
     }
@@ -349,6 +345,56 @@ uint8_t BLDCDriverBoard::ProcessHeader(uint8_t header_byte) {
   }
 }
 
+inline uint16_t normalizeAngle(int32_t in, uint16_t period) {
+  while (in < 0) {
+    in += period;
+  }
+
+  while (in >= period) {
+    in -= period;
+  }
+
+  return in;
+}
+
+void BLDCDriverBoard::SendSetupVariables() {
+  if (motors_[0]) {
+    std::cout << "1" << motors_[0] << std::endl;
+    SendSetCommandAndSub(0, CMD_SENSOR_LINEARIZATION, SCMD_OFFSET,
+                         motors_[0]->sensor_linearization_offset_,
+                         static_cast<uint8_t>(0));
+    for (int i = 0; i < motors_[0]->sensor_linearization_coeffs_.size(); ++i) {
+      SendSetCommandAndSub(0, CMD_SENSOR_LINEARIZATION, SCMD_FACTOR,
+                           static_cast<uint8_t>(i),
+                           motors_[0]->sensor_linearization_coeffs_[i]);
+    }
+
+    SendSetCommandAndSub(
+        0, CMD_SENSOR, SCMD_SENS_ELEC_OFFSET,
+        static_cast<int32_t>(motors_[0]->electric_zero_angle_));
+    // SendSetCommand(0, CMD_MOTION_TYPE, static_cast<uint8_t>(1));
+  }
+  if (motors_[1]) {
+    std::cout << "2" << std::endl;
+    std::cout << motors_[1]->GetName() << std::endl;
+    SendSetCommandAndSub(1, CMD_SENSOR_LINEARIZATION, SCMD_OFFSET,
+                         motors_[1]->sensor_linearization_offset_,
+                         static_cast<uint8_t>(0));
+    std::cout << "2.1" << std::endl;
+    for (int i = 0; i < motors_[1]->sensor_linearization_coeffs_.size(); ++i) {
+      SendSetCommandAndSub(1, CMD_SENSOR_LINEARIZATION, SCMD_FACTOR,
+                           static_cast<uint8_t>(i),
+                           motors_[1]->sensor_linearization_coeffs_[i]);
+    }
+    SendSetCommandAndSub(
+        1, CMD_SENSOR, SCMD_SENS_ELEC_OFFSET,
+        static_cast<int32_t>(motors_[1]->electric_zero_angle_));
+    // SendSetCommand(1, CMD_MOTION_TYPE, static_cast<uint8_t>(1));
+  }
+
+  SendSetCommand(0, CMD_STATE, static_cast<uint8_t>(1));
+}
+
 void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
   // Make sure we're getting data that we're expecting
   switch (sync_state_) {
@@ -368,7 +414,9 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
         return;
       }
       SetState(SyncState::kSynced);
-      std::cout << "Post SetState" << std::endl;
+      SendSetupVariables();
+
+      std::cout << "Setup variables sent" << std::endl;
       std::cout.flush();
       BumpTimeout(1000);
       return;
@@ -395,7 +443,8 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
     }
   } else if ((message[0] & MESSAGE_TYPE_MASK) == MESSAGE_TYPE_STRING) {
     uint8_t string_length = message[1];
-    std::string received_string(message[2], string_length);
+    std::string received_string(reinterpret_cast<const char *>(message + 2),
+                                string_length);
     switch (message[0] & MESSAGE_SUBTYPE_MASK) {
       case STRING_MESSAGE_TYPE_ERROR:
         std::cout << "ERROR: " << received_string << std::endl;
@@ -409,10 +458,12 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
         break;
     }
   } else if ((message[0] & MESSAGE_TYPE_MASK) == MESSAGE_TYPE_DATA_STREAM) {
-    std::cout << *reinterpret_cast<const float *>(&message[1]);
-    std::cout << " ";
-    std::cout << *reinterpret_cast<const float *>(&message[5]);
-    std::cout << std::endl;
+    if (message[0] & DATA_STREAM_ANGLE_BIT) {
+      //std::cout << *reinterpret_cast<const uint16_t *>(&message[1]);
+      //std::cout << " ";
+      std::cout << *reinterpret_cast<const uint16_t *>(&message[3]);
+      std::cout << std::endl;
+    }
   } else {
     HandleCommunicationError(
         fmt::format("Unknown message type: {}", message[0]));
@@ -422,35 +473,15 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
 void BLDCDriverBoard::ProcessLoop() {
   std::chrono::seconds pause_time(2);
   std::this_thread::sleep_for(pause_time);
+  communication_deadline_ = std::chrono::system_clock::now();
+  BumpTimeout(3000);
+
   while (IsConnected()) {
     switch (sync_state_) {
       case SyncState::kNotSynced:
         SendSync();
-        if (motors_[0]) {
-          std::cout << "1" << motors_[0] << std::endl;
-          SendSetCommand(0, CMD_SENSOR_LINEARIZATION, SCMD_OFFSET,
-                         motors_[0]->sensor_linearization_offset_,
-                         static_cast<uint8_t>(0));
-          for (int i = 0; i < motors_[0]->sensor_linearization_coeffs_.size();
-               ++i) {
-            SendSetCommand(0, CMD_SENSOR_LINEARIZATION, SCMD_FACTOR,
-                           static_cast<uint8_t>(i),
-                           motors_[0]->sensor_linearization_coeffs_[i]);
-          }
-        }
-        if (motors_[1]) {
-          std::cout << "2" << std::endl;
-          SendSetCommand(1, CMD_SENSOR_LINEARIZATION, SCMD_OFFSET,
-                         motors_[1]->sensor_linearization_offset_,
-                         static_cast<uint8_t>(0));
-          for (int i = 0; i < motors_[1]->sensor_linearization_coeffs_.size();
-               ++i) {
-            SendSetCommand(1, CMD_SENSOR_LINEARIZATION, SCMD_FACTOR,
-                           static_cast<uint8_t>(i),
-                           motors_[1]->sensor_linearization_coeffs_[i]);
-          }
-        }
-        std::cout << "3" << std::endl;
+
+        std::cout << "Sync sent" << std::endl;
 
         DiscardReceive();
         // ProcessSend();
@@ -516,14 +547,15 @@ void BLDCDriverBoard::SendSync() {
 
 void BLDCDriverBoard::CheckTimeout() {
   if (std::chrono::system_clock::now() >= communication_deadline_) {
-    HandleCommunicationError(
-        fmt::format("CheckTimeout: communication timeout"));
+    // HandleCommunicationError(
+    //     fmt::format("CheckTimeout: communication timeout"));
   }
 }
 
 void BLDCDriverBoard::BumpTimeout(int ms) {
   communication_deadline_ =
       std::chrono::system_clock::now() + std::chrono::milliseconds{ms};
+  // std::cout << "Bump" << std::endl;
 }
 
 void BLDCDriverBoard::SetState(SyncState new_state) {

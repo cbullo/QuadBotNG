@@ -16,7 +16,7 @@
 #include "SimpleFOC.h"
 #include "base/custom_magnetic_sensor_i2c.h"
 
-CustomMagneticSensorI2C sensor = CustomMagneticSensorI2C(AS5600_I2C, A1, A0);
+CustomMagneticSensorI2C sensor = CustomMagneticSensorI2C(AS5600_I2C, A0, A1);
 
 void Critical(){};
 

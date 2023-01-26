@@ -35,6 +35,7 @@ class Motor {
   static const int linearization_factors_count = 16;
   uint8_t sensor_linearization_offset_ = 0;
   std::vector<uint8_t> sensor_linearization_coeffs_;
+  int electric_zero_angle_ = 0.0;
 
  private:
   BLDCDriverBoard* controller_;
@@ -49,5 +50,9 @@ class Motor {
   double gear_ratio_ = 1.0;
   int direction_ = 1;
   bool first_update = true;
+
+
+  
+
   std::string name_;
 };

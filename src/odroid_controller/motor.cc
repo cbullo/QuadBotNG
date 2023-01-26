@@ -14,9 +14,10 @@ void Motor::UpdateConfig(const YAML::Node& config) {
   sensor_linearization_offset_ = config["linearization_offset"].as<uint8_t>();
   sensor_linearization_coeffs_ =
       config["linearization_coeffs"].as<std::vector<uint8_t>>();
+  electric_zero_angle_ = config["electric_zero_offset"].as<int>();
 }
 
-static int foo = 80000;
+// static int foo = 80000;
 
 void Motor::UpdateRawAngle(uint16_t new_angle) {
   //  if (foo-- > 0) {

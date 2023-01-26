@@ -1,12 +1,13 @@
 
-//#include "../../custom_magnetic_sensor_i2c.h"
+// #include "../../custom_magnetic_sensor_i2c.h"
 #include <avr/wdt.h>
 
 #include "Arduino.h"
-#include "SimpleFOC.h"
+// #include "SimpleFOC.h"
 #include "Wire.h"
 #include "analog_reader.h"
 #include "debug_led.h"
+#include "simple_foc/time_utils.h"
 #include "temperature.h"
 
 #define DEBUG_WDT 0
@@ -80,10 +81,10 @@ void MainInitialize() {
   Initialize();
 }
 
-float temperature[2] = {20.f, 20.f};
+uint8_t temperature[2] = {20, 20};
 void CheckTemperature(bool first) {
-  int index = first ? 0 : 1;
-  auto reading = analog_reader.GetADCReading(index);
+  uint8_t index = first ? 0 : 1;
+  int reading = analog_reader.GetADCReading(index);
 
   temperature[index] = ComputeTemperature(reading);
 

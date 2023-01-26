@@ -12,5 +12,5 @@ cc_library(
         "@arduino//:arduino_wire_lib",
         "@arduino//:arduino_spi_lib"
     ],
-    #defines = ["COMMANDS_H", "COMMANDS_h"]
+    defines = ["FOC_USE_SINE_MODULATION"]
 )

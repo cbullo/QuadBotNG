@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <linux/joystick.h>
 #include <stdio.h>
@@ -41,15 +42,17 @@ void ReleaseEStop() {
 
 void Run() {
   for (const auto& controller : controllers) {
-    // controller->SendCommand("R");
+    controller->SendSetCommand(0, CMD_STATE, static_cast<uint8_t>(3));
+    std::cout << "Running!" << std::endl;
   }
-  std::cout << "Running!" << std::endl;
+  
   stopped = false;
 }
 
 void Stop() {
   for (const auto& controller : controllers) {
     // controller->SendCommand("S");
+    controller->SendSetCommand(0, CMD_STATE, static_cast<uint8_t>(2));
   }
   std::cout << "Stopped!" << std::endl;
   stopped = true;
@@ -153,18 +156,6 @@ int main() {
   int joystick_fd = -1;
 
   while (true) {
-    for (const auto& controller : controllers) {
-      if (controller->serial_ >= 0) {
-        //   uint8_t some_byte = 'D';
-        //   int ret = write(controller->serial_, &some_byte, 1);
-        //   if (ret != 1) {
-        //     std::cout << "What's wrong???: " << ret << " " << strerror(errno)
-        //     << std::endl;
-        //   }
-        // controller->SendSync();
-      }
-    }
-
     if (joystick_fd == -1) {
       joystick_fd = open(device, O_RDONLY | O_NONBLOCK);
       if (joystick_fd == -1) {
@@ -214,8 +205,20 @@ int main() {
           double z = axes[3].x / 32768.0;
           auto theta = atan2(y, x);
           auto gamma = sqrt(x * x + y * y);
-          if (gamma > 0.1) {
-            main_controller->SetThetaGamma(theta, gamma, z);
+          // if (gamma > 0.1) {
+          //   main_controller->SetThetaGamma(theta, gamma, z);
+          // }
+
+          for (int i = 0; i < 2; ++i) {
+            for (const auto& controller : controllers) {
+              int16_t target = static_cast<int16_t>(512 * (12 * x));
+              //              std::cout << "Sending target: " << x << " " <<
+              //              target << std::endl;
+              controller->SendSetCommand(0, CMD_MOTOR_VOLTAGE, target);
+              controller->SendSetCommand(1, CMD_MOTOR_VOLTAGE, target);
+              // controller->SendSetCommand(1, CMD_MOTOR_TARGET,
+              // static_cast<float>(100.f * gamma));
+            }
           }
         }
       }
