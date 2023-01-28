@@ -31,7 +31,7 @@ CustomMagneticSensorI2C sensors[2] = {
 // BLDCDriver3PWM drivers[2] = {BLDCDriver3PWM(5, 3, 6),
 //                              BLDCDriver3PWM(9, 11, 10)};
 BLDCMotor motors[2] = {BLDCMotor(&sensors[0], 9, 11, 10, 7, 1),
-                       BLDCMotor(&sensors[1], 5, 3, 6, 7, 1)};
+                       BLDCMotor(&sensors[1], 6, 5, 3, 7, 1)};
 
 BinaryCommander commander;
 ControllerState controller_state = ControllerState::PRE_INIT;

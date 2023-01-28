@@ -106,13 +106,13 @@ void BLDCMotor::loopFOC() {
   // set the phase voltage - FOC heart function :)
   setPhaseVoltageSin2(voltage, electrical_angle);
   // auto old_zea = zero_electric_angle;
-  // zero_electric_angle = 0;
-  // setPhaseVoltageSin2(12 * 512, 0);
+  //zero_electric_angle = 0;
+  //setPhaseVoltageSin2(12 * 512, 0);
   // zero_electric_angle = old_zea;
 
   // setPhaseVoltageSin2(5 * 512, phase);
   phase++;
-  _delay(2);
+  // _delay(2);
 }
 
 #define N_SIN 4096

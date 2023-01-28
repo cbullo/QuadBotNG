@@ -45,7 +45,7 @@ void Run() {
     controller->SendSetCommand(0, CMD_STATE, static_cast<uint8_t>(3));
     std::cout << "Running!" << std::endl;
   }
-  
+
   stopped = false;
 }
 
@@ -201,7 +201,7 @@ int main() {
         size_t axis = get_axis_state(&event, axes);
         if (axis < 6) {
           double x = axes[1].x / 32768.0;
-          double y = -axes[0].x / 32768.0;
+          double y = axes[0].x / 32768.0;
           double z = axes[3].x / 32768.0;
           auto theta = atan2(y, x);
           auto gamma = sqrt(x * x + y * y);
@@ -211,11 +211,12 @@ int main() {
 
           for (int i = 0; i < 2; ++i) {
             for (const auto& controller : controllers) {
-              int16_t target = static_cast<int16_t>(512 * (12 * x));
-              //              std::cout << "Sending target: " << x << " " <<
-              //              target << std::endl;
-              controller->SendSetCommand(0, CMD_MOTOR_VOLTAGE, target);
-              controller->SendSetCommand(1, CMD_MOTOR_VOLTAGE, target);
+              int16_t target0 = static_cast<int16_t>(512 * (12 * x));
+              int16_t target1 = static_cast<int16_t>(512 * (12 * y));
+              // std::cout << "Sending targets: " << target0 << " " << target1
+              //           << std::endl;
+              controller->SendSetCommand(0, CMD_MOTOR_VOLTAGE, target0);
+              controller->SendSetCommand(1, CMD_MOTOR_VOLTAGE, target1);
               // controller->SendSetCommand(1, CMD_MOTOR_TARGET,
               // static_cast<float>(100.f * gamma));
             }

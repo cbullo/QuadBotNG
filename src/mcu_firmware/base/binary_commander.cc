@@ -387,8 +387,8 @@ void BinaryCommander::process(uint8_t* user_command) {
     case CMD_SENSOR_LINEARIZATION:
       switch (sub_cmd) {
         case SCMD_OFFSET: {
-          uint8_t value = *(reinterpret_cast<uint8_t*>(
-              user_command + msg_length + sizeof(uint8_t)));
+          uint8_t value =
+              *(reinterpret_cast<uint8_t*>(user_command + msg_length));
           GetSensor(motor_index)->linearization_.offset_ = value;
           break;
         }

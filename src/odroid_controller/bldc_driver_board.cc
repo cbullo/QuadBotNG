@@ -459,8 +459,8 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
     }
   } else if ((message[0] & MESSAGE_TYPE_MASK) == MESSAGE_TYPE_DATA_STREAM) {
     if (message[0] & DATA_STREAM_ANGLE_BIT) {
-      //std::cout << *reinterpret_cast<const uint16_t *>(&message[1]);
-      //std::cout << " ";
+      std::cout << *reinterpret_cast<const uint16_t *>(&message[1]);
+      std::cout << " ";
       std::cout << *reinterpret_cast<const uint16_t *>(&message[3]);
       std::cout << std::endl;
     }

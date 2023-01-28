@@ -1,16 +1,16 @@
 ---
 controllers:
-  #controller_FR:
-  #  controller_address: "/dev/ardu0"
-  controller_FZ:
+  controller_FR:
     controller_address: "/dev/ardu1"
+  #controller_FZ:
+  #  controller_address: "/dev/ardu1"
 
-encoders:
-  encoder_FRZ:
-    controller: "controller_FZ"
-    index: 1
-    linearization_offset: 13
-    linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
+# encoders:
+#   encoder_FRF:
+#     controller: "controller_FZ"
+#     index: 1
+#     linearization_offset: 13
+#     linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
 
 motors:
   #motor_FRF:
@@ -23,15 +23,23 @@ motors:
   #  index: 1
   #  sensor_index: 1
   #  gear_ratio_inv: 9
-  motor_FRZ:
+  motor_FRF:
     linearization_offset: 13
     linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
-    controller: "controller_FZ"
+    controller: "controller_FR"
     index: 0
-    encoder: "encoder_FRZ"
     electric_zero_offset: 270
     encoder_direction: 1
     gear_ratio_inv: 9
+  motor_FRR:
+    linearization_offset: 0
+    linearization_coeffs: [25,34,45,44,44,32,28,33,33,27,37,48,23,16,16,19]
+    controller: "controller_FR"
+    index: 1
+    electric_zero_offset: 196
+    encoder_direction: 1
+    gear_ratio_inv: 9
+
 
 legs:
   leg_FR:
