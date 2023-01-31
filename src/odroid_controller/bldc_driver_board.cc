@@ -359,6 +359,7 @@ inline uint16_t normalizeAngle(int32_t in, uint16_t period) {
 
 void BLDCDriverBoard::SendSetupVariables() {
   if (motors_[0]) {
+    SendSetCommand(0, CMD_AVAILABILITY, static_cast<uint8_t>(0x01 | 0x02));
     std::cout << "1" << motors_[0] << std::endl;
     SendSetCommandAndSub(0, CMD_SENSOR_LINEARIZATION, SCMD_OFFSET,
                          motors_[0]->sensor_linearization_offset_,
@@ -375,6 +376,7 @@ void BLDCDriverBoard::SendSetupVariables() {
     // SendSetCommand(0, CMD_MOTION_TYPE, static_cast<uint8_t>(1));
   }
   if (motors_[1]) {
+    SendSetCommand(1, CMD_AVAILABILITY, static_cast<uint8_t>(0x0));
     std::cout << "2" << std::endl;
     std::cout << motors_[1]->GetName() << std::endl;
     SendSetCommandAndSub(1, CMD_SENSOR_LINEARIZATION, SCMD_OFFSET,
@@ -457,7 +459,7 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
         std::cout << "INFO: " << received_string << std::endl;
         break;
     }
-  } else if ((message[0] & MESSAGE_TYPE_MASK) == MESSAGE_TYPE_DATA_STREAM) {
+  } else if ((message[0] & MESSAGE_TYPE_MASK) == MESSAGE_TYPE_DATA_STREAM) {    
     if (message[0] & DATA_STREAM_ANGLE_BIT) {
       std::cout << *reinterpret_cast<const uint16_t *>(&message[1]);
       std::cout << " ";

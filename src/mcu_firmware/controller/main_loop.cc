@@ -13,8 +13,9 @@
 #define SENSOR_AVAILABLE 0x02
 
 uint8_t availability[2] = {
-    MOTOR_AVAILABLE | SENSOR_AVAILABLE,
-    MOTOR_AVAILABLE | SENSOR_AVAILABLE
+    0,
+    0
+    //0//MOTOR_AVAILABLE | SENSOR_AVAILABLE
 };
 
 /** Typical configuration for the 12bit AMS AS5600 magnetic sensor over I2C
@@ -30,8 +31,8 @@ CustomMagneticSensorI2C sensors[2] = {
 
 // BLDCDriver3PWM drivers[2] = {BLDCDriver3PWM(5, 3, 6),
 //                              BLDCDriver3PWM(9, 11, 10)};
-BLDCMotor motors[2] = {BLDCMotor(&sensors[0], 9, 11, 10, 7, 1),
-                       BLDCMotor(&sensors[1], 6, 5, 3, 7, 1)};
+BLDCMotor motors[2] = {BLDCMotor(&sensors[0], 6, 5, 3, 7, 1),
+                       BLDCMotor(&sensors[1], 9, 11, 10, 7, 1)};
 
 BinaryCommander commander;
 ControllerState controller_state = ControllerState::PRE_INIT;
@@ -78,7 +79,7 @@ void InitController() {
       // motors[i].controller = MotionControlType::angle;
       // motors[i].velocity_limit = 100;
 
-      //motors[i].zero_electric_angle = 328;
+      // motors[i].zero_electric_angle = 328;
       motors[i].sensor_direction = 1;
       motors[i].controller = MotionControlType::velocity;
       motors[i].torque_controller = TorqueControlType::voltage;

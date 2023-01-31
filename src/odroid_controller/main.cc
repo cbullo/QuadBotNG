@@ -209,18 +209,20 @@ int main() {
           //   main_controller->SetThetaGamma(theta, gamma, z);
           // }
 
-          for (int i = 0; i < 2; ++i) {
-            for (const auto& controller : controllers) {
+          //for (int i = 0; i < 2; ++i) {
+            //for (const auto& controller : controllers) {
               int16_t target0 = static_cast<int16_t>(512 * (12 * x));
               int16_t target1 = static_cast<int16_t>(512 * (12 * y));
+              int16_t target2 = static_cast<int16_t>(512 * (12 * z));
               // std::cout << "Sending targets: " << target0 << " " << target1
               //           << std::endl;
-              controller->SendSetCommand(0, CMD_MOTOR_VOLTAGE, target0);
-              controller->SendSetCommand(1, CMD_MOTOR_VOLTAGE, target1);
+              controllers[1]->SendSetCommand(0, CMD_MOTOR_VOLTAGE, target0);
+              controllers[1]->SendSetCommand(1, CMD_MOTOR_VOLTAGE, target1);
+              controllers[0]->SendSetCommand(0, CMD_MOTOR_VOLTAGE, target2);
               // controller->SendSetCommand(1, CMD_MOTOR_TARGET,
               // static_cast<float>(100.f * gamma));
-            }
-          }
+            //}
+          //}
         }
       }
     }

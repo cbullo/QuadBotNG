@@ -106,8 +106,8 @@ void BLDCMotor::loopFOC() {
   // set the phase voltage - FOC heart function :)
   setPhaseVoltageSin2(voltage, electrical_angle);
   // auto old_zea = zero_electric_angle;
-  //zero_electric_angle = 0;
-  //setPhaseVoltageSin2(12 * 512, 0);
+  // zero_electric_angle = 0;
+  // setPhaseVoltageSin2(12 * 512, 0);
   // zero_electric_angle = old_zea;
 
   // setPhaseVoltageSin2(5 * 512, phase);
@@ -176,9 +176,9 @@ void BLDCMotor::setPhaseVoltageSin(Voltage U, Angle angle_el) {
   Ub = -Ualpha / 2 + (443 * Ubeta) / 512 + center;
   Uc = -Ualpha / 2 - (443 * Ubeta) / 512 + center;
 
-  setPwm(Ua, Ub, Uc);
+  // setPwm(Ua, Ub, Uc);
 
-  // setPwm(3 * 512, 0, 0);
+  setPwm(0, 3 * 512, 0);
 }
 
 // Method using FOC to set Uq and Ud to the motor at the optimal angle
