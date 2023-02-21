@@ -77,6 +77,11 @@ void BinaryCommander::SendDataStream() {
     // float data[2] = {GetSensor(0)->getAngle(),
     //                  GetSensor(1)->getAngle()};
 
+    if (GetSensor(0)->getLastAngleReadingTime() < 0 ||
+        GetSensor(1)->getLastAngleReadingTime() < 0) {
+      return;
+    }
+
     uint8_t msg = MESSAGE_TYPE_DATA_STREAM;
     switch (next_data) {
       case 0: {
@@ -158,7 +163,6 @@ void ProcessStateCommand(BinaryCommander* cmd, ControllerState new_state) {
         if (availability[1] & MOTOR_AVAILABLE) {
           motors[1].disable();
         }
-        return;
       }
       break;
     case ControllerState::ERROR:
@@ -274,20 +278,6 @@ void BinaryCommander::process(uint8_t* user_command) {
                   sequence);
       }
       break;
-    case CMD_TORQUE_TYPE:
-      // change control type
-      if (!is_get) {
-        uint8_t value =
-            *(reinterpret_cast<uint8_t*>(user_command + msg_length));
-        if (value >= 0 && value < 3) {
-          motors[motor_index].torque_controller = (TorqueControlType)value;
-        }
-      } else {
-        SendReply(cmd,
-                  static_cast<uint8_t>(motors[motor_index].torque_controller),
-                  sequence);
-      }
-      break;
     case CMD_PWMMOD:
       // PWM modulation change
       switch (sub_cmd) {
@@ -350,6 +340,27 @@ void BinaryCommander::process(uint8_t* user_command) {
         // SendString(STRING_MESSAGE_TYPE_INFO, str);
 
         motors[motor_index].voltage = value;
+        motors[motor_index].controller = MotionControlType::voltage;
+      } else {
+        // SendReply(cmd,
+        //           _isset(motors[motor_index].phase_resistance) ?
+        //           motors[motor_index].phase_resistance : 0, sequence);
+      }
+      break;
+    case CMD_MOTOR_PHASE:
+      if (!is_get) {
+        int16_t phase = *reinterpret_cast<int16_t*>(user_command + msg_length);
+        int16_t voltage = *reinterpret_cast<int16_t*>(
+            user_command + msg_length + sizeof(int16_t));
+
+        // char str[10];
+        // int v = static_cast<int>(voltage);
+        // sprintf(str, "%d", v);
+        // SendString(STRING_MESSAGE_TYPE_INFO, str);
+
+        motors[motor_index].phase = phase;
+        motors[motor_index].voltage = voltage;
+        motors[motor_index].controller = MotionControlType::direct_phase;
       } else {
         // SendReply(cmd,
         //           _isset(motors[motor_index].phase_resistance) ?
@@ -371,8 +382,8 @@ void BinaryCommander::process(uint8_t* user_command) {
         case SCMD_SENS_ELEC_OFFSET:  // electrical zero offset - not
                                      // suggested to touch
           if (!is_get) {
-            int32_t value =
-                *(reinterpret_cast<int32_t*>(user_command + msg_length));
+            int16_t value =
+                *(reinterpret_cast<int16_t*>(user_command + msg_length));
             motors[motor_index].zero_electric_angle = value;
 
           } else {

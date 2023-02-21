@@ -44,6 +44,8 @@ class CustomMagneticSensorI2C {
    */
   void update();
 
+  long getLastAngleReadingTime() const { return last_angle_reading_time_; };
+
   PiecewiseLinear<12, 4> linearization_;
 
  protected:
@@ -73,7 +75,7 @@ class CustomMagneticSensorI2C {
   int checkBus(byte sda_pin, byte scl_pin);
 
   uint16_t last_angle_reading_ = 0;
-  long last_angle_reading_time_ = 0;
+  long last_angle_reading_time_ = -1;
 
   uint8_t this_sda_pin_;
   uint8_t other_sda_pin_;

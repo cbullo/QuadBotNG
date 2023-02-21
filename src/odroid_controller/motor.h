@@ -15,7 +15,7 @@ class Motor {
   Motor(BLDCDriverBoard* controller, int motor_index);
   void UpdateConfig(const YAML::Node& config);
   uint16_t GetRawAngle() const { return raw_angle_; }
-  void UpdateRawAngle(uint16_t new_angle);
+
   void SetZeroAngle(uint16_t zero_angle);
   inline double GetAccumulatedAngle() const {
     return accumulated_angle_ /*- zero_angle_*/;
@@ -32,27 +32,41 @@ class Motor {
   std::string GetName() const { return name_; }
   int GetDirection() const { return direction_; }
 
+  void SetCurrentTemperature(uint16_t temp) { current_temp_ = temp; }
+  void SetCurrentRawAngle(uint16_t angle) {
+    current_raw_angle_ = angle;
+    angle_received_ = true;
+  }
+
+  void Update();
+
   static const int linearization_factors_count = 16;
   uint8_t sensor_linearization_offset_ = 0;
   std::vector<uint8_t> sensor_linearization_coeffs_;
   int electric_zero_angle_ = 0.0;
 
  private:
+  void UpdateAngle(uint16_t new_angle);
+
   BLDCDriverBoard* controller_;
   int motor_index_;
 
   uint16_t raw_angle_ = 0.0;
-  double zero_angle_ = 0.0;
+  float zero_angle_ = 0.0;
 
-  double offset_angle_ = 0.0;
-  double prev_offset_angle_ = 0.0;
-  double accumulated_angle_ = 0.0;
-  double gear_ratio_ = 1.0;
+  float offset_angle_ = 0.0;
+  float prev_offset_angle_ = 0.0;
+  float accumulated_angle_ = 0.0;
+  float gear_ratio_ = 1.0;
   int direction_ = 1;
   bool first_update = true;
 
+  std::atomic<uint16_t> current_temp_;
+  std::atomic<uint16_t> current_raw_angle_;
+  bool angle_received_ = false;
 
-  
+  float sensor_angle_;
+  float accumulated_normalized_angle_;
 
   std::string name_;
 };

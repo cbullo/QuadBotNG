@@ -10,25 +10,13 @@
 // #include "common/time_utils.h"
 #include "types.h"
 
-enum MotionControlType {
-  torque,    //!< Torque control
-  velocity,  //!< Velocity motion control
-  angle,     //!< Position/angle motion control
-  velocity_openloop,
-  angle_openloop
-};
-
-/**
- *  Motiron control type
- */
-enum TorqueControlType {
-  voltage,  //!< Torque control using voltage
-#if FOC_USE_DC_CURRENT_CONTROL
-  dc_current,  //!< Torque control using DC current (one current magnitude)
-#endif
-#if FOC_USE_FOC_CURRENT_CONTROL
-  foc_current  //!< torque control using dq currents
-#endif
+enum class MotionControlType {
+  voltage,  //!< Torque control
+  // velocity,  //!< Velocity motion control
+  // angle,     //!< Position/angle motion control
+  // velocity_openloop,
+  // angle_openloop,
+  direct_phase
 };
 
 /**
@@ -153,16 +141,18 @@ class BLDCMotor {
   uint16_t angleOpenloop(uint16_t target_angle);
   // open loop variables
   long open_loop_timestamp;
-public:
+
+ public:
   Angle electricalAngle();
 
- 
   // state variables
   // float target; //!< current target value - depends of the controller
   // FullAngle shaft_angle;   //!< current motor angle
   Angle electrical_angle;  //!< current electrical angle
   Voltage voltage = 0;     //!< current q voltage set to the motor
-  uint8_t pole_pairs;      //!< motor pole pairs number
+  int16_t phase = 0;       // for setting the phase directly
+
+  uint8_t pole_pairs;  //!< motor pole pairs number
 
   Voltage voltage_limit =
       12 * (1 << 9) - 1;  //!< Voltage limitting variable - global limit
@@ -174,12 +164,10 @@ public:
                                    //!< driver limit /2  or  (0) pulled to 0
 
   // configuration structures
-  TorqueControlType
-      torque_controller;  //!< parameter determining the torque control type
   MotionControlType
       controller;  //!< parameter determining the control loop to be used
 
-  int32_t zero_electric_angle =
+  Angle zero_electric_angle =
       0;                        //!< absolute zero electric angle - if available
   int8_t sensor_direction = 1;  //!< if sensor_direction == Direction::CCW
                                 //!< then direction will be flipped to CW

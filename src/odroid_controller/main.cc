@@ -1,16 +1,18 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <linux/joystick.h>
 #include <stdio.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
 #include "bldc_driver_board.h"
 #include "controller.h"
+#include "joystick_input.h"
 #include "leg.h"
 
 volatile bool estop_triggered = false;
@@ -22,11 +24,7 @@ bool start_pressed = false;
 std::vector<BLDCDriverBoard*> controllers;
 std::vector<Motor*> motors;
 std::vector<Leg*> legs;
-std::unique_ptr<Controller> main_controller;
-
-struct axis_state {
-  short x, y;
-};
+// std::unique_ptr<Controller> main_controller;
 
 void EStop() {
   if (!estop_triggered) {
@@ -99,44 +97,130 @@ void ReadLegs(const YAML::Node& config,
   for (auto& leg_yaml : legs_yaml) {
     auto name = leg_yaml.first.as<std::string>();
 
-    auto motor_F_name = leg_yaml.second["motor_F"].as<std::string>();
-    auto motor_B_name = leg_yaml.second["motor_B"].as<std::string>();
+    auto motor_I_name = leg_yaml.second["motor_I"].as<std::string>();
+    auto motor_O_name = leg_yaml.second["motor_O"].as<std::string>();
     auto motor_Z_name = leg_yaml.second["motor_Z"].as<std::string>();
 
-    auto m_f = motors.at(motor_F_name);
-    auto m_b = motors.at(motor_B_name);
+    auto m_i = motors.at(motor_I_name);
+    auto m_o = motors.at(motor_O_name);
     auto m_z = motors.at(motor_Z_name);
 
-    auto leg = new Leg(m_f, m_b, m_z);
+    auto leg = new Leg(m_i, m_o, m_z);
     leg->UpdateConfig(leg_yaml.second);
     legs[name] = leg;
   }
 }
 
-size_t get_axis_state(struct js_event* event, axis_state axes[3]) {
-  size_t axis = event->number;
+Controller SetupController() {
+  std::cout << "SetupController 1" << std::endl;
+  auto device = "/dev/input/js0";
 
-  if (axis < 6) {
-    axes[axis].x = event->value;
-  }
+  auto stopped_behavior = std::make_shared<StoppedBehavior>();
+  auto estopped_behavior = std::make_shared<EStoppedBehavior>();
 
-  return axis;
+  auto estopped_scheme = std::make_shared<EStoppedScheme>();
+  auto stopped_scheme = std::make_shared<StoppedScheme>();
+  auto calibration_scheme = std::make_shared<CalibrationScheme>();
+  auto thetagamma_scheme = std::make_shared<ThetaGammaScheme>();
+
+  auto joystick_input = std::make_shared<JoystickInput>(device);
+  auto leg_testing_behavior = std::make_shared<LegTestingBehavior>();
+  auto motor_testing_behavior = std::make_shared<MotorTestingBehavior>();
+
+  motor_testing_behavior->SetNextBehavior(leg_testing_behavior.get());
+  motor_testing_behavior->SetPreviousBehavior(leg_testing_behavior.get());
+
+  leg_testing_behavior->SetNextBehavior(motor_testing_behavior.get());
+  leg_testing_behavior->SetPreviousBehavior(motor_testing_behavior.get());
+
+  joystick_input->Init();
+
+  stopped_behavior->AttachActivationCallback(
+      [joystick_input, stopped_scheme](const Behavior& b) mutable {
+        joystick_input->SetScheme(stopped_scheme);
+      });
+
+  estopped_behavior->AttachActivationCallback(
+      [joystick_input, estopped_scheme](const Behavior& b) mutable {
+        joystick_input->SetScheme(estopped_scheme);
+      });
+
+  leg_testing_behavior->AttachActivationCallback(
+      [joystick_input, thetagamma_scheme](const Behavior& b) mutable {
+        std::cout << "Setting theta gamma scheme" << std::endl;
+        joystick_input->SetScheme(thetagamma_scheme);
+      });
+
+  motor_testing_behavior->AttachActivationCallback(
+      [joystick_input, calibration_scheme](const Behavior& b) mutable {
+        std::cout << "Setting calibration scheme" << std::endl;
+        joystick_input->SetScheme(calibration_scheme);
+      });
+
+  Legs legs_s;
+  legs_s.fr = legs.size() > 0 ? legs[0] : nullptr;
+  legs_s.fl = legs.size() > 1 ? legs[1] : nullptr;
+  legs_s.bl = legs.size() > 2 ? legs[2] : nullptr;
+  legs_s.br = legs.size() > 3 ? legs[3] : nullptr;
+
+  Controller main_controller(legs_s, controllers, stopped_behavior,
+                             estopped_behavior);
+
+  main_controller.AttachEventNode(joystick_input);
+  main_controller.AttachBehavior(leg_testing_behavior);
+  main_controller.AttachBehavior(motor_testing_behavior);
+
+  main_controller.SubscribeToTick(joystick_input.get());
+
+  main_controller.SubscribeToEvent(leg_testing_behavior.get(),
+                                   EventId::kControlEventConfirm);
+  main_controller.SubscribeToEvent(leg_testing_behavior.get(),
+                                   EventId::kControlEventNextItem);
+  main_controller.SubscribeToEvent(leg_testing_behavior.get(),
+                                   EventId::kControlEventPreviousItem);
+  main_controller.SubscribeToEvent(leg_testing_behavior.get(),
+                                   EventId::kControlEventLegTheta);
+  main_controller.SubscribeToEvent(leg_testing_behavior.get(),
+                                   EventId::kControlEventLegGamma);
+  main_controller.SubscribeToEvent(leg_testing_behavior.get(),
+                                   EventId::kControlEventLegTilt);
+
+  main_controller.SubscribeToEvent(motor_testing_behavior.get(),
+                                   EventId::kControlEventNextMode);
+  main_controller.SubscribeToEvent(motor_testing_behavior.get(),
+                                   EventId::kControlEventPreviousMode);
+  main_controller.SubscribeToEvent(motor_testing_behavior.get(),
+                                   EventId::kControlEventNextItem);
+  main_controller.SubscribeToEvent(motor_testing_behavior.get(),
+                                   EventId::kControlEventPreviousItem);
+  main_controller.SubscribeToEvent(motor_testing_behavior.get(),
+                                   EventId::kControlEventConfirm);
+
+  stopped_behavior->SetPreviousBehavior(motor_testing_behavior.get());
+  stopped_behavior->Activate();
+  std::cout << "SetupController 2" << std::endl;
+
+  return main_controller;
 }
 
 int main() {
   std::cout << "Running controller" << std::endl;
-  axis_state axes[6] = {0};
 
   YAML::Node config = YAML::LoadFile("config/robot_config.yaml");
 
   std::unordered_map<std::string, BLDCDriverBoard*> controllers_map;
   std::unordered_map<std::string, Motor*> motors_map;
+  std::unordered_map<std::string, Leg*> legs_map;
 
   ReadControllers(config, controllers_map);
   ReadMotors(config, controllers_map, motors_map);
+  ReadLegs(config, motors_map, legs_map);
 
   std::transform(controllers_map.begin(), controllers_map.end(),
                  back_inserter(controllers),
+                 [](const auto& val) { return val.second; });
+
+  std::transform(legs_map.begin(), legs_map.end(), back_inserter(legs),
                  [](const auto& val) { return val.second; });
 
   for (const auto& controller : controllers) {
@@ -149,101 +233,40 @@ int main() {
     }
   }
 
-  bool trigger_estop = false;
+  // bool trigger_estop = false;
 
-  auto device = "/dev/input/js0";
+  // auto device = "/dev/input/js0";
 
-  int joystick_fd = -1;
+  // int joystick_fd = -1;
 
+  auto main_controller = SetupController();
+
+  std::cout << "Before loop" << std::endl;
+  auto prev_time = std::chrono::high_resolution_clock::now();
   while (true) {
-    if (joystick_fd == -1) {
-      joystick_fd = open(device, O_RDONLY | O_NONBLOCK);
-      if (joystick_fd == -1) {
-        // std::cout << "Can't connect to joystick.." << std::endl;
-        trigger_estop = true;
-      }
-    }
+    auto curr_time = std::chrono::high_resolution_clock::now();
+    float elapsed_time_s =
+        std::chrono::duration<float>(curr_time - prev_time).count();
+    main_controller.Update(elapsed_time_s);
+    prev_time = curr_time;
 
-    while (joystick_fd != -1) {
-      int bytes;
-      js_event event;
-      bytes = read(joystick_fd, &event, sizeof(event));
+    // if (trigger_estop) {
+    //   EStop();
+    //   trigger_estop = false;
+    // }
 
-      if (bytes == -1) {
-        if (errno != EAGAIN) {
-          trigger_estop = true;
-          close(joystick_fd);
-          joystick_fd = -1;
-        }
-        break;
-      }
+    // if (estop_triggered) {
+    //   if (select_pressed && start_pressed) {
+    //     ReleaseEStop();
+    //     select_pressed = false;
+    //     start_pressed = false;
+    //   }
 
-      if (event.type == JS_EVENT_BUTTON) {
-        if (estop_triggered) {
-          if (event.number == 0x0) {
-            select_pressed = event.value;
-          } else if (event.number == 0x3) {
-            start_pressed = event.value;
-          }
-        } else {
-          if (event.number == 0x0 && event.value == 1) {
-            trigger_estop = true;
-            break;
-          } else if (event.number == 0x3 && event.value == 1) {
-            if (stopped) {
-              Run();
-            } else {
-              Stop();
-            }
-          }
-        }
-      } else if (event.type == JS_EVENT_AXIS) {
-        size_t axis = get_axis_state(&event, axes);
-        if (axis < 6) {
-          double x = axes[1].x / 32768.0;
-          double y = axes[0].x / 32768.0;
-          double z = axes[3].x / 32768.0;
-          auto theta = atan2(y, x);
-          auto gamma = sqrt(x * x + y * y);
-          // if (gamma > 0.1) {
-          //   main_controller->SetThetaGamma(theta, gamma, z);
-          // }
-
-          //for (int i = 0; i < 2; ++i) {
-            //for (const auto& controller : controllers) {
-              int16_t target0 = static_cast<int16_t>(512 * (12 * x));
-              int16_t target1 = static_cast<int16_t>(512 * (12 * y));
-              int16_t target2 = static_cast<int16_t>(512 * (12 * z));
-              // std::cout << "Sending targets: " << target0 << " " << target1
-              //           << std::endl;
-              controllers[1]->SendSetCommand(0, CMD_MOTOR_VOLTAGE, target0);
-              controllers[1]->SendSetCommand(1, CMD_MOTOR_VOLTAGE, target1);
-              controllers[0]->SendSetCommand(0, CMD_MOTOR_VOLTAGE, target2);
-              // controller->SendSetCommand(1, CMD_MOTOR_TARGET,
-              // static_cast<float>(100.f * gamma));
-            //}
-          //}
-        }
-      }
-    }
-
-    if (trigger_estop) {
-      EStop();
-      trigger_estop = false;
-    }
-
-    if (estop_triggered) {
-      if (select_pressed && start_pressed) {
-        ReleaseEStop();
-        select_pressed = false;
-        start_pressed = false;
-      }
-
-      for (const auto& controller : controllers) {
-        controller->HardwareReset();
-      }
-      usleep(100000);
-    }
+    //   for (const auto& controller : controllers) {
+    //     controller->HardwareReset();
+    //   }
+    //   usleep(100000);
+    // }
   }
 
   return 0;

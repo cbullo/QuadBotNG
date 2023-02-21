@@ -5,6 +5,11 @@
 #include "sin_approx.h"
 #include "time_utils.h"
 
+#define N_SIN 4096
+#define N_SIN_4 1024
+#define N_SIN_3 1365
+#define N_SIN_2_3 2731
+
 inline uint16_t normalizeAngle(int32_t in, uint16_t period) {
   while (in < 0) {
     in += period;
@@ -28,9 +33,6 @@ BLDCMotor::BLDCMotor(CustomMagneticSensorI2C* s, int phA, int phB, int phC,
   pole_pairs = pp;
 
   sensor_direction = dir;
-
-  // torque control type is voltage by default
-  torque_controller = TorqueControlType::voltage;
 
   pwmA = phA;
   pwmB = phB;
@@ -71,8 +73,6 @@ void BLDCMotor::enable() {
   enabled = 1;
 }
 
-static uint32_t phase = 0;
-
 // Iterative function looping FOC algorithm, setting Uq on the Motor
 // The faster it can be run the better
 void BLDCMotor::loopFOC() {
@@ -91,45 +91,28 @@ void BLDCMotor::loopFOC() {
     return;
   }
 
-  // Needs the update() to be called first
-  // This function will not have numerical issues because it uses
-  // Sensor::getMechanicalAngle() which is in range 0-2PI
-  electrical_angle = electricalAngle();
-  // switch (torque_controller) {
-  //   case TorqueControlType::voltage:
-  //     // no need to do anything really
-  //     break;
-  //   default:
-  //     break;
-  // }
-
-  // set the phase voltage - FOC heart function :)
-  setPhaseVoltageSin2(voltage, electrical_angle);
-  // auto old_zea = zero_electric_angle;
-  // zero_electric_angle = 0;
-  // setPhaseVoltageSin2(12 * 512, 0);
-  // zero_electric_angle = old_zea;
+  if (controller == MotionControlType::voltage) {
+    electrical_angle = electricalAngle();
+    // set the phase voltage - FOC heart function :)
+    int16_t offset = N_SIN_4;
+    if (voltage < 0) {
+      offset = -offset;
+    }
+    Angle angle_to_set = normalizeAngle(electrical_angle + offset, N_SIN);
+    setPhaseVoltageSin2(voltage, angle_to_set);
+  } else if (controller == MotionControlType::direct_phase) {
+    setPhaseVoltageSin2(voltage, phase);
+  }
 
   // setPhaseVoltageSin2(5 * 512, phase);
-  phase++;
+  // phase++;
   // _delay(2);
 }
-
-#define N_SIN 4096
-#define N_SIN_4 1024
-#define N_SIN_3 1365
-#define N_SIN_2_3 2731
 
 void BLDCMotor::setPhaseVoltageSin2(Voltage U, Angle angle_el) {
   int32_t pwm_a;
   int32_t pwm_b;
   int32_t pwm_c;
-
-  int16_t offset = N_SIN_4;
-  if (U < 0) {
-    offset = -offset;
-  }
-  angle_el = normalizeAngle(angle_el + offset, N_SIN);
 
   pwm_a = sin15(angle_el << 3);
   pwm_b = sin15(normalizeAngle(angle_el + N_SIN_3, N_SIN) << 3);

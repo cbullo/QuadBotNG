@@ -14,40 +14,54 @@ controllers:
 
 motors:
   motor_FRI:
-    linearization_offset: 13
-    linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
+    # linearization_offset: 13
+    # linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
+    linearization_offset: 0
+    linearization_coeffs: [21,5,19,53,10,156,185,178,156,110,99,69,79,103,81,51]
     controller: "controller_FR"
     index: 0
-    electric_zero_offset: 270
+    electric_zero_offset: 264
     encoder_direction: 1
     gear_ratio_inv: 9
   motor_FRO:
     linearization_offset: 0
-    linearization_coeffs: [25,34,45,44,44,32,28,33,33,27,37,48,23,16,16,19]
+    linearization_coeffs: [31,41,50,52,44,44,51,50,47,46,43,45,25,14,19,26]
+    # linearization_offset: 0
+    # linearization_coeffs: [25,34,45,44,44,32,28,33,33,27,37,48,23,16,16,19]
     controller: "controller_FR"
     index: 1
-    electric_zero_offset: 196
+    electric_zero_offset: 203
     encoder_direction: 1
     gear_ratio_inv: 9
   motor_FRZ:
-    linearization_offset: 8
-    linearization_coeffs: [23, 12, 21, 27, 21, 22, 31, 25, 17,  7,  6,  9,  5,  0,  9, 16]
+    # linearization_offset: 8
+    # linearization_coeffs: [23, 12, 21, 27, 21, 22, 31, 25, 17,  7,  6,  9,  5,  0,  9, 16]
+    linearization_offset: 0
+    linearization_coeffs: [26,27,24,29,39,40,44,36,27,19,22,25,36,46,50,39]
     controller: "controller_FZ"
-    index: 0
-    electric_zero_offset: 526
+    index: 0  
+    electric_zero_offset: 377
     encoder_direction: 1
     gear_ratio_inv: 9
+  # motor_FLZ:
+  #   linearization_offset: 0
+  #   linearization_coeffs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  #   controller: "controller_FZ"
+  #   index: 1  
+  #   electric_zero_offset: 0
+  #   encoder_direction: 1
+  #   gear_ratio_inv: 9
 legs:
   leg_FR:
     motor_I: "motor_FRI"
     motor_O: "motor_FRO"
     motor_Z: "motor_FRZ"
     theta_p: 0.15
-    theta_i: 0.20
+    theta_i: 0.00
     theta_d: 0.0
     gamma_p: 0.15
-    gamma_i: 0.20
+    gamma_i: 0.00
     gamma_d: 0.0
     z_p: 0.15
-    z_i: 0.20
+    z_i: 0.00
     z_d: 0.0

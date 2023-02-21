@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdint.h"
+
 // Odroid -> Driver
 
 #define MAX_COMMAND_SIZE 16
@@ -11,12 +13,13 @@
 #define CMD_LIMITS 0x03             //'L' //!< limits current/voltage/velocity
 #define CMD_MOTION_TYPE 0x04        //'C' //!< motion control type
 #define CMD_MOTION_DOWNSAMPLE 0x05  //'C' //!< motion control type
-#define CMD_TORQUE_TYPE 0x06        // 'T' //!< torque control type
-#define CMD_SENSOR 0x07             //'S'   //!< sensor offsets
-#define CMD_RESIST 0x08             //'R'   //!< motor phase resistance
-#define CMD_PWMMOD 0x09             //'W'   //!< pwm modulation
+// #define CMD_TORQUE_TYPE 0x06        // 'T' //!< torque control type
+#define CMD_SENSOR 0x07  //'S'   //!< sensor offsets
+#define CMD_RESIST 0x08  //'R'   //!< motor phase resistance
+#define CMD_PWMMOD 0x09  //'W'   //!< pwm modulation
 // #define CMD_MOTOR_TARGET 0x0A       //" Target get/set
 #define CMD_MOTOR_VOLTAGE 0x0A  //" Target get/set
+#define CMD_MOTOR_PHASE 0x02    // Direct phase set
 
 // controller configuration
 #define CMD_STATE 0x0B
@@ -90,16 +93,18 @@ inline uint8_t GetArgumentLength(uint8_t byte) {
       return sizeof(uint8_t);
     case CMD_MOTION_DOWNSAMPLE:
       return sizeof(uint16_t);
-    case CMD_TORQUE_TYPE:
-      return sizeof(uint8_t);
+    // case CMD_TORQUE_TYPE:
+    //   return sizeof(uint8_t);
     case CMD_SENSOR:
-      return sizeof(int32_t);
+      return sizeof(int16_t);
     case CMD_RESIST:
       return sizeof(uint16_t);
     case CMD_PWMMOD:
       return sizeof(uint8_t);
     case CMD_MOTOR_VOLTAGE:
       return sizeof(int16_t);
+    case CMD_MOTOR_PHASE:
+      return 2 * sizeof(int16_t);
     case CMD_STATE:
       return sizeof(uint8_t);
     case CMD_AVAILABILITY:
@@ -136,8 +141,8 @@ inline uint8_t GetCommandLength(uint8_t byte) {
       return sizeof(COMMAND_TYPE);
     case CMD_MOTION_DOWNSAMPLE:
       return sizeof(COMMAND_TYPE);
-    case CMD_TORQUE_TYPE:
-      return sizeof(COMMAND_TYPE);
+    // case CMD_TORQUE_TYPE:
+    //   return sizeof(COMMAND_TYPE);
     case CMD_SENSOR:
       return 2 * sizeof(COMMAND_TYPE);
     case CMD_RESIST:

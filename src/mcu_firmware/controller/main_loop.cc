@@ -81,8 +81,7 @@ void InitController() {
 
       // motors[i].zero_electric_angle = 328;
       motors[i].sensor_direction = 1;
-      motors[i].controller = MotionControlType::velocity;
-      motors[i].torque_controller = TorqueControlType::voltage;
+      motors[i].controller = MotionControlType::voltage;
       // motors[i].sensor_offset = 0;
       // motors[i].foc_modulation = FOCModulationType::SpaceVectorPWM;
       // motors[i].voltage_sensor_align = 12.f;

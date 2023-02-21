@@ -26,7 +26,7 @@ def fft(data):
 a = []
 b = []
 
-with open('data/motor_1.calib') as f:
+with open('data/motor_3.calib') as f:
     lines = f.read().splitlines()
 
 tb = -100
