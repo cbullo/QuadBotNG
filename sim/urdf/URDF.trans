@@ -1,0 +1,59 @@
+<?xml version="1.0" ?>
+<robot name="URDF" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+<transmission name="base_to_shoulder_RF_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="base_to_shoulder_RF">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="base_to_shoulder_RF_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="shoulder_to_main_RF_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="shoulder_to_main_RF">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="shoulder_to_main_RF_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="shoulder_to_crank_RF_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="shoulder_to_crank_RF">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="shoulder_to_crank_RF_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="crank_to_link_RF_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="crank_to_link_RF">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="crank_to_link_RF_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="main_to_lower_RF_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="main_to_lower_RF">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="main_to_lower_RF_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+</robot>

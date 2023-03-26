@@ -1,0 +1,290 @@
+<?xml version="1.0"?>
+<robot name="URDF" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="/home/tomasz/dev/dev_ws/src/quadbot_description/urdf/materials.xacro" />
+  <xacro:include filename="/home/tomasz/dev/dev_ws/src/quadbot_description/urdf/URDF.trans" />
+  <xacro:include filename="/home/tomasz/dev/dev_ws/src/quadbot_description/urdf/URDF.gazebo" />
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0.00014024235087096401 -0.0003890538127367371 -0.019060892954127925" rpy="0 0 0" />
+      <mass value="0.5621563017705747" />
+      <inertia ixx="0.001155" iyy="0.00653" izz="0.006946" ixy="4e-06" iyz="2e-06" ixz="-2.4e-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/base_link.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/base_link_c.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+
+  </link>
+
+
+  <link name="drives_1">
+    <inertial>
+      <origin xyz="-0.03951765517329959 1.2719094139211486e-09 -0.012055286127708453" rpy="0 0 0" />
+      <mass value="3.702587577963783" />
+      <inertia ixx="0.008603" iyy="0.056229" izz="0.062893" ixy="0.0" iyz="0.0" ixz="-0.0" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.039505 -0.0 -0.018083" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/drives_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <!-- <collision>
+    <origin xyz="-0.039505 -0.0 -0.018083" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://URDF_description/meshes/drives_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision> -->
+  </link>
+
+  <xacro:macro name="leg" params="name prefix move_x reflect_y">
+    <link name="shoulder_${name}_1">
+      <inertial>
+        <origin xyz="0.07305887126794519 ${reflect_y * -0.006366818449876278} 1.737939750193092e-05"
+          rpy="0 0 0" />
+        <mass value="0.0687982302950686" />
+        <inertia ixx="4.5e-05" iyy="4.9e-05" izz="5e-05" ixy="${reflect_y * 7e-06}" iyz="0.0"
+          ixz="0.0" />
+      </inertial>
+      <visual>
+        <origin xyz="-0.039006 ${reflect_y * 0.053} -0.0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/shoulder_${prefix}_1.stl"
+            scale="0.001 0.001 0.001" />
+        </geometry>
+        <material name="silver" />
+      </visual>
+      <collision>
+        <origin xyz="-0.039006 ${reflect_y * 0.053} -0.0" rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/shoulder_${prefix}_1_c.stl"
+            scale="0.001 0.001 0.001" />
+        </geometry>
+      </collision>
+
+    </link>
+
+    <link name="arm_main_${name}_1">
+      <inertial>
+        <origin xyz="-0.004247618304285272 ${reflect_y *-0.014187952596475387} -0.04886253447598682"
+          rpy="0 0 0" />
+        <mass value="0.047281594844868054" />
+        <inertia ixx="7.8e-05" iyy="7.7e-05" izz="6e-06" ixy="-0.0" iyz="${reflect_y *-2e-06}"
+          ixz="2e-06" />
+      </inertial>
+      <visual>
+        <origin xyz="-0.118706 ${reflect_y *0.0875} -0.0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_main_${prefix}_1.stl"
+            scale="0.001 0.001 0.001" />
+        </geometry>
+        <material name="silver" />
+      </visual>
+      <collision>
+        <origin xyz="-0.118706 ${reflect_y *0.0875} -0.0" rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_main_${prefix}_1_c.stl"
+            scale="0.001 0.001 0.001" />
+        </geometry>
+      </collision>
+
+    </link>
+
+    <link name="arm_crank_${name}_1">
+      <inertial>
+        <origin xyz="0.01870365879895089 ${reflect_y *-0.01385715444565519} 9.569436468071744e-05"
+          rpy="0 0 0" />
+        <mass value="0.007002755420396213" />
+        <inertia ixx="0.0" iyy="2e-06" izz="2e-06" ixy="0.0" iyz="0.0" ixz="-0.0" />
+      </inertial>
+      <visual>
+        <origin xyz="-0.118706 ${reflect_y *0.0875} -0.0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_crank_${prefix}_1.stl"
+            scale="0.001 0.001 0.001" />
+        </geometry>
+        <material name="silver" />
+      </visual>
+      <!-- <collision>
+    <origin xyz="-0.118706 0.0875 -0.0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_crank_${prefix}_1.stl"
+      scale="0.001 0.001 0.001"/>
+    </geometry>
+    <surface>
+      <contact>
+        <collide_bitmask>0x02</collide_bitmask>
+      </contact>
+    </surface>
+  </collision> -->
+
+    </link>
+
+    <link name="arm_link_${name}_1">
+      <inertial>
+        <origin xyz="0.00114096544972489 ${reflect_y *-0.0013691619442786351} -0.05890529754921636"
+          rpy="0 0 0" />
+        <mass value="0.0331145638504204" />
+        <inertia ixx="4.4e-05" iyy="4.3e-05" izz="4e-06" ixy="-0.0" iyz="0.0" ixz="-1e-06" />
+      </inertial>
+      <visual>
+        <origin xyz="-0.153706 ${reflect_y *0.1026} -0.0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_link_${prefix}_1.stl"
+            scale="0.001 0.001 0.001" />
+        </geometry>
+        <material name="silver" />
+      </visual>
+      <!-- <collision>
+    <origin xyz="-0.153706 0.1026 -0.0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_link_${prefix}_1.stl"
+      scale="0.001 0.001 0.001"/>
+    </geometry>
+    <surface>
+      <contact>
+        <collide_bitmask>0x04</collide_bitmask>
+      </contact>
+    </surface>
+  </collision>
+   -->
+    </link>
+
+    <link name="arm_lower_${name}_1">
+      <inertial>
+        <origin xyz="0.06322127393693497 ${reflect_y *4.99720667845871e-07} -0.0019199942850988"
+          rpy="0 0 0" />
+        <mass value="0.03998924644154324" />
+        <inertia ixx="3e-06" iyy="6e-05" izz="5.9e-05" ixy="-0.0" iyz="0.0" ixz="-2e-06" />
+      </inertial>
+      <visual>
+        <origin xyz="-0.118702 ${reflect_y *0.1026} 0.119915" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_lower_${prefix}_1.stl"
+            scale="0.001 0.001 0.001" />
+        </geometry>
+        <material name="silver" />
+      </visual>
+      <collision>
+        <origin xyz="-0.118702 ${reflect_y *0.1026} 0.119915" rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_lower_${prefix}_1_c.stl"
+            scale="0.001 0.001 0.001" />
+        </geometry>
+        <surface>
+          <contact>
+            <collide_bitmask>0x08</collide_bitmask>
+          </contact>
+        </surface>
+      </collision>
+    </link>
+
+
+    <joint name="base_to_shoulder_${name}" type="continuous">
+      <origin xyz="${move_x} ${reflect_y * -0.053} 0.0" rpy="0 0 0" />
+      <parent link="base_link" />
+      <child link="shoulder_${name}_1" />
+      <axis xyz="1.0 -0.0 -0.0" />
+    </joint>
+
+    <joint name="shoulder_to_main_${name}" type="continuous">
+      <origin xyz="0.0797 ${reflect_y * -0.0345} 0.0" rpy="0 0 0" />
+      <parent link="shoulder_${name}_1" />
+      <child link="arm_main_${name}_1" />
+      <axis xyz="0.0 1.0 0.0" />
+    </joint>
+
+    <joint name="shoulder_to_crank_${name}" type="continuous">
+      <origin xyz="0.0797 ${reflect_y * -0.0345} 0.0" rpy="0 0 0" />
+      <parent link="shoulder_${name}_1" />
+      <child link="arm_crank_${name}_1" />
+      <axis xyz="0.0 1.0 0.0" />
+    </joint>
+
+    <joint name="crank_to_link_${name}" type="continuous">
+      <origin xyz="0.035 ${reflect_y * -0.0151} 0.0" rpy="0 0 0" />
+      <parent link="arm_crank_${name}_1" />
+      <child link="arm_link_${name}_1" />
+      <axis xyz="0.0 -1.0 0.0" />
+    </joint>
+
+    <joint name="main_to_lower_${name}" type="continuous">
+      <origin xyz="0.0 ${reflect_y * -0.0151} -0.12" rpy="0 0 0" />
+      <parent link="arm_main_${name}_1" />
+      <child link="arm_lower_${name}_1" />
+      <axis xyz="0.0 1.0 0.0" />
+    </joint>
+
+    <transmission name="main_trans_${name}">
+      <type>transmission_interface/DifferenceTransmission</type>
+      <actuator name="main_motor_${name}">
+        <role>actuator1</role>
+        <mechanicalReduction>1.5</mechanicalReduction>
+      </actuator>
+      <actuator name="shoulder_motor_${name}">
+        <role>actuator2</role>
+        <mechanicalReduction>2.25</mechanicalReduction>
+      </actuator>
+    </transmission>
+
+    <transmission name="crank_trans_${name}">
+      <type>transmission_interface/DifferenceTransmission</type>
+      <actuator name="crank_motor_${name}">
+        <role>actuator1</role>
+        <mechanicalReduction>1.5</mechanicalReduction>
+      </actuator>
+      <actuator name="shoulder_motor_${name}">
+        <role>actuator2</role>
+        <mechanicalReduction>2.25</mechanicalReduction>
+      </actuator>
+    </transmission>
+
+    <transmission name="crank_trans_${name}">
+      <type>transmission_interface/SimpleTransmission</type>
+      <actuator name="shoulder_motor_${name}">
+        <mechanicalReduction>1.5</mechanicalReduction>
+      </actuator>
+    </transmission>
+
+    <gazebo>
+      <joint name="link_to_lower_${name}" type="ball">
+        <parent>arm_link_${name}_1</parent>
+        <child>arm_lower_${name}_1</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+        </axis>
+        <pose relative_to="arm_link_${name}_1">0.0 0.0 -0.12 0.0 0.0 0.0</pose>
+      </joint>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:leg name="RF" prefix="RF" move_x="0.039006" reflect_y="1"/>
+  <xacro:leg name="LF" prefix="LF" move_x="0.039006" reflect_y="-1"/>
+  <xacro:leg name="RB" prefix="RF" move_x="-0.195006" reflect_y="1"/>
+  <xacro:leg name="LB" prefix="LF" move_x="-0.195006" reflect_y="-1"/>
+
+
+  <joint name="base_to_drives" type="fixed">
+    <origin xyz="0.039505 0.0 0.018083" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="drives_1" />
+  </joint>
+
+</robot>

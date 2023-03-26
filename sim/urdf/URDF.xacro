@@ -1,0 +1,256 @@
+<?xml version="1.0"?>
+<robot name="URDF" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find URDF_description)/urdf/materials.xacro" />
+  <xacro:include filename="$(find URDF_description)/urdf/URDF.trans" />
+  <xacro:include filename="$(find URDF_description)/urdf/URDF.gazebo" />
+  
+  <link name="base_link2"></link>
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0.00014024235087096401 -0.0003890538127367371 -0.019060892954127925" rpy="0 0 0" />
+      <mass value="4.163138649904727" />
+      <inertia ixx="0.008554" iyy="0.048357" izz="0.051437" ixy="3.2e-05" iyz="1.3e-05"
+        ixz="-0.000175" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/base_link.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/base_link.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="shoulder_RF_1">
+    <inertial>
+      <origin xyz="0.07305887126794519 -0.006366818449876278 1.737939750193092e-05" rpy="0 0 0" />
+      <mass value="0.0687982302950686" />
+      <inertia ixx="4.5e-05" iyy="4.9e-05" izz="5e-05" ixy="7e-06" iyz="0.0" ixz="0.0" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.039006 0.053 -0.0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/shoulder_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin xyz="-0.039006 0.053 -0.0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/shoulder_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="arm_foot_RF_1">
+    <inertial>
+      <origin xyz="-0.212706 0.1026 0.120174" rpy="0 0 0" />
+      <mass value="0.0" />
+      <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.212706 0.1026 0.120174" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_foot_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin xyz="-0.212706 0.1026 0.120174" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_foot_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="arm_main_anchor_RF" />
+
+  <link name="arm_main_RF_1">
+    <inertial>
+      <origin xyz="-0.004247618304285272 -0.014187952596475387 -0.04886253447598682" rpy="0 0 0" />
+      <mass value="0.3501514335209568" />
+      <inertia ixx="0.000581" iyy="0.000569" izz="4.3e-05" ixy="-3e-06" iyz="-1.6e-05" ixz="1.3e-05" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.118706 0.0875 -0.0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_main_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin xyz="-0.118706 0.0875 -0.0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_main_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="arm_crank_anchor_RF" />
+
+  <link name="arm_crank_RF_1">
+    <inertial>
+      <origin xyz="0.01870365879895089 -0.01385715444565519 9.569436468071744e-05" rpy="0 0 0" />
+      <mass value="0.05186002834916063" />
+      <inertia ixx="2e-06" iyy="1.2e-05" izz="1.2e-05" ixy="1e-06" iyz="0.0" ixz="-0.0" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.118706 0.0875 -0.0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_crank_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin xyz="-0.118706 0.0875 -0.0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_crank_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="arm_link_RF_1">
+    <inertial>
+      <origin xyz="0.00114096544972489 -0.0013691619442786351 -0.05890529754921636" rpy="0 0 0" />
+      <mass value="0.24523521342056617" />
+      <inertia ixx="0.000328" iyy="0.000316" izz="2.6e-05" ixy="-1e-06" iyz="3e-06" ixz="-4e-06" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.153706 0.1026 -0.0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_link_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin xyz="-0.153706 0.1026 -0.0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_link_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="arm_lower_intm_RF"/>
+
+  <link name="arm_link_intm_RF"/>
+
+  <link name="arm_lower_RF_1">
+    <inertial>
+      <origin xyz="0.06322127393693497 4.99720667845871e-07 -0.0019199942850988" rpy="0 0 0" />
+      <mass value="0.2961467778925608" />
+      <inertia ixx="2.5e-05" iyy="0.000442" izz="0.000434" ixy="-0.0" iyz="0.0" ixz="-1.6e-05" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.118702 0.1026 0.119915" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_lower_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin xyz="-0.118702 0.1026 0.119915" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://URDF_description/meshes/arm_lower_RF_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="link_to_link" type="fixed">
+    <parent link="base_link_2" />
+    <child link="base_link" />
+  </joint>
+
+  <joint name="base_to_shoulder_RF" type="continuous">
+    <origin xyz="0.039006 -0.053 0.0" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="shoulder_RF_1" />
+    <axis xyz="1.0 -0.0 -0.0" />
+  </joint>
+
+  <joint name="lower_to_foot_RF" type="fixed">
+    <origin xyz="0.094004 0.0 0.0" rpy="0 0 0" />
+    <parent link="arm_lower_RF_1" />
+    <child link="arm_foot_RF_1" />
+  </joint>
+
+  <joint name="shoulder_to_main_anchor_RF" type="continuous">
+    <origin xyz="0.0797 -0.0345 0.0" rpy="0 0 0" />
+    <parent link="shoulder_RF_1" />
+    <child link="arm_main_anchor_RF" />
+    <axis xyz="0.0 1.0 0.0" />
+    <mimic joint="base_to_shoulder_RF" multiplier="0.75" />
+  </joint>
+
+  <joint name="main_anchor_to_main_RF" type="continuous">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+    <parent link="arm_main_anchor_RF" />
+    <child link="arm_main_RF_1" />
+    <axis xyz="0.0 1.0 0.0" />
+  </joint>
+
+  <joint name="shoulder_to_crank_anchor_RF" type="continuous">
+    <origin xyz="0.0797 -0.0345 0.0" rpy="0 0 0" />
+    <parent link="shoulder_RF_1" />
+    <child link="arm_crank_anchor_RF" />
+    <axis xyz="0.0 1.0 0.0" />
+    <mimic joint="base_to_shoulder_RF" multiplier="-0.75" />
+  </joint>
+
+  <joint name="crank_anchor_to_crank_RF" type="continuous">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+    <parent link="arm_crank_anchor_RF" />
+    <child link="arm_crank_RF_1" />
+    <axis xyz="0.0 1.0 0.0" />
+  </joint>
+
+  <joint name="crank_to_link_intm_RF" type="continuous">
+    <origin xyz="0.035 -0.0156 0.0" rpy="0 0 0" />
+    <parent link="arm_crank_RF_1" />
+    <child link="arm_link_intm_RF" />
+    <axis xyz="0.0 -1.0 0.0" />
+    <mimic joint="main_anchor_to_main_RF" multiplier="-1.0"/>
+  </joint>
+
+  <joint name="link_intm_to_link_RF" type="continuous">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+    <parent link="arm_link_intm_RF" />
+    <child link="arm_link_RF_1" />
+    <axis xyz="0.0 -1.0 0.0" />
+    <mimic joint="crank_anchor_to_crank_RF" multiplier="1.0"/>
+  </joint>
+
+  <joint name="main_to_lower_intm_RF" type="continuous">
+    <origin xyz="-0.000011 -0.0151 -0.12" rpy="0 0 0" />
+    <parent link="arm_main_RF_1" />
+    <child link="arm_lower_intm_RF" />
+    <axis xyz="0.0 1.0 0.0" />
+    <mimic joint="main_anchor_to_main_RF" multiplier="-1.0"/>
+  </joint>
+
+  <joint name="lower_intm_to_lower_RF" type="continuous">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+    <parent link="arm_lower_intm_RF" />
+    <child link="arm_lower_RF_1" />
+    <axis xyz="0.0 1.0 0.0" />
+    <mimic joint="crank_anchor_to_crank_RF"/>
+  </joint>
+</robot>

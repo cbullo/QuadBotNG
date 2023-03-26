@@ -2,6 +2,8 @@
 controllers:
   controller_FR:
     controller_address: "/dev/ardu2"
+  controller_FL:
+    controller_address: "/dev/ardu3"
   controller_FZ:
     controller_address: "/dev/ardu1"
 
