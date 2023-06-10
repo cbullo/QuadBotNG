@@ -133,13 +133,18 @@ class ThetaGammaScheme : public JoystickControlScheme {
       return;
     }
 
-    if (Pressed(state, joystick_event, JoystickButtonIds::Cross)) {
+    if (Pressed(state, joystick_event, JoystickButtonIds::HatRight)) {
+      events.push_back({EventId::kControlEventNextItem, 0.f});
+    } else if (Pressed(state, joystick_event, JoystickButtonIds::HatLeft)) {
+      events.push_back({EventId::kControlEventPreviousItem, 0.f});
+    } else if (Pressed(state, joystick_event, JoystickButtonIds::Cross)) {
       events.push_back({EventId::kControlEventConfirm, 0.f});
     }
 
     if (IsAxisEvent(joystick_event, JoystickAxisIds::LeftStickHorz) ||
         IsAxisEvent(joystick_event, JoystickAxisIds::LeftStickVert) ||
-        IsAxisEvent(joystick_event, JoystickAxisIds::RightStickHorz)) {
+        IsAxisEvent(joystick_event, JoystickAxisIds::RightStickHorz) ||
+        IsAxisEvent(joystick_event, JoystickAxisIds::RightStickVert)) {
       float x =
           GetAxisValue(state, joystick_event, JoystickAxisIds::LeftStickHorz);
       float y =
@@ -147,21 +152,29 @@ class ThetaGammaScheme : public JoystickControlScheme {
       float z =
           GetAxisValue(state, joystick_event, JoystickAxisIds::RightStickHorz);
 
+      float l =
+          GetAxisValue(state, joystick_event, JoystickAxisIds::RightStickVert);
+
       x /= 32767.f;
       y /= 32767.f;
       z /= 32767.f;
+      l /= 32767.f;
 
       float length = sqrtf(x * x + y * y);
       if (length > 0.1f) {
+        // if (length > 1.f) {
+        //   length = 1.f;
+        // }
 
-        if (length > 1.f) {
-          length = 1.f;
-        }
-
-        float angle = atan2f(y, x);
-        events.push_back({EventId::kControlEventLegTheta, -angle});
-        events.push_back({EventId::kControlEventLegGamma, 2.5f * length});
+        float angle = atan2f(-y, x);
+        events.push_back({EventId::kControlEventLegTheta, angle});
+        // events.push_back({EventId::kControlEventLegGamma, 0.5f * length});
+      }
+      if (fabs(z) > 0.1f) {
         events.push_back({EventId::kControlEventLegTilt, z});
+      }
+      if (fabs(l) > 0.05f) {
+        events.push_back({EventId::kControlEventLegGamma, l});
       }
     }
   }
@@ -189,6 +202,14 @@ class CalibrationScheme : public JoystickControlScheme {
       events.push_back({EventId::kControlEventPreviousItem, 0.f});
     } else if (Pressed(state, joystick_event, JoystickButtonIds::Cross)) {
       events.push_back({EventId::kControlEventConfirm, 0.f});
+    }
+
+    if (IsAxisEvent(joystick_event, JoystickAxisIds::RightStickHorz)) {
+      float z =
+          GetAxisValue(state, joystick_event, JoystickAxisIds::RightStickHorz);
+
+      z /= 32767.f;
+      events.push_back({EventId::kControlEventLegTilt, z});
     }
 
     // std::cout << "Calibration scheme 3" << std::endl;

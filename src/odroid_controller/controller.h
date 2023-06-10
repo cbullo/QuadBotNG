@@ -6,7 +6,8 @@
 
 #include "event_factory.h"
 #include "leg.h"
-#include "leg_control.h"
+// #include "leg_control.h"
+#include "leg_controls.h"
 
 class Controller;
 
@@ -36,7 +37,9 @@ class Behavior : public EventNode {
   void SetController(Controller* controller) { controller_ = controller; };
 
   void SetNextBehavior(Behavior* next) { next_behavior_ = next; };
-  void SetPreviousBehavior(Behavior* previous) { previous_behavior_ = previous; };
+  void SetPreviousBehavior(Behavior* previous) {
+    previous_behavior_ = previous;
+  };
 
  protected:
   inline Controller* GetController() const { return controller_; }
@@ -69,31 +72,6 @@ class EStoppedBehavior : public Behavior {
   void ProcessInputEvents(const std::deque<ControlEvent>& events) override;
 };
 
-class ThetaGammaZLegControl : public LegControl {
- public:
-  bool Process(Leg& leg, float dt) override;
-
-  void SetThetaSetpoint(float theta) { state_.theta_setpoint = theta; }
-  void SetGammaSetpoint(float gamma) { state_.gamma_setpoint = gamma; }
-  void SetZSetpoint(float z) { state_.z_setpoint = z; }
-
- private:
-  struct State {
-    float theta_setpoint = 0.0;
-    float gamma_setpoint = 0.0;
-    float z_setpoint = 0.0;
-
-    float prev_theta_error = 0.0;
-    float prev_gamma_error = 0.0;
-    float prev_z_error = 0.0;
-    float i_theta_sum = 0.0;
-    float i_gamma_sum = 0.0;
-    float i_z_sum = 0.0;
-  };
-  State state_;
-
-  float delay_ = -0.01f;
-};
 
 class LegTestingBehavior : public Behavior {
  public:
@@ -101,6 +79,7 @@ class LegTestingBehavior : public Behavior {
   // void Start(Legs& legs) override;
   // void Update(Legs& legs, float dt) override;
 
+  void Activate() override;
   void ProcessInputEvents(const std::deque<ControlEvent>& events) override;
 
  private:
@@ -115,45 +94,6 @@ class LegTestingBehavior : public Behavior {
   // ThetaGammaScheme joystick_scheme_;
 };
 
-class CalibrationLegControl : public LegControl {
- public:
-  enum CalibrationMode {
-    LinearizationReading,
-    LinearizationValidation,
-    ElectricZero
-  };
-
-  bool Process(Leg& leg, float dt) override;
-
-  CalibrationMode GetCalibrationMode() const { return calibration_mode_; }
-  void SetCalibrationMode(CalibrationMode mode);
-  void SetMotorIndex(int index);
-  void SendSetupData(Leg& leg);
-  void SetRunning(bool running) {
-    std::cout << "Set running: " << running << std::endl;
-    running_ = running;
-    step_ = 0;
-    next_read_delta_ = -0.1f;
-    // if (running_ && calibration_mode_ == CalibrationMode::ElectricZero) {
-    //   std::cout << "Delta set" << std::endl;
-    //   next_read_delta_ = 1.5f;
-    // }
-  }
-  bool IsRunning() const { return running_; }
-
-  int GetStep() const { return step_; }
-  void SetStep(int step) { step_ = step; }
-
-  uint16_t raw_angle_ = 0;
- private:
-  Motor* GetMotor(Leg& leg, int index) const;
-  CalibrationMode calibration_mode_ = CalibrationMode::LinearizationReading;
-  int motor_index_ = 0;
-  bool running_ = false;
-  int step_ = 0;
-  float next_read_delta_ = 0.f;
-  int zero_angle_ = 0;
-};
 
 class MotorTestingBehavior : public Behavior {
  public:
@@ -190,7 +130,7 @@ class MotorTestingBehavior : public Behavior {
 
 class Controller {
  public:
-  Controller(const Legs& legs, const std::vector<BLDCDriverBoard*>& controllers,
+  Controller(const Legs& legs, const std::vector<ControllerType*>& controllers,
              std::shared_ptr<StoppedBehavior> stopped_behavior,
              std::shared_ptr<EStoppedBehavior> estopped_behavior);
 
@@ -200,12 +140,10 @@ class Controller {
   inline const Legs& GetLegs() const { return legs_; }
   inline Legs& GetLegs() { return legs_; }
 
-  inline const std::vector<BLDCDriverBoard*>& GetControllers() const {
+  inline const std::vector<ControllerType*>& GetControllers() const {
     return controllers_;
   }
-  inline std::vector<BLDCDriverBoard*>& GetControllers() {
-    return controllers_;
-  }
+  inline std::vector<ControllerType*>& GetControllers() { return controllers_; }
 
   // void SetMode(ControllerMode new_mode);
 
@@ -236,7 +174,7 @@ class Controller {
   void DistributeEvents(const std::deque<ControlEvent>& events);
 
   Legs legs_;
-  std::vector<BLDCDriverBoard*> controllers_;
+  std::vector<ControllerType*> controllers_;
   // Behavior* current_behavior_ = {};
   //  std::vector<std::shared_ptr<EventFactory>> control_sources_ = {};
 

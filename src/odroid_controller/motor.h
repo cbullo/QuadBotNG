@@ -5,14 +5,22 @@
 #include <vector>
 
 #include "angle.h"
+
+#if QUADBOT_SIMULATOR
+#include "gazebo_driver.h"
+using ControllerType = GazeboDriver;
+#else
 #include "bldc_driver_board.h"
+using ControllerType = BLDCDriverBoard;
+#endif
+
 
 class Motor {
  public:
   static constexpr double kAS5600ToRadians = M_PI / 2048.0;
   static constexpr double kRadiansToAS5600 = 2048.0 / M_PI;
 
-  Motor(BLDCDriverBoard* controller, int motor_index);
+  Motor(ControllerType* controller, int motor_index);
   void UpdateConfig(const YAML::Node& config);
   uint16_t GetRawAngle() const { return raw_angle_; }
 
@@ -26,7 +34,7 @@ class Motor {
   double GetGearRatio() const { return gear_ratio_; }
   int GetIndex() const { return motor_index_; }
 
-  BLDCDriverBoard* GetController() const { return controller_; }
+  ControllerType* GetController() const { return controller_; }
 
   void SetName(const std::string& name) { name_ = name; }
   std::string GetName() const { return name_; }
@@ -44,11 +52,12 @@ class Motor {
   uint8_t sensor_linearization_offset_ = 0;
   std::vector<uint8_t> sensor_linearization_coeffs_;
   int electric_zero_angle_ = 0.0;
+  uint8_t swap_wires_ = 0;
 
  private:
   void UpdateAngle(uint16_t new_angle);
 
-  BLDCDriverBoard* controller_;
+  ControllerType* controller_;
   int motor_index_;
 
   uint16_t raw_angle_ = 0.0;

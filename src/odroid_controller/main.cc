@@ -10,7 +10,12 @@
 #include <unordered_map>
 #include <vector>
 
+#if QUADBOT_SIMULATOR
+#include "gazebo_driver.h"
+#else
 #include "bldc_driver_board.h"
+#endif
+
 #include "controller.h"
 #include "joystick_input.h"
 #include "leg.h"
@@ -21,7 +26,13 @@ bool stopped = true;
 bool select_pressed = false;
 bool start_pressed = false;
 
-std::vector<BLDCDriverBoard*> controllers;
+#ifdef QUADBOT_SIMULATOR
+using ControllerType = GazeboDriver;
+#else
+using ControllerType = BLDCDriverBoard;
+#endif
+
+std::vector<ControllerType*> controllers;
 std::vector<Motor*> motors;
 std::vector<Leg*> legs;
 // std::unique_ptr<Controller> main_controller;
@@ -58,12 +69,12 @@ void Stop() {
 
 void ReadControllers(
     const YAML::Node& config,
-    std::unordered_map<std::string, BLDCDriverBoard*>& controllers) {
+    std::unordered_map<std::string, ControllerType*>& controllers) {
   const YAML::Node& controllers_yaml = config["controllers"];
   for (auto& controller_yaml : controllers_yaml) {
     auto name = controller_yaml.first.as<std::string>();
     std::cout << "Reading " << name << std::endl;
-    auto controller = new BLDCDriverBoard();
+    auto controller = new ControllerType();
     controller->SetName(name);
     controller->UpdateConfig(controller_yaml.second);
     controllers[name] = controller;
@@ -72,7 +83,7 @@ void ReadControllers(
 
 void ReadMotors(
     const YAML::Node& config,
-    const std::unordered_map<std::string, BLDCDriverBoard*>& controllers,
+    const std::unordered_map<std::string, ControllerType*>& controllers,
     std::unordered_map<std::string, Motor*>& motors) {
   const YAML::Node& motors_yaml = config["motors"];
   for (auto& motor_yaml : motors_yaml) {
@@ -97,15 +108,27 @@ void ReadLegs(const YAML::Node& config,
   for (auto& leg_yaml : legs_yaml) {
     auto name = leg_yaml.first.as<std::string>();
 
-    auto motor_I_name = leg_yaml.second["motor_I"].as<std::string>();
-    auto motor_O_name = leg_yaml.second["motor_O"].as<std::string>();
-    auto motor_Z_name = leg_yaml.second["motor_Z"].as<std::string>();
+    Motor* m_i = nullptr;
+    Motor* m_o = nullptr;
+    Motor* m_z = nullptr;
 
-    auto m_i = motors.at(motor_I_name);
-    auto m_o = motors.at(motor_O_name);
-    auto m_z = motors.at(motor_Z_name);
+    if (YAML::Node motor_node = leg_yaml.second["motor_I"]) {
+      auto motor_I_name = motor_node.as<std::string>();
+      m_i = motors.at(motor_I_name);
+    }
+
+    if (YAML::Node motor_node = leg_yaml.second["motor_O"]) {
+      auto motor_O_name = motor_node.as<std::string>();
+      m_o = motors.at(motor_O_name);
+    }
+
+    if (YAML::Node motor_node = leg_yaml.second["motor_Z"]) {
+      auto motor_Z_name = motor_node.as<std::string>();
+      m_z = motors.at(motor_Z_name);
+    }
 
     auto leg = new Leg(m_i, m_o, m_z);
+    leg->SetName(name);
     leg->UpdateConfig(leg_yaml.second);
     legs[name] = leg;
   }
@@ -195,6 +218,9 @@ Controller SetupController() {
                                    EventId::kControlEventPreviousItem);
   main_controller.SubscribeToEvent(motor_testing_behavior.get(),
                                    EventId::kControlEventConfirm);
+  main_controller.SubscribeToEvent(motor_testing_behavior.get(),
+                                   EventId::kControlEventLegTilt);
+
 
   stopped_behavior->SetPreviousBehavior(motor_testing_behavior.get());
   stopped_behavior->Activate();
@@ -208,7 +234,7 @@ int main() {
 
   YAML::Node config = YAML::LoadFile("config/robot_config.yaml");
 
-  std::unordered_map<std::string, BLDCDriverBoard*> controllers_map;
+  std::unordered_map<std::string, ControllerType*> controllers_map;
   std::unordered_map<std::string, Motor*> motors_map;
   std::unordered_map<std::string, Leg*> legs_map;
 

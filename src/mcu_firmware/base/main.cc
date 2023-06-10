@@ -81,14 +81,17 @@ void MainInitialize() {
   Initialize();
 }
 
-uint8_t temperature[2] = {20, 20};
+uint16_t temperature[2] = {20 << 8, 20 << 8};
 void CheckTemperature(bool first) {
   uint8_t index = first ? 0 : 1;
   int reading = analog_reader.GetADCReading(index);
 
-  temperature[index] = ComputeTemperature(reading);
-
-  if (temperature[index] > 55) {
+  uint16_t temp_reading = ComputeTemperature(reading) << 8;
+  uint16_t temp_8 = temperature[index] >> 3;
+  temperature[index] -= temp_8;
+  temperature[index] += temp_reading >> 3;
+  
+  if (temperature[index] > (55 << 8) ) {
     // Serial.print(F("temperature: "));
     // Serial.println(temperature[index]);
     // Serial.println(F("OVERHEAT DETECTED! RESETTING!"));
@@ -100,7 +103,7 @@ void CheckTemperature(bool first) {
 
 void serialEventRun(){};
 
-#define TEMP_CHECK_PERIOD 1000;  // ms
+#define TEMP_CHECK_PERIOD 100;  // ms
 void MainCritical() {
   if (millis() >= next_temperature_read) {
     // Add all safety/hardware failure critical functions here

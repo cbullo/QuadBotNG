@@ -348,11 +348,9 @@ void integerSinFOC(int16_t U, int16_t angle_el, int32_t &Ua, int32_t &Ub,
 int16_t electricalAngle(uint16_t a) {
   // if no sensor linked return previous value ( for open loop )
 
-
   int32_t pos = a;
 
-  return normalizeAngle(
-      (7) * pos - 0, 4096);
+  return normalizeAngle((7) * pos - 0, 4096);
 
   // int32_t pos = a;
 
@@ -372,107 +370,127 @@ int16_t electricalAngle(uint16_t a) {
 #define N_SIN_3 1365
 #define N_SIN_2_3 2731
 
-void integerSinFOC2(int16_t U, int16_t angle_el, int32_t &Ua, int32_t &Ub,
-                   int32_t &Uc) {
+void integerSinFOC2(int16_t U, uint16_t angle_el, int32_t &Ua, int32_t &Ub,
+                    int32_t &Uc) {
   int32_t pwm_a;
   int32_t pwm_b;
   int32_t pwm_c;
-
-  int16_t offset = N_SIN_4;
-  if (U < 0) {
-    offset = -offset;
-  }
-  angle_el = normalizeAngle(-angle_el, N_SIN);
-  angle_el = normalizeAngle(angle_el + offset, N_SIN);
 
   pwm_a = sin15(angle_el << 3);
   pwm_b = sin15(normalizeAngle(angle_el + N_SIN_3, N_SIN) << 3);
   pwm_c = sin15(normalizeAngle(angle_el + N_SIN_2_3, N_SIN) << 3);
 
-  int16_t power = abs(U);
-  int32_t center = (12 * 512) / 2;
+  uint16_t power = abs(U);
+  int32_t max_voltage = (12 * (1 << 9)); 
+  int32_t center = max_voltage / 2 - 1;
 
   // apply power factor
   pwm_a = power * pwm_a;
-  pwm_a = pwm_a >> 9;
+  pwm_a = pwm_a >> 10;
   pwm_a += center;
 
   pwm_b = power * pwm_b;
-  pwm_b = pwm_b >> 9;
+  pwm_b = pwm_b >> 10;
   pwm_b += center;
 
   pwm_c = power * pwm_c;
-  pwm_c = pwm_c >> 9;
+  pwm_c = pwm_c >> 10;
   pwm_c += center;
 
-  Ua = pwm_a;
-  Ub = pwm_b;
-  Uc = pwm_c;
+  // pwm_a = std::max(0, std::min(pwm_a, 12 * 512));
+  // pwm_b = std::max(0, std::min(pwm_b, 12 * 512));
+  // pwm_c = std::max(0, std::min(pwm_c, 12 * 512));
+
+  // uint16_t vps = 8 * 512;
+  // vps >>= 9;
+
+  //uint16_t uua = pwm_a;
+  //uint16_t uub = pwm_b;
+  //uint16_t uuc = pwm_c;
+
+  Ua = pwm_a / (2 * (max_voltage >> 9));
+  Ub = pwm_b / (2 * (max_voltage >> 9));
+  Uc = pwm_c / (2 * (max_voltage >> 9));
 }
 
 int main() {
   std::ofstream fout("output.txt");
 
   for (int i = 0; i < 4096; ++i) {
-    float angle_f = 2.0 * M_PI * (i / 4096.0);
-    int16_t elec_angle = electricalAngle(i);
-    float elec_angle_f = 2.0 * M_PI * (elec_angle / 4096.0);
-    // std::cout << "Angle: " << i << " / " << angle_f << " / " << elec_angle
-    //           << " / " << elec_angle_f << std::endl;
-    // std::cout << "Elec. angle: " << elec_angle << std::endl;
+    //   float angle_f = 2.0 * M_PI * (i / 4096.0);
+    // int16_t elec_angle = electricalAngle(i);
+    int16_t elec_angle = i;
+    //   float elec_angle_f = 2.0 * M_PI * (elec_angle / 4096.0);
+    //   // std::cout << "Angle: " << i << " / " << angle_f << " / " <<
+    //   elec_angle
+    //   //           << " / " << elec_angle_f << std::endl;
+    //   // std::cout << "Elec. angle: " << elec_angle << std::endl;
 
-    float Ua_f;
-    float Ub_f;
-    float Uc_f;
+    //   float Ua_f;
+    //   float Ub_f;
+    //   float Uc_f;
 
-    floatSinFOC(6.0, elec_angle_f, Ua_f, Ub_f, Uc_f);
-    // std::cout << "Us float: " << Ua_f << " " << Ub_f << " " << Uc_f
-    //           << std::endl;
+    //   floatSinFOC(6.0, elec_angle_f, Ua_f, Ub_f, Uc_f);
+    //   // std::cout << "Us float: " << Ua_f << " " << Ub_f << " " << Uc_f
+    //   //           << std::endl;
 
-    Ua_f = _constrain(Ua_f, 0.0f, 12.f);
-    Ub_f = _constrain(Ub_f, 0.0f, 12.f);
-    Uc_f = _constrain(Uc_f, 0.0f, 12.f);
-    // calculate duty cycle
-    // limited in [0,1]
-    float dc_a_f = _constrain(Ua_f / 12.f, 0.0f, 1.0f);
-    float dc_b_f = _constrain(Ub_f / 12.f, 0.0f, 1.0f);
-    float dc_c_f = _constrain(Uc_f / 12.f, 0.0f, 1.0f);
+    //   Ua_f = _constrain(Ua_f, 0.0f, 12.f);
+    //   Ub_f = _constrain(Ub_f, 0.0f, 12.f);
+    //   Uc_f = _constrain(Uc_f, 0.0f, 12.f);
+    //   // calculate duty cycle
+    //   // limited in [0,1]
+    //   float dc_a_f = _constrain(Ua_f / 12.f, 0.0f, 1.0f);
+    //   float dc_b_f = _constrain(Ub_f / 12.f, 0.0f, 1.0f);
+    //   float dc_c_f = _constrain(Uc_f / 12.f, 0.0f, 1.0f);
 
-    // std::cout << "Dc float: " << dc_a_f * 255.0<< " " << dc_b_f * 255.0<< " "
-    // << dc_c_f * 255.0
-    //           << std::endl;
+    //   // std::cout << "Dc float: " << dc_a_f * 255.0<< " " << dc_b_f *
+    //   255.0<< " "
+    //   // << dc_c_f * 255.0
+    //   //           << std::endl;
 
     int32_t Ua;
     int32_t Ub;
     int32_t Uc;
 
-    int32_t vl = 12 * 512 - 1;
+    //   int32_t vl = 12 * 512 - 1;
 
-    //integerSinFOC(6 * (1 << 9), elec_angle, Ua, Ub, Uc);
+    //   //integerSinFOC(6 * (1 << 9), elec_angle, Ua, Ub, Uc);
 
-    integerSinFOC2(6 * (1 << 9), elec_angle, Ua, Ub, Uc);
+    // integerSinFOC2(5 * (1 << 9), elec_angle, Ua, Ub, Uc);
 
-    Ua = std::max((int32_t)0, std::min(Ua, vl));
-    Ub = std::max((int32_t)0, std::min(Ub, vl));
-    Uc = std::max((int32_t)0, std::min(Uc, vl));
+    //   Ua = std::max((int32_t)0, std::min(Ua, vl));
+    //   Ub = std::max((int32_t)0, std::min(Ub, vl));
+    //   Uc = std::max((int32_t)0, std::min(Uc, vl));
 
-    uint16_t vps = 12 * 512;
-    vps >>= 8;
+    //   uint16_t vps = 12 * 512;
+    //   vps >>= 8;
 
-    uint16_t uua = Ua;
-    uint16_t uub = Ub;
-    uint16_t uuc = Uc;
+    //   uint16_t uua = Ua;
+    //   uint16_t uub = Ub;
+    //   uint16_t uuc = Uc;
 
-    uint8_t dc_a = uua / vps;
-    uint8_t dc_b = uub / vps;
-    uint8_t dc_c = uuc / vps;
+    //   uint8_t dc_a = uua / vps;
+    //   uint8_t dc_b = uub / vps;
+    //   uint8_t dc_c = uuc / vps;
 
-    // std::cout << "Us integer: " << (float)Ua / (float)(1 << 9) << " "
-    //           << (float)Ub / (float)(1 << 9) << " "
-    //           << (float)Uc / (float)(1 << 9) << std::endl;
-    fout << (int)dc_a << " " << (int)dc_b << " " << (int)dc_c << std::endl;
+    //   // std::cout << "Us integer: " << (float)Ua / (float)(1 << 9) << " "
+    //   //           << (float)Ub / (float)(1 << 9) << " "
+    //   //           << (float)Uc / (float)(1 << 9) << std::endl;
+    //   fout << (int)dc_a << " " << (int)dc_b << " " << (int)dc_c << std::endl;
 
-    //   std::cout << std::endl;
+    //   //   std::cout << std::endl;
+    // }
+
+    int16_t offset = N_SIN_4;
+    uint16_t angle_to_set = normalizeAngle(i + offset, N_SIN);
+    integerSinFOC2(8 * (1 << 9), angle_to_set, Ua, Ub, Uc);
+
+    uint16_t angle_corrected =
+      static_cast<uint16_t>(4095 + 2) & (0xFFF);
+
+    std::cout << angle_corrected << std::endl;
+
+    fout << i << " " << Ua << " " << Ub << " " << Uc << std ::endl;
   }
   return 0;
 }

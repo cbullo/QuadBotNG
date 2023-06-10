@@ -2,7 +2,7 @@
 
 #include "angle.h"
 
-Motor::Motor(BLDCDriverBoard* controller, int motor_index) {
+Motor::Motor(ControllerType* controller, int motor_index) {
   controller_ = controller;
   motor_index_ = motor_index;
 }
@@ -15,6 +15,7 @@ void Motor::UpdateConfig(const YAML::Node& config) {
   sensor_linearization_coeffs_ =
       config["linearization_coeffs"].as<std::vector<uint8_t>>();
   electric_zero_angle_ = config["electric_zero_offset"].as<int>();
+  swap_wires_ = config["swap_wires"].as<uint8_t>();
 }
 
 void Motor::Update() {
@@ -31,7 +32,7 @@ void Motor::UpdateAngle(uint16_t new_angle) {
     zero_angle_ = offset_angle_;
     first_update = false;
     raw_angle_ = new_angle;
-    std::cout << "Zero angle set: " << zero_angle_ << std::endl;
+    // std::cout << "Zero angle set: " << zero_angle_ << std::endl;
     // std::cout << "Accumulated angle: " << GetAccumulatedAngle() << std::endl;
     return;
   }

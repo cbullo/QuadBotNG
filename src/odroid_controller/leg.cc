@@ -27,7 +27,16 @@ void Leg::UpdateConfig(const YAML::Node& config) {
   z_pd_config.p = config["z_p"].as<double>();
   z_pd_config.i = config["z_i"].as<double>();
   z_pd_config.d = config["z_d"].as<double>();
+
+  min_z = config["min_z"].as<double>();
+  max_z = config["max_z"].as<double>();
+  min_gamma = config["min_gamma"].as<double>();
+  max_gamma = config["max_gamma"].as<double>();
+  zero_theta_offset = config["zero_theta_offset"].as<double>();
+  init_safe_z = config["init_safe_z"].as<double>();
+  init_ref_theta = config["init_ref_theta"].as<double>();
 }
+
 
 void Leg::UpdateControl(float dt) {
   // auto now = std::chrono::system_clock::now().time_since_epoch();
@@ -43,14 +52,16 @@ void Leg::UpdateControl(float dt) {
   // auto dt = elapsed.count();
   if (active_control_) {
     if (active_control_->Process(*this, dt)) {
-      
     } else {
       // GetMotorI()->GetController()->SendSetCommand(
-      //     GetMotorI()->GetIndex(), CMD_MOTOR_VOLTAGE, static_cast<int16_t>(0));
+      //     GetMotorI()->GetIndex(), CMD_MOTOR_VOLTAGE,
+      //     static_cast<int16_t>(0));
       // GetMotorO()->GetController()->SendSetCommand(
-      //     GetMotorO()->GetIndex(), CMD_MOTOR_VOLTAGE, static_cast<int16_t>(0));
+      //     GetMotorO()->GetIndex(), CMD_MOTOR_VOLTAGE,
+      //     static_cast<int16_t>(0));
       // GetMotorZ()->GetController()->SendSetCommand(
-      //     GetMotorZ()->GetIndex(), CMD_MOTOR_VOLTAGE, static_cast<int16_t>(0));
+      //     GetMotorZ()->GetIndex(), CMD_MOTOR_VOLTAGE,
+      //     static_cast<int16_t>(0));
     }
   }
 

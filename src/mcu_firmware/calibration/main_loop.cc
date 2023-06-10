@@ -67,7 +67,7 @@ const int samples_margin = 0;
 int16_t current_sample = 0;
 int test_direction = 1;
 
-extern uint8_t temperature[2];
+extern uint16_t temperature[2];
 
 int phase = 0;
 

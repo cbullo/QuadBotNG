@@ -40,7 +40,12 @@ ControllerState controller_state = ControllerState::PRE_INIT;
 
 CustomMagneticSensorI2C* GetSensor(uint8_t index) { return &sensors[index]; }
 
-void Initialize() {}
+void Initialize() {
+   for (int i = 0; i < 2; ++i) {
+      motors[i].init();
+      motors[i].disable(); 
+   }
+}
 
 void InitController() {
   for (int i = 0; i < 2; ++i) {
@@ -69,6 +74,10 @@ void InitController() {
     // Serial.print(i);
     // Serial.println(F(" ready"));
 
+    motors[i].init();
+    motors[i].disable();
+
+
     if (availability[i] & MOTOR_AVAILABLE) {
       // motors[i].linkDriver(&drivers[i]);
 
@@ -87,8 +96,8 @@ void InitController() {
       // motors[i].voltage_sensor_align = 12.f;
       motors[i].voltage_limit = 12 * 512 - 1;
       // motors[i].modulation_centered = 0;
-      motors[i].init();
-      motors[i].enable();
+      // motors[i].init();
+      motors[i].disable();
 
       // wdt_enable(WDTO_8S);
       // for (int j = 0; j < 10; ++j) {
@@ -116,6 +125,9 @@ void InitController() {
       // Serial.print(F("Motor "));
       // Serial.print(i);
       // Serial.println(F(" ready"));
+    } else {
+      motors[i].init();
+      motors[i].disable();
     }
   }
   commander.SendString(STRING_MESSAGE_TYPE_INFO, "INIC");

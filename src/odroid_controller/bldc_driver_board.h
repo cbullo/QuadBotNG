@@ -27,10 +27,14 @@ struct Callback {
 struct Command {
   Command(){};
   Command(const Command &other) {
+    *this = other;
+  }
+  Command& operator=(const Command& other) {
     memcpy(command_bytes, &other.command_bytes, other.command_length);
     command_length = other.command_length;
     memcpy(callback_mem, other.callback_mem, MAX_CALLBACK_SIZE);
     callback = reinterpret_cast<Callback *>(callback_mem);
+    return *this;
   }
 
   uint8_t command_bytes[MAX_COMMAND_LENGTH];

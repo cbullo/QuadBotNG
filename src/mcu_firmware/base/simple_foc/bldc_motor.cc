@@ -76,15 +76,7 @@ void BLDCMotor::enable() {
 // Iterative function looping FOC algorithm, setting Uq on the Motor
 // The faster it can be run the better
 void BLDCMotor::loopFOC() {
-  // update sensor - do this even in open-loop mode, as user may be switching
-  // between modes and we could lose track
-  //                 of full rotations otherwise.
   sensor->update();
-
-  // // if open-loop do nothing
-  // if (controller == MotionControlType::angle_openloop ||
-  //     controller == MotionControlType::velocity_openloop)
-  //   return;
 
   // if disabled do nothing
   if (!enabled) {
@@ -119,19 +111,19 @@ void BLDCMotor::setPhaseVoltageSin2(Voltage U, Angle angle_el) {
   pwm_c = sin15(normalizeAngle(angle_el + N_SIN_2_3, N_SIN) << 3);
 
   Voltage power = abs(U);
-  int32_t center = voltage_limit / 2;
+  int32_t center = voltage_power_supply / 2 - 1;
 
   // apply power factor
   pwm_a = power * pwm_a;
-  pwm_a = pwm_a >> 9;
+  pwm_a = pwm_a >> 10;
   pwm_a += center;
 
   pwm_b = power * pwm_b;
-  pwm_b = pwm_b >> 9;
+  pwm_b = pwm_b >> 10;
   pwm_b += center;
 
   pwm_c = power * pwm_c;
-  pwm_c = pwm_c >> 9;
+  pwm_c = pwm_c >> 10;
   pwm_c += center;
 
   setPwm(pwm_a, pwm_b, pwm_c);
@@ -441,20 +433,20 @@ int BLDCMotor::init() {
 // Set voltage to the pwm pin
 void BLDCMotor::setPwm(Voltage Ua, Voltage Ub, Voltage Uc) {
   // limit the voltage in driver
-  Ua = max(0, min(Ua, voltage_limit));
-  Ub = max(0, min(Ub, voltage_limit));
-  Uc = max(0, min(Uc, voltage_limit));
+  // Ua = max(0, min(Ua, voltage_limit));
+  // Ub = max(0, min(Ub, voltage_limit));
+  // Uc = max(0, min(Uc, voltage_limit));
 
-  uint16_t vps = voltage_power_supply;
-  vps >>= 8;
+  // uint16_t vps = voltage_power_supply;
+  // vps >>= 8;
 
   uint16_t uua = Ua;
   uint16_t uub = Ub;
   uint16_t uuc = Uc;
 
-  dc_a = uua / vps;
-  dc_b = uub / vps;
-  dc_c = uuc / vps;
+  dc_a = uua / (2 * (voltage_power_supply >> 9)) ;
+  dc_b = uub / (2 * (voltage_power_supply >> 9));
+  dc_c = uuc / (2 * (voltage_power_supply >> 9));
 
   // hardware specific writing
   // hardware specific function - depending on driver and mcu

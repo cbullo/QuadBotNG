@@ -101,13 +101,14 @@ void BLDCDriverBoard::StartCommunicationThread() {
 }
 
 void BLDCDriverBoard::ProcessSend() {
-  if (pending_commands_.empty()) {
-    return;
-  }
-
   Command to_process;
+
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
+    if (pending_commands_.empty()) {
+      return;
+    }
+
     if (!pending_commands_.empty()) {
       to_process = pending_commands_.front();
       pending_commands_.pop();
@@ -362,7 +363,7 @@ void BLDCDriverBoard::SendSetupVariables() {
     // std::cout << "1" << motors_[0] << std::endl;
     SendSetCommandAndSub(0, CMD_SENSOR_LINEARIZATION, SCMD_OFFSET,
                          motors_[0]->sensor_linearization_offset_,
-                         static_cast<uint8_t>(0));
+                         static_cast<uint8_t>(motors_[0]->swap_wires_));
     for (int i = 0; i < motors_[0]->sensor_linearization_coeffs_.size(); ++i) {
       SendSetCommandAndSub(0, CMD_SENSOR_LINEARIZATION, SCMD_FACTOR,
                            static_cast<uint8_t>(i),
@@ -380,7 +381,7 @@ void BLDCDriverBoard::SendSetupVariables() {
     // std::cout << motors_[1]->GetName() << std::endl;
     SendSetCommandAndSub(1, CMD_SENSOR_LINEARIZATION, SCMD_OFFSET,
                          motors_[1]->sensor_linearization_offset_,
-                         static_cast<uint8_t>(0));
+                         static_cast<uint8_t>(motors_[1]->swap_wires_));
     // std::cout << "2.1" << std::endl;
     for (int i = 0; i < motors_[1]->sensor_linearization_coeffs_.size(); ++i) {
       SendSetCommandAndSub(1, CMD_SENSOR_LINEARIZATION, SCMD_FACTOR,

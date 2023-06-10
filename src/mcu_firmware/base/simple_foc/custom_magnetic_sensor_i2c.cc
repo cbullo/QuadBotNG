@@ -15,6 +15,7 @@ void CustomMagneticSensorI2C::Activate() {
 // function reading the raw counter of the magnetic sensor
 Angle CustomMagneticSensorI2C::getRawCount() {
   Activate();
+
   uint16_t raw_reading =
       (uint16_t)CustomMagneticSensorI2C::read(angle_register_msb);
 

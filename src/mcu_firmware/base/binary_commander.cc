@@ -67,7 +67,7 @@ void BinaryCommander::run() {
   }
 }
 
-extern uint8_t temperature[2];
+extern uint16_t temperature[2];
 
 static uint8_t next_data = 0;
 void BinaryCommander::SendDataStream() {
@@ -105,13 +105,13 @@ void BinaryCommander::SendDataStream() {
         uint16_t data;
         msg |= DATA_STREAM_TEMPERATURE_BIT;
         Serial.write(&msg, 1);
-        data = temperature[0];
+        data = temperature[0] >> 8;
         Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(uint16_t));
-        data = temperature[1];
+        data = temperature[1] >> 8;
         Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(uint16_t));
       } break;
     }
-    next_data = (next_data + 1) % 2;
+    // next_data = (next_data + 1) % 2;
     BumpTimeout();
   }
 }
@@ -400,6 +400,16 @@ void BinaryCommander::process(uint8_t* user_command) {
         case SCMD_OFFSET: {
           uint8_t value =
               *(reinterpret_cast<uint8_t*>(user_command + msg_length));
+
+          // This is hacky - swapped wires
+          uint8_t swap_wires = *(reinterpret_cast<uint8_t*>(
+              user_command + msg_length + sizeof(uint8_t)));
+          if (swap_wires) {
+            auto prvB = motors[motor_index].pwmB;
+            motors[motor_index].pwmB = motors[motor_index].pwmC;
+            motors[motor_index].pwmC = prvB;
+          }
+
           GetSensor(motor_index)->linearization_.offset_ = value;
           break;
         }

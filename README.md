@@ -10,4 +10,8 @@ To compile for Odroid-C4 platform:
 
 To compile everything and deploy to target robot:
 
-`bazel run //src/odroid_controller:deploy_controller --incompatible_enable_cc_toolchain_resolution=true --platforms=//:Odroid-C4`
+`bazel run //src/odroid_controller:deploy_controller --incompatible_enable_cc_toolchain_resolution=true --platforms=//:Odroid-C4 -- all`
+
+To run simulator 
+
+`bazel run //src/odroid_controller:controller --//src/odroid_controller:simulator=1`
