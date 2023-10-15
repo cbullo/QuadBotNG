@@ -77,21 +77,67 @@ void MainInitialize() {
   analog_reader.StartConversion(2, 0);
   // Serial.println(F("Done setup"));
   wdt_enable(WDTO_4S);
-  next_temperature_read = millis();
+  next_temperature_read = _micros();
   Initialize();
 }
 
-uint16_t temperature[2] = {20 << 8, 20 << 8};
+const uint8_t buckets_offset = 10;
+const uint8_t buckets_count = 100;
+const uint8_t buffer_size = 32;
+uint16_t values_in_buckets[2] = {};
+
+uint8_t temp_values_buckets[2][buckets_count] = {};  // 10 to 110 degrees C
+uint8_t temp_ring_buffer[2][buffer_size] = {};
+uint8_t buffer_pos[2] = {};
+
+uint8_t UpdateAndGetMedian(uint8_t index, uint8_t new_value) {
+  if (buckets_offset <= new_value &&
+      new_value < buckets_offset + buckets_count) {
+    new_value -= buckets_offset;
+
+    auto old_value = temp_ring_buffer[index][buffer_pos[index]];
+    if (buckets_offset <= old_value &&
+        old_value < buckets_offset + buckets_count) {
+      old_value -= buckets_offset;
+      --temp_values_buckets[index][old_value];
+      --values_in_buckets[index];
+    }
+    ++temp_values_buckets[index][new_value];
+    ++values_in_buckets[index];
+    temp_ring_buffer[index][buffer_pos[index]] = new_value + buckets_offset;
+    buffer_pos[index] = (buffer_pos[index] + 1) % buffer_size;
+  }
+
+  if (values_in_buckets[index] < 4) {
+    return 0;
+  }
+
+  uint16_t values_counter = 0;
+  uint8_t value = 0;
+  while (values_counter < (values_in_buckets[index] / 2) &&
+         value < buckets_count) {
+    values_counter += temp_values_buckets[index][value];
+    value++;
+  }
+  return value - 1 + buckets_offset;
+}
+
+uint16_t temperature[2] = {20, 20};
 void CheckTemperature(bool first) {
-  uint8_t index = first ? 0 : 1;
+  uint8_t index = first ? 1 : 0;
   int reading = analog_reader.GetADCReading(index);
 
-  uint16_t temp_reading = ComputeTemperature(reading) << 8;
-  uint16_t temp_8 = temperature[index] >> 3;
-  temperature[index] -= temp_8;
-  temperature[index] += temp_reading >> 3;
-  
-  if (temperature[index] > (55 << 8) ) {
+  uint8_t temp_reading = ComputeTemperature(reading);
+  // uint16_t temp_8 = temperature[index] >> 3;
+
+
+  uint8_t median_temp = UpdateAndGetMedian(index, temp_reading);
+  temperature[index] = median_temp;
+
+  // temperature[index] -= temp_8;
+  // temperature[index] += temp_reading >> 3;
+
+  if (temperature[index] > (55)) {
     // Serial.print(F("temperature: "));
     // Serial.println(temperature[index]);
     // Serial.println(F("OVERHEAT DETECTED! RESETTING!"));
@@ -103,12 +149,32 @@ void CheckTemperature(bool first) {
 
 void serialEventRun(){};
 
-#define TEMP_CHECK_PERIOD 100;  // ms
+extern uint8_t motor_pin_00;
+extern uint8_t motor_pin_01;
+extern uint8_t motor_pin_02;
+extern uint8_t motor_pin_10;
+extern uint8_t motor_pin_11;
+extern uint8_t motor_pin_12;
+
+extern uint8_t dc_value_00;
+extern uint8_t dc_value_01;
+extern uint8_t dc_value_02;
+extern uint8_t dc_value_10;
+extern uint8_t dc_value_11;
+extern uint8_t dc_value_12;
+
+bool disable_motors_temp_read = false;
+
+#define TEMP_CHECK_PERIOD 100000;  // us
 void MainCritical() {
-  if (millis() >= next_temperature_read) {
+  auto us = _micros();
+
+  if (us >= next_temperature_read) {
+    bool first = next_temperature_read % 200000 < 100000;
+    // uint8_t t_index = first ? 0 : 1;
     // Add all safety/hardware failure critical functions here
-    CheckTemperature(next_temperature_read % 2000 < 1000);
-    next_temperature_read += TEMP_CHECK_PERIOD;
+    CheckTemperature(first);
+    next_temperature_read = us + TEMP_CHECK_PERIOD;
   }
   Critical();
 

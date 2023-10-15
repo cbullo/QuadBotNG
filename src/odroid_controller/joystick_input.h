@@ -216,6 +216,19 @@ class CalibrationScheme : public JoystickControlScheme {
   }
 };
 
+class WalkScheme : public JoystickControlScheme {
+  void ProcessInput(const JoystickState& state, const js_event& joystick_event,
+                    std::deque<ControlEvent>& events) override {
+    if (HandleCommonInputs(state, joystick_event, events)) {
+      return;
+    }
+
+    if (Pressed(state, joystick_event, JoystickButtonIds::Cross)) {
+      events.push_back({EventId::kControlEventConfirm, 0.f});
+    }
+  }
+};
+
 class JoystickInput : public EventNode {
  public:
   JoystickInput(const std::string& device_address)

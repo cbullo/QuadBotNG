@@ -44,6 +44,8 @@ void Controller::Update(float dt) {
   bool trigger_estop = false;
   bool trigger_stop = false;
 
+  duration_ += dt;
+
   for (const auto& node : tickables_) {
     node->Tick(dt);
   }
@@ -99,21 +101,34 @@ void Controller::Update(float dt) {
     estopped_behavior_->Activate();
   }
 
-  if (legs_.fl) {
-    legs_.fl->UpdateControl(dt);
-  }
-  if (legs_.fr) {
-    legs_.fr->UpdateControl(dt);
-  }
-  if (legs_.bl) {
-    legs_.bl->UpdateControl(dt);
-  }
-  if (legs_.br) {
-    legs_.br->UpdateControl(dt);
-  }
   auto& controllers = GetControllers();
-  for (auto* controller : controllers) {
-    controller->Tick();
+  bool any_transmission_bound = false;
+  for (auto& controller : controllers) {
+    any_transmission_bound = any_transmission_bound || controller->IsTransmissionBound();
+  }
+
+  dt_acc_ += dt;
+  if (!any_transmission_bound) {
+    if (legs_.fl) {
+      legs_.fl->UpdateControl(dt_acc_);
+    }
+    if (legs_.fr) {
+      legs_.fr->UpdateControl(dt_acc_);
+    }
+    if (legs_.bl) {
+      legs_.bl->UpdateControl(dt_acc_);
+    }
+    if (legs_.br) {
+      legs_.br->UpdateControl(dt_acc_);
+    }
+  
+    for (auto* controller : controllers) {
+      controller->Tick();
+    }
+
+    dt_acc_ = 0.f;
+  } else {
+    std::cout << "Trasmission bound, skipping. Current delta: " << dt_acc_ << std::endl;
   }
 }
 
@@ -536,3 +551,34 @@ void MotorTestingBehavior::ProcessInputEvents(
                selected_motor_);
   }
 };
+
+void WalkBehavior::Activate() {
+  std::cout << "Walk behavior" << std::endl;
+  Behavior::Activate();
+}
+
+void WalkBehavior::ProcessInputEvents(const std::deque<ControlEvent>& events) {
+  Behavior::ProcessInputEvents(events);
+  const auto& legs = GetController()->GetLegs();
+  for (const auto& event : events) {
+    switch (event.event_id) {
+      case EventId::kControlEventConfirm: {
+        auto leg = legs.bl;
+        leg->SetControl(init_control_);
+        init_control_->Restart();
+        if (auto* motor = leg->GetMotorI()) {
+          motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                 static_cast<uint8_t>(3));
+        }
+        if (auto* motor = leg->GetMotorO()) {
+          motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                 static_cast<uint8_t>(3));
+        }
+        if (auto* motor = leg->GetMotorZ()) {
+          motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                 static_cast<uint8_t>(3));
+        }
+      } break;
+    }
+  }
+}

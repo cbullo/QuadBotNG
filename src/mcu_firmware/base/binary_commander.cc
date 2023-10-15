@@ -105,13 +105,13 @@ void BinaryCommander::SendDataStream() {
         uint16_t data;
         msg |= DATA_STREAM_TEMPERATURE_BIT;
         Serial.write(&msg, 1);
-        data = temperature[0] >> 8;
+        data = temperature[0];
         Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(uint16_t));
-        data = temperature[1] >> 8;
+        data = temperature[1];
         Serial.write(reinterpret_cast<uint8_t*>(&data), sizeof(uint16_t));
       } break;
     }
-    // next_data = (next_data + 1) % 2;
+    next_data = (next_data + 1) % 2;
     BumpTimeout();
   }
 }

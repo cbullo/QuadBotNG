@@ -45,7 +45,7 @@ BLDCMotor::BLDCMotor(CustomMagneticSensorI2C* s, int phA, int phB, int phC,
 
   // default power-supply value
   voltage_power_supply = DEF_POWER_SUPPLY;
-  voltage_limit = VoltsToVoltage(12) - 1;
+  voltage_limit = VoltsToVoltage(28) - 1;
 
   // maximum voltage to be set to the motor
   // voltage_limit = VoltsToVoltage(DEF_POWER_SUPPLY);
@@ -59,8 +59,6 @@ BLDCMotor::BLDCMotor(CustomMagneticSensorI2C* s, int phA, int phB, int phC,
 void BLDCMotor::disable() {
   // set zero to PWM
   setPwm(0, 0, 0);
-  // disable the driver
-  // disableDriver();
   // motor status update
   enabled = 0;
 }
@@ -401,6 +399,9 @@ int BLDCMotor::init() {
   pinMode(pwmA, OUTPUT);
   pinMode(pwmB, OUTPUT);
   pinMode(pwmC, OUTPUT);
+  // digitalWrite(pwmA, 0);
+  // digitalWrite(pwmB, 0);
+  // digitalWrite(pwmC, 0);
   // if (_isset(enableA_pin)) pinMode(enableA_pin, OUTPUT);
   // if (_isset(enableB_pin)) pinMode(enableB_pin, OUTPUT);
   // if (_isset(enableC_pin)) pinMode(enableC_pin, OUTPUT);
@@ -413,9 +414,9 @@ int BLDCMotor::init() {
   // hardware specific function - depending on driver and mcu
   _configure3PWM(pwm_frequency, pwmA, pwmB, pwmC);
 
-  _delay(500);
+  //_delay(500);
   // enable motor
-  enable();
+  disable();
   _delay(500);
   return 0;
 }
@@ -429,6 +430,17 @@ int BLDCMotor::init() {
 //     digitalWrite(enableC_pin, sc == _HIGH_IMPEDANCE ? LOW : HIGH);
 //   }
 // }
+
+uint8_t dc_value_00 = 0;
+uint8_t dc_value_01 = 0;
+uint8_t dc_value_02 = 0;
+uint8_t dc_value_10 = 0;
+uint8_t dc_value_11 = 0;
+uint8_t dc_value_12 = 0;
+
+extern uint8_t motor_pin_00;
+
+extern bool disable_motors_temp_read;
 
 // Set voltage to the pwm pin
 void BLDCMotor::setPwm(Voltage Ua, Voltage Ub, Voltage Uc) {
@@ -444,14 +456,27 @@ void BLDCMotor::setPwm(Voltage Ua, Voltage Ub, Voltage Uc) {
   uint16_t uub = Ub;
   uint16_t uuc = Uc;
 
-  dc_a = uua / (2 * (voltage_power_supply >> 9)) ;
+  dc_a = uua / (2 * (voltage_power_supply >> 9));
   dc_b = uub / (2 * (voltage_power_supply >> 9));
   dc_c = uuc / (2 * (voltage_power_supply >> 9));
 
   // hardware specific writing
   // hardware specific function - depending on driver and mcu
   //_writeDutyCycle3PWM(dc_a, dc_b, dc_c, pwmA, pwmB, pwmC);
-  _writeDutyCycle3PWM(dc_a, dc_b, dc_c, pwmA, pwmB, pwmC);
+
+  if (pwmA == motor_pin_00) {
+    dc_value_00 = dc_a;
+    dc_value_01 = dc_b;
+    dc_value_02 = dc_c;
+  } else {
+    dc_value_10 = dc_a;
+    dc_value_11 = dc_b;
+    dc_value_12 = dc_c;
+  }
+
+  if (!disable_motors_temp_read) {
+    _writeDutyCycle3PWM(dc_a, dc_b, dc_c, pwmA, pwmB, pwmC);
+  }
 }
 
 // // shaft angle calculation

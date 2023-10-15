@@ -26,10 +26,8 @@ struct Callback {
 
 struct Command {
   Command(){};
-  Command(const Command &other) {
-    *this = other;
-  }
-  Command& operator=(const Command& other) {
+  Command(const Command &other) { *this = other; }
+  Command &operator=(const Command &other) {
     memcpy(command_bytes, &other.command_bytes, other.command_length);
     command_length = other.command_length;
     memcpy(callback_mem, other.callback_mem, MAX_CALLBACK_SIZE);
@@ -126,6 +124,8 @@ class BLDCDriverBoard {
 
   void SetErrorState(bool enabled) { error_state_ = enabled; }
 
+  bool IsTransmissionBound() const { return is_transmission_bound_; };
+
   int serial_ = -1;
   void SendSync();
 
@@ -133,6 +133,8 @@ class BLDCDriverBoard {
   enum class ExpectedMessagePart { kHeaderPart, kStaticPart, kDynamicPart };
 
   void SendCommand(COMMAND_TYPE command);
+
+  void PushCommand(const Command &cmd);
 
   void StartCommunicationThread();
   void DiscardReceive();
@@ -184,6 +186,8 @@ class BLDCDriverBoard {
 
   bool error_state_ = false;
   std::string error_message_;
+
+  bool is_transmission_bound_ = false;
 };
 
 template <class ARGUMENT>
@@ -201,7 +205,7 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
   assert(cmd.command_length <= MAX_COMMAND_LENGTH);
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
-    pending_commands_.push(cmd);
+    PushCommand(cmd);
   }
 }
 
@@ -223,7 +227,7 @@ void BLDCDriverBoard::SendSetCommand(uint8_t motor_index, COMMAND_TYPE command,
   assert(cmd.command_length <= MAX_COMMAND_LENGTH);
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
-    pending_commands_.push(cmd);
+    PushCommand(cmd);
   }
 }
 
@@ -246,7 +250,7 @@ void BLDCDriverBoard::SendSetCommandAndSub(uint8_t motor_index,
   assert(cmd.command_length <= MAX_COMMAND_LENGTH);
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
-    pending_commands_.push(cmd);
+    PushCommand(cmd);
   }
 }
 
@@ -285,7 +289,7 @@ void BLDCDriverBoard::SendSetCommandAndSub(uint8_t motor_index,
   // std::cout << "SSC7" << std::endl;
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
-    pending_commands_.push(cmd);
+    PushCommand(cmd);
   }
   // std::cout << "SSC8" << std::endl;
 }

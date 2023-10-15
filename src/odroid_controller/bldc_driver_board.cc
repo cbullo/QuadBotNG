@@ -103,17 +103,43 @@ void BLDCDriverBoard::StartCommunicationThread() {
 void BLDCDriverBoard::ProcessSend() {
   Command to_process;
 
-  {
-    std::lock_guard<std::mutex> guard(commands_mutex_);
-    if (pending_commands_.empty()) {
-      return;
-    }
+  const int MAX_SEND_BUFFER_BYTES = 1024;
 
-    if (!pending_commands_.empty()) {
-      to_process = pending_commands_.front();
-      pending_commands_.pop();
-      if (to_process.command_bytes[0] & GET_CMD_BIT) {
-        sent_get_commands_.push(to_process);
+  {
+    size_t nbytes;
+    ssize_t bytes_read;
+    int fd = serial_;
+    while (true) {
+      int bytes_in_send_buffer = 0;
+      int error = ioctl(fd, TIOCOUTQ, &bytes_in_send_buffer);
+      //std::cout << bytes_in_send_buffer << std::endl;
+      if (error == -1) {
+        HandleCommunicationError(
+            fmt::format("ProcessReceive ioctl() returned error {}: {}", errno,
+                        strerror(errno)));
+        return;
+      }
+
+      if (bytes_in_send_buffer > MAX_SEND_BUFFER_BYTES) {
+        // Wait until data is flushed
+        is_transmission_bound_ = true;
+        std::cout << "Transmission bound" << std::endl;
+        return;
+      } else {
+        is_transmission_bound_ = false;
+      }
+
+      std::lock_guard<std::mutex> guard(commands_mutex_);
+      if (pending_commands_.empty()) {
+        return;
+      }
+
+      if (!pending_commands_.empty()) {
+        to_process = pending_commands_.front();
+        pending_commands_.pop();
+        if (to_process.command_bytes[0] & GET_CMD_BIT) {
+          sent_get_commands_.push(to_process);
+        }
       }
     }
   }
@@ -471,6 +497,17 @@ void BLDCDriverBoard::ProcessMessage(const uint8_t *message, int message_size) {
         auto m1_angle = *reinterpret_cast<const uint16_t *>(&message[3]);
         m1->SetCurrentRawAngle(m1_angle);
       }
+    } else if (message[0] & DATA_STREAM_TEMPERATURE_BIT) {
+      auto *m0 = GetMotor(0);
+      if (m0) {
+        auto m0_angle = *reinterpret_cast<const uint16_t *>(&message[1]);
+        m0->SetTemperature(m0_angle);
+      }
+      auto *m1 = GetMotor(1);
+      if (m1) {
+        auto m1_angle = *reinterpret_cast<const uint16_t *>(&message[3]);
+        m1->SetTemperature(m1_angle);
+      }
     }
   } else {
     HandleCommunicationError(
@@ -579,6 +616,10 @@ void BLDCDriverBoard::SetState(SyncState new_state) {
   std::cout << "Board new state: " << static_cast<int>(new_state) << std::endl;
 }
 
+void BLDCDriverBoard::PushCommand(const Command &cmd) {
+  pending_commands_.push(cmd);
+}
+
 void BLDCDriverBoard::SendCommand(COMMAND_TYPE command) {
   Command cmd;
   cmd.command_bytes[0] = command & MAIN_COMMAND_MASK;
@@ -589,7 +630,7 @@ void BLDCDriverBoard::SendCommand(COMMAND_TYPE command) {
 
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
-    pending_commands_.push(cmd);
+    PushCommand(cmd);
   }
 }
 
@@ -602,7 +643,7 @@ void BLDCDriverBoard::SendGetCommand(uint8_t motor_index,
 
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
-    pending_commands_.push(cmd);
+    PushCommand(cmd);
   }
 }
 
@@ -616,7 +657,7 @@ void BLDCDriverBoard::SendGetCommand(uint8_t motor_index, COMMAND_TYPE command,
 
   {
     std::lock_guard<std::mutex> guard(commands_mutex_);
-    pending_commands_.push(cmd);
+    PushCommand(cmd);
   }
 }
 

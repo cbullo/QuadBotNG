@@ -28,8 +28,8 @@ cc_library(
     # deps = "@gazebo",
 )
 
-cc_binary(
-    name = "controller",
+cc_library(
+    name = "controller_lib",
     srcs = [
         "angle.h",
         "bldc_driver_board.cc",
@@ -45,16 +45,15 @@ cc_binary(
         "leg_controls.cc",
         "leg_controls.h",
         "log_helper.h",
-        "main.cc",
         "motor.cc",
         "motor.h",
+        "pid_utils.h",
     ],
     copts = [
         "-flto",
         "-fuse-linker-plugin",
         "-ffat-lto-objects",
     ],
-    data = ["config/robot_config.yaml"],
     defines = select({
         ":simulator_mode": {"QUADBOT_SIMULATOR": "1"},
         "//conditions:default": {},
@@ -80,80 +79,4 @@ cc_binary(
                 ],
             },
         ),
-)
-
-sh_binary(
-    name = "deploy_controller",
-    srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/controller/controller_hex.hex"],
-    data = [
-        "config/robot_config.yaml",
-        "scripts/update_encoder.sh",
-        "scripts/upload_firmware.sh",
-        ":controller",
-        "//src/mcu_firmware/controller:mcu_controller",
-    ],
-)
-
-sh_binary(
-    name = "deploy_calibration",
-    srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/calibration/calibration_hex.hex"],
-    data = [
-        "config/robot_config.yaml",
-        "scripts/update_encoder.sh",
-        "scripts/upload_firmware.sh",
-        "//src/mcu_firmware/calibration:mcu_calibration",
-    ],
-)
-
-sh_binary(
-    name = "deploy_encoder",
-    srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/encoder/encoder_hex.hex"],
-    data = [
-        "config/robot_config.yaml",
-        "scripts/update_encoder.sh",
-        "scripts/upload_firmware.sh",
-        "//src/mcu_firmware/encoder:mcu_encoder",
-    ],
-)
-
-sh_binary(
-    name = "deploy_open_loop",
-    srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/open_loop/open_loop_hex.hex"],
-    data = [
-        "config/robot_config.yaml",
-        "scripts/update_encoder.sh",
-        "scripts/upload_firmware.sh",
-        "//src/mcu_firmware/open_loop:mcu_open_loop",
-    ],
-)
-
-sh_binary(
-    name = "deploy_init_foc",
-    srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/init_foc/init_foc_hex.hex"],
-    data = [
-        "config/robot_config.yaml",
-        "scripts/upload_firmware.sh",
-        "//src/mcu_firmware/init_foc:mcu_init_foc",
-    ],
-)
-
-sh_binary(
-    name = "deploy_calibration_foc",
-    srcs = ["scripts/deploy.sh"],
-    args = ["../../mcu_firmware/calibration/calibration_hex.hex"],
-    data = [
-        "config/robot_config.yaml",
-        "scripts/upload_firmware.sh",
-        "//src/mcu_firmware/init_foc:mcu_calibration",
-    ],
-)
-
-sh_binary(
-    name = "run",
-    srcs = ["scripts/run.sh"],
 )

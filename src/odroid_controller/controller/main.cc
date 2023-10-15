@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstring>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -13,12 +14,13 @@
 #if QUADBOT_SIMULATOR
 #include "gazebo_driver.h"
 #else
-#include "bldc_driver_board.h"
+#include "src/odroid_controller/bldc_driver_board.h"
 #endif
 
-#include "controller.h"
-#include "joystick_input.h"
-#include "leg.h"
+#include "src/odroid_controller/controller.h"
+#include "src/odroid_controller/joystick_input.h"
+#include "src/odroid_controller/leg.h"
+#include "src/odroid_controller/web_server/server.h"
 
 volatile bool estop_triggered = false;
 bool stopped = true;
@@ -36,6 +38,8 @@ std::vector<ControllerType*> controllers;
 std::vector<Motor*> motors;
 std::vector<Leg*> legs;
 // std::unique_ptr<Controller> main_controller;
+
+WebServer web_server;
 
 void EStop() {
   if (!estop_triggered) {
@@ -103,7 +107,7 @@ void ReadMotors(
 
 void ReadLegs(const YAML::Node& config,
               const std::unordered_map<std::string, Motor*>& motors,
-              std::unordered_map<std::string, Leg*>& legs) {
+              std::map<std::string, Leg*>& legs) {
   const YAML::Node& legs_yaml = config["legs"];
   for (auto& leg_yaml : legs_yaml) {
     auto name = leg_yaml.first.as<std::string>();
@@ -145,16 +149,22 @@ Controller SetupController() {
   auto stopped_scheme = std::make_shared<StoppedScheme>();
   auto calibration_scheme = std::make_shared<CalibrationScheme>();
   auto thetagamma_scheme = std::make_shared<ThetaGammaScheme>();
+  auto walk_scheme = std::make_shared<WalkScheme>();
 
   auto joystick_input = std::make_shared<JoystickInput>(device);
+
   auto leg_testing_behavior = std::make_shared<LegTestingBehavior>();
   auto motor_testing_behavior = std::make_shared<MotorTestingBehavior>();
+  auto walk_behavior = std::make_shared<WalkBehavior>();
 
-  motor_testing_behavior->SetNextBehavior(leg_testing_behavior.get());
-  motor_testing_behavior->SetPreviousBehavior(leg_testing_behavior.get());
+  // motor_testing_behavior->SetPreviousBehavior(walk_behavior.get());
+  // motor_testing_behavior->SetNextBehavior(leg_testing_behavior.get());
 
-  leg_testing_behavior->SetNextBehavior(motor_testing_behavior.get());
-  leg_testing_behavior->SetPreviousBehavior(motor_testing_behavior.get());
+  // leg_testing_behavior->SetPreviousBehavior(motor_testing_behavior.get());
+  // leg_testing_behavior->SetNextBehavior(walk_behavior.get());
+
+  walk_behavior->SetPreviousBehavior(leg_testing_behavior.get());
+  walk_behavior->SetNextBehavior(motor_testing_behavior.get());
 
   joystick_input->Init();
 
@@ -180,18 +190,25 @@ Controller SetupController() {
         joystick_input->SetScheme(calibration_scheme);
       });
 
+  walk_behavior->AttachActivationCallback(
+      [joystick_input, walk_scheme](const Behavior& b) mutable {
+        std::cout << "Setting walk scheme" << std::endl;
+        joystick_input->SetScheme(walk_scheme);
+      });
+
   Legs legs_s;
-  legs_s.fr = legs.size() > 0 ? legs[0] : nullptr;
-  legs_s.fl = legs.size() > 1 ? legs[1] : nullptr;
-  legs_s.bl = legs.size() > 2 ? legs[2] : nullptr;
-  legs_s.br = legs.size() > 3 ? legs[3] : nullptr;
+  legs_s.bl = legs.size() > 0 ? legs[0] : nullptr;
+  legs_s.br = legs.size() > 1 ? legs[1] : nullptr;
+  legs_s.fl = legs.size() > 2 ? legs[2] : nullptr;
+  legs_s.fr = legs.size() > 3 ? legs[3] : nullptr;
 
   Controller main_controller(legs_s, controllers, stopped_behavior,
                              estopped_behavior);
 
   main_controller.AttachEventNode(joystick_input);
-  main_controller.AttachBehavior(leg_testing_behavior);
-  main_controller.AttachBehavior(motor_testing_behavior);
+  // main_controller.AttachBehavior(leg_testing_behavior);
+  // main_controller.AttachBehavior(motor_testing_behavior);
+  main_controller.AttachBehavior(walk_behavior);
 
   main_controller.SubscribeToTick(joystick_input.get());
 
@@ -221,10 +238,14 @@ Controller SetupController() {
   main_controller.SubscribeToEvent(motor_testing_behavior.get(),
                                    EventId::kControlEventLegTilt);
 
+  main_controller.SubscribeToEvent(walk_behavior.get(),
+                                   EventId::kControlEventConfirm);
 
-  stopped_behavior->SetPreviousBehavior(motor_testing_behavior.get());
+  stopped_behavior->SetPreviousBehavior(walk_behavior.get());
   stopped_behavior->Activate();
   std::cout << "SetupController 2" << std::endl;
+
+  web_server.Init(&main_controller);
 
   return main_controller;
 }
@@ -236,7 +257,7 @@ int main() {
 
   std::unordered_map<std::string, ControllerType*> controllers_map;
   std::unordered_map<std::string, Motor*> motors_map;
-  std::unordered_map<std::string, Leg*> legs_map;
+  std::map<std::string, Leg*> legs_map;
 
   ReadControllers(config, controllers_map);
   ReadMotors(config, controllers_map, motors_map);

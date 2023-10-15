@@ -14,7 +14,6 @@ using ControllerType = GazeboDriver;
 using ControllerType = BLDCDriverBoard;
 #endif
 
-
 class Motor {
  public:
   static constexpr double kAS5600ToRadians = M_PI / 2048.0;
@@ -28,9 +27,9 @@ class Motor {
   inline double GetAccumulatedAngle() const {
     return accumulated_angle_ /*- zero_angle_*/;
   }
-  double GetAngleDelta() const {
-    return ClosestAngle(prev_offset_angle_, offset_angle_);
-  }
+  // double GetAngleDelta() const {
+  //   return ClosestAngle(prev_offset_angle_, offset_angle_);
+  // }
   double GetGearRatio() const { return gear_ratio_; }
   int GetIndex() const { return motor_index_; }
 
@@ -40,13 +39,19 @@ class Motor {
   std::string GetName() const { return name_; }
   int GetDirection() const { return direction_; }
 
-  void SetCurrentTemperature(uint16_t temp) { current_temp_ = temp; }
+  uint16_t GetTemperature() const { return temperature_; }
+  void SetTemperature(uint16_t temp) { temperature_ = temp; }
   void SetCurrentRawAngle(uint16_t angle) {
     current_raw_angle_ = angle;
     angle_received_ = true;
   }
 
   void Update();
+
+  // void SetCurrentAngle(float new_angle) {
+  //   accumulated_angle_ = new_angle / GetGearRatio();
+  //   first_update = true;
+  // }
 
   static const int linearization_factors_count = 16;
   uint8_t sensor_linearization_offset_ = 0;
@@ -64,13 +69,13 @@ class Motor {
   float zero_angle_ = 0.0;
 
   float offset_angle_ = 0.0;
-  float prev_offset_angle_ = 0.0;
+  //  float prev_offset_angle_ = 0.0;
   float accumulated_angle_ = 0.0;
   float gear_ratio_ = 1.0;
   int direction_ = 1;
   bool first_update = true;
 
-  std::atomic<uint16_t> current_temp_;
+  std::atomic<uint16_t> temperature_;
   std::atomic<uint16_t> current_raw_angle_;
   bool angle_received_ = false;
 

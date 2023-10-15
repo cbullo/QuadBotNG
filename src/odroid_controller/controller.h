@@ -114,6 +114,15 @@ class MotorTestingBehavior : public Behavior {
   uint16_t sensor_values_[64] = {0};
 };
 
+class WalkBehavior : public Behavior {
+  public:
+  void Activate() override;
+  void ProcessInputEvents(const std::deque<ControlEvent>& events) override;
+
+  private:
+  InitializationLegControl init_control_[4];
+};
+
 // class DriveXYZBehavior : public Behavior {
 //  public:
 //   DriveXYZBehavior(Controller* c) : Behavior(c){};
@@ -169,6 +178,7 @@ class Controller {
   }
 
   void SubscribeToTick(EventNode* node) { tickables_.push_back(node); }
+  float GetDuration() const { return duration_; }
 
  private:
   void DistributeEvents(const std::deque<ControlEvent>& events);
@@ -183,6 +193,9 @@ class Controller {
   std::vector<std::shared_ptr<EventNode>> nodes_;
   std::vector<EventNode*> tickables_;
   std::unordered_multimap<EventId, EventNode*> subscriptions_;
+
+  float duration_ = 0.f;
+  float dt_acc_ = 0.f;
 
   // DriveThetaGammaBehavior theta_gamma_behavior_;
   // DriveXYZBehavior xyz_behavior_;

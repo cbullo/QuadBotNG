@@ -57,7 +57,7 @@ int16_t sin15(int16_t i) {
   return c ? -y : y;
 }
 void floatFOC(float U, float angle_el, float &Ua, float &Ub, float &Uc) {
-  const float voltage_limit = 12;
+  const float voltage_limit = 28;
   const float _PI_3 = M_PI / 3.0;
   const float _SQRT3 = sqrtf(3.0);
 
@@ -381,7 +381,7 @@ void integerSinFOC2(int16_t U, uint16_t angle_el, int32_t &Ua, int32_t &Ub,
   pwm_c = sin15(normalizeAngle(angle_el + N_SIN_2_3, N_SIN) << 3);
 
   uint16_t power = abs(U);
-  int32_t max_voltage = (12 * (1 << 9)); 
+  int32_t max_voltage = (12 * (1 << 9));
   int32_t center = max_voltage / 2 - 1;
 
   // apply power factor
@@ -404,9 +404,9 @@ void integerSinFOC2(int16_t U, uint16_t angle_el, int32_t &Ua, int32_t &Ub,
   // uint16_t vps = 8 * 512;
   // vps >>= 9;
 
-  //uint16_t uua = pwm_a;
-  //uint16_t uub = pwm_b;
-  //uint16_t uuc = pwm_c;
+  // uint16_t uua = pwm_a;
+  // uint16_t uub = pwm_b;
+  // uint16_t uuc = pwm_c;
 
   Ua = pwm_a / (2 * (max_voltage >> 9));
   Ub = pwm_b / (2 * (max_voltage >> 9));
@@ -485,8 +485,7 @@ int main() {
     uint16_t angle_to_set = normalizeAngle(i + offset, N_SIN);
     integerSinFOC2(8 * (1 << 9), angle_to_set, Ua, Ub, Uc);
 
-    uint16_t angle_corrected =
-      static_cast<uint16_t>(4095 + 2) & (0xFFF);
+    uint16_t angle_corrected = static_cast<uint16_t>(4095 + 2) & (0xFFF);
 
     std::cout << angle_corrected << std::endl;
 

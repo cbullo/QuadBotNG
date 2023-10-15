@@ -13,9 +13,8 @@
 #define SENSOR_AVAILABLE 0x02
 
 uint8_t availability[2] = {
-    0,
-    0
-    //0//MOTOR_AVAILABLE | SENSOR_AVAILABLE
+    0, 0
+    // 0//MOTOR_AVAILABLE | SENSOR_AVAILABLE
 };
 
 /** Typical configuration for the 12bit AMS AS5600 magnetic sensor over I2C
@@ -29,10 +28,16 @@ CustomMagneticSensorI2C sensors[2] = {
     CustomMagneticSensorI2C(AS5600_I2C, A1, A0),
     CustomMagneticSensorI2C(AS5600_I2C, A0, A1)};
 
-// BLDCDriver3PWM drivers[2] = {BLDCDriver3PWM(5, 3, 6),
-//                              BLDCDriver3PWM(9, 11, 10)};
-BLDCMotor motors[2] = {BLDCMotor(&sensors[0], 6, 5, 3, 7, 1),
-                       BLDCMotor(&sensors[1], 9, 11, 10, 7, 1)};
+int motor_pin_00 = 6;
+int motor_pin_01 = 5;
+int motor_pin_02 = 3;
+int motor_pin_10 = 9;
+int motor_pin_11 = 11;
+int motor_pin_12 = 10;
+
+BLDCMotor motors[2] = {
+    BLDCMotor(&sensors[0], motor_pin_00, motor_pin_01, motor_pin_02, 7, 1),
+    BLDCMotor(&sensors[1], motor_pin_10, motor_pin_11, motor_pin_12, 7, 1)};
 
 BinaryCommander commander;
 ControllerState controller_state = ControllerState::PRE_INIT;
@@ -41,10 +46,10 @@ ControllerState controller_state = ControllerState::PRE_INIT;
 CustomMagneticSensorI2C* GetSensor(uint8_t index) { return &sensors[index]; }
 
 void Initialize() {
-   for (int i = 0; i < 2; ++i) {
-      motors[i].init();
-      motors[i].disable(); 
-   }
+  for (int i = 0; i < 2; ++i) {
+    motors[i].init();
+    motors[i].disable();
+  }
 }
 
 void InitController() {
@@ -76,7 +81,6 @@ void InitController() {
 
     motors[i].init();
     motors[i].disable();
-
 
     if (availability[i] & MOTOR_AVAILABLE) {
       // motors[i].linkDriver(&drivers[i]);

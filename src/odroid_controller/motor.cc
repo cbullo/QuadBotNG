@@ -28,7 +28,6 @@ void Motor::Update() {
 void Motor::UpdateAngle(uint16_t new_angle) {
   if (first_update) {
     offset_angle_ = new_angle * kAS5600ToRadians;
-    prev_offset_angle_ = offset_angle_;
     zero_angle_ = offset_angle_;
     first_update = false;
     raw_angle_ = new_angle;
@@ -39,7 +38,7 @@ void Motor::UpdateAngle(uint16_t new_angle) {
 
   double new_angle_rad = new_angle * kAS5600ToRadians;
 
-  prev_offset_angle_ = offset_angle_;
+  double prev_offset_angle_ = offset_angle_;
   offset_angle_ = new_angle_rad;
 
   // std::cout << prev_offset_angle_ << " " << offset_angle_ << std::endl;
