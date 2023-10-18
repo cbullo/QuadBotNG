@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <robot name="URDF" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:include filename="/home/tomasz/dev/dev_ws/src/quadbot_description/urdf/materials.xacro" />
-  <xacro:include filename="/home/tomasz/dev/dev_ws/src/quadbot_description/urdf/URDF.trans" />
-  <xacro:include filename="/home/tomasz/dev/dev_ws/src/quadbot_description/urdf/URDF.gazebo" />
+  <!-- <xacro:include filename="/home/tomasz/dev/QuadBotNG/sim/urdf/materials.xacro" />
+  <xacro:include filename="/home/tomasz/dev/QuadBotNG/sim/urdf/URDF.trans" /> -->
+  <xacro:include filename="/home/tomasz/dev/QuadBotNG/sim/urdf/URDF.gazebo" />
   <link name="base_link">
     <inertial>
       <origin xyz="0.00014024235087096401 -0.0003890538127367371 -0.019060892954127925" rpy="0 0 0" />
@@ -13,7 +13,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/base_link.stl"
+        <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/base_link.stl"
           scale="0.001 0.001 0.001" />
       </geometry>
       <material name="silver" />
@@ -21,7 +21,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/base_link_c.stl"
+        <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/base_link_c.stl"
           scale="0.001 0.001 0.001" />
       </geometry>
     </collision>
@@ -38,7 +38,7 @@
     <visual>
       <origin xyz="-0.039505 -0.0 -0.018083" rpy="0 0 0" />
       <geometry>
-        <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/drives_1.stl"
+        <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/drives_1.stl"
           scale="0.001 0.001 0.001" />
       </geometry>
       <material name="silver" />
@@ -63,7 +63,7 @@
       <visual>
         <origin xyz="-0.039006 ${reflect_y * 0.053} -0.0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/shoulder_${prefix}_1.stl"
+          <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/shoulder_${prefix}_1.stl"
             scale="0.001 0.001 0.001" />
         </geometry>
         <material name="silver" />
@@ -72,7 +72,7 @@
         <origin xyz="-0.039006 ${reflect_y * 0.053} -0.0" rpy="0 0 0" />
         <geometry>
           <mesh
-            filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/shoulder_${prefix}_1_c.stl"
+            filename="/home/tomasz/dev/QuadBotNG/sim/meshes/shoulder_${prefix}_1_c.stl"
             scale="0.001 0.001 0.001" />
         </geometry>
       </collision>
@@ -90,7 +90,7 @@
       <visual>
         <origin xyz="-0.118706 ${reflect_y *0.0875} -0.0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_main_${prefix}_1.stl"
+          <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/arm_main_${prefix}_1.stl"
             scale="0.001 0.001 0.001" />
         </geometry>
         <material name="silver" />
@@ -99,7 +99,7 @@
         <origin xyz="-0.118706 ${reflect_y *0.0875} -0.0" rpy="0 0 0" />
         <geometry>
           <mesh
-            filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_main_${prefix}_1_c.stl"
+            filename="/home/tomasz/dev/QuadBotNG/sim/meshes/arm_main_${prefix}_1_c.stl"
             scale="0.001 0.001 0.001" />
         </geometry>
       </collision>
@@ -116,7 +116,7 @@
       <visual>
         <origin xyz="-0.118706 ${reflect_y *0.0875} -0.0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_crank_${prefix}_1.stl"
+          <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/arm_crank_${prefix}_1.stl"
             scale="0.001 0.001 0.001" />
         </geometry>
         <material name="silver" />
@@ -124,7 +124,7 @@
       <!-- <collision>
     <origin xyz="-0.118706 0.0875 -0.0" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_crank_${prefix}_1.stl"
+      <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/arm_crank_${prefix}_1.stl"
       scale="0.001 0.001 0.001"/>
     </geometry>
     <surface>
@@ -146,7 +146,7 @@
       <visual>
         <origin xyz="-0.153706 ${reflect_y *0.1026} -0.0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_link_${prefix}_1.stl"
+          <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/arm_link_${prefix}_1.stl"
             scale="0.001 0.001 0.001" />
         </geometry>
         <material name="silver" />
@@ -154,7 +154,7 @@
       <!-- <collision>
     <origin xyz="-0.153706 0.1026 -0.0" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_link_${prefix}_1.stl"
+      <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/arm_link_${prefix}_1.stl"
       scale="0.001 0.001 0.001"/>
     </geometry>
     <surface>
@@ -176,7 +176,7 @@
       <visual>
         <origin xyz="-0.118702 ${reflect_y *0.1026} 0.119915" rpy="0 0 0" />
         <geometry>
-          <mesh filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_lower_${prefix}_1.stl"
+          <mesh filename="/home/tomasz/dev/QuadBotNG/sim/meshes/arm_lower_${prefix}_1.stl"
             scale="0.001 0.001 0.001" />
         </geometry>
         <material name="silver" />
@@ -185,7 +185,7 @@
         <origin xyz="-0.118702 ${reflect_y *0.1026} 0.119915" rpy="0 0 0" />
         <geometry>
           <mesh
-            filename="/home/tomasz/dev/dev_ws/src/quadbot_description/meshes/arm_lower_${prefix}_1_c.stl"
+            filename="/home/tomasz/dev/QuadBotNG/sim/meshes/arm_lower_${prefix}_1_c.stl"
             scale="0.001 0.001 0.001" />
         </geometry>
         <surface>

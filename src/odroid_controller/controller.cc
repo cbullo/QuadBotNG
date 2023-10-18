@@ -104,7 +104,9 @@ void Controller::Update(float dt) {
   auto& controllers = GetControllers();
   bool any_transmission_bound = false;
   for (auto& controller : controllers) {
-    any_transmission_bound = any_transmission_bound || controller->IsTransmissionBound();
+    any_transmission_bound = any_transmission_bound ||
+                             controller->IsTransmissionBound() ||
+                             controller->AreCommandsScheduled();
   }
 
   dt_acc_ += dt;
@@ -121,14 +123,18 @@ void Controller::Update(float dt) {
     if (legs_.br) {
       legs_.br->UpdateControl(dt_acc_);
     }
-  
+
     for (auto* controller : controllers) {
       controller->Tick();
     }
 
     dt_acc_ = 0.f;
   } else {
-    std::cout << "Trasmission bound, skipping. Current delta: " << dt_acc_ << std::endl;
+    // std::cout << "Trasmission bound, skipping. Current delta: " << dt_acc_
+    //           << std::endl;
+    if (dt_acc_ > 0.1) {
+      dt_acc_ = 0.1;
+    }
   }
 }
 
@@ -563,7 +569,7 @@ void WalkBehavior::ProcessInputEvents(const std::deque<ControlEvent>& events) {
   for (const auto& event : events) {
     switch (event.event_id) {
       case EventId::kControlEventConfirm: {
-        auto leg = legs.bl;
+        auto leg = legs.fl;
         leg->SetControl(init_control_);
         init_control_->Restart();
         if (auto* motor = leg->GetMotorI()) {

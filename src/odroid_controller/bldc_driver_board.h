@@ -125,6 +125,7 @@ class BLDCDriverBoard {
   void SetErrorState(bool enabled) { error_state_ = enabled; }
 
   bool IsTransmissionBound() const { return is_transmission_bound_; };
+  bool AreCommandsScheduled();
 
   int serial_ = -1;
   void SendSync();

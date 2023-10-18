@@ -1,0 +1,1071 @@
+#VRML_SIM R2022b utf8
+# license: Apache License 2.0
+# license url: http://www.apache.org/licenses/LICENSE-2.0
+# This is a proto file for Webots for the URDF
+# Extracted from: /home/tomasz/dev/QuadBotNG/sim/urdf/quadbot.urdf
+
+PROTO URDF [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 0 1 0
+  field  SFString    name            "URDF"  # Is `Robot.name`.
+  field  SFString    controller      "void"  # Is `Robot.controller`.
+  field  MFString    controllerArgs  []      # Is `Robot.controllerArgs`.
+  field  SFString    customData      ""      # Is `Robot.customData`.
+  field  SFBool      supervisor      FALSE   # Is `Robot.supervisor`.
+  field  SFBool      synchronization TRUE    # Is `Robot.synchronization`.
+  field  SFBool      selfCollision   FALSE   # Is `Robot.selfCollision`.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    synchronization IS synchronization
+    selfCollision IS selfCollision
+    children [
+      Transform {
+        scale 0.001000 0.001000 0.001000
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.500000 0.500000 0.500000
+              roughness 1.000000
+              metalness 0
+            }
+            geometry DEF base_link Mesh {
+              url "/home/tomasz/dev/QuadBotNG/sim/meshes/base_link.stl"
+            }
+          }
+        ]
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor 0.039006 -0.053000 0.000000
+        }
+        device [
+          RotationalMotor {
+            name "base_to_shoulder_RF"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "base_to_shoulder_RF_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.039006 -0.053000 0.000000
+          children [
+            Transform {
+              translation -0.039006 0.053000 -0.000000
+              scale 0.001000 0.001000 0.001000
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.500000 0.500000 0.500000
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry DEF shoulder_RF_1 Mesh {
+                    url "/home/tomasz/dev/QuadBotNG/sim/meshes/shoulder_RF_1.stl"
+                  }
+                }
+              ]
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 0.000000
+                anchor 0.079700 -0.034500 0.000000
+              }
+              device [
+                RotationalMotor {
+                  name "shoulder_to_main_RF"
+                  maxTorque 10000
+                }
+                PositionSensor {
+                  name "shoulder_to_main_RF_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.079700 -0.034500 0.000000
+                children [
+                  Transform {
+                    translation -0.118706 0.087500 -0.000000
+                    scale 0.001000 0.001000 0.001000
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.500000 0.500000 0.500000
+                          roughness 1.000000
+                          metalness 0
+                        }
+                        geometry DEF arm_main_RF_1 Mesh {
+                          url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_main_RF_1.stl"
+                        }
+                      }
+                    ]
+                  }
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 1.000000 0.000000
+                      anchor 0.000000 -0.015100 -0.120000
+                    }
+                    device [
+                      RotationalMotor {
+                        name "main_to_lower_RF"
+                        maxTorque 10000
+                      }
+                      PositionSensor {
+                        name "main_to_lower_RF_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.000000 -0.015100 -0.120000
+                      children [
+                        Transform {
+                          translation -0.118702 0.102600 0.119915
+                          scale 0.001000 0.001000 0.001000
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.500000 0.500000 0.500000
+                                roughness 1.000000
+                                metalness 0
+                              }
+                              geometry DEF arm_lower_RF_1 Mesh {
+                                url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_lower_RF_1.stl"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                      name "arm_lower_RF_1"
+                      boundingObject Transform {
+                        translation -0.118702 0.102600 0.119915
+                        scale 0.001000 0.001000 0.001000
+                        children [
+                          DEF arm_lower_RF_1_c Mesh {
+                            url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_lower_RF_1_c.stl"
+                          }
+                        ]
+                      }
+                      physics Physics {
+                        density -1
+                        mass 0.039989
+                        centerOfMass [ 0.063221 0.000000 -0.001920 ]
+                        inertiaMatrix [
+                          3.000000e-06 6.000000e-05 5.900000e-05
+                          -0.000000e+00 -2.000000e-06 0.000000e+00
+                        ]
+                      }
+                    }
+                  }
+                ]
+                name "arm_main_RF_1"
+                boundingObject Transform {
+                  translation -0.118706 0.087500 -0.000000
+                  scale 0.001000 0.001000 0.001000
+                  children [
+                    DEF arm_main_RF_1_c Mesh {
+                      url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_main_RF_1_c.stl"
+                    }
+                  ]
+                }
+                physics Physics {
+                  density -1
+                  mass 0.047282
+                  centerOfMass [ -0.004248 -0.014188 -0.048863 ]
+                  inertiaMatrix [
+                    7.800000e-05 7.700000e-05 6.000000e-06
+                    -0.000000e+00 2.000000e-06 -2.000000e-06
+                  ]
+                }
+              }
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 0.000000
+                anchor 0.079700 -0.034500 0.000000
+              }
+              device [
+                RotationalMotor {
+                  name "shoulder_to_crank_RF"
+                  maxTorque 10000
+                }
+                PositionSensor {
+                  name "shoulder_to_crank_RF_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.079700 -0.034500 0.000000
+                children [
+                  Transform {
+                    translation -0.118706 0.087500 -0.000000
+                    scale 0.001000 0.001000 0.001000
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.500000 0.500000 0.500000
+                          roughness 1.000000
+                          metalness 0
+                        }
+                        geometry DEF arm_crank_RF_1 Mesh {
+                          url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_crank_RF_1.stl"
+                        }
+                      }
+                    ]
+                  }
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 -1.000000 0.000000
+                      anchor 0.035000 -0.015100 0.000000
+                    }
+                    device [
+                      RotationalMotor {
+                        name "crank_to_link_RF"
+                        maxTorque 10000
+                      }
+                      PositionSensor {
+                        name "crank_to_link_RF_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.035000 -0.015100 0.000000
+                      children [
+                        Transform {
+                          translation -0.153706 0.102600 -0.000000
+                          scale 0.001000 0.001000 0.001000
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.500000 0.500000 0.500000
+                                roughness 1.000000
+                                metalness 0
+                              }
+                              geometry DEF arm_link_RF_1 Mesh {
+                                url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_link_RF_1.stl"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                      name "arm_link_RF_1"
+                      physics Physics {
+                        density -1
+                        mass 0.033115
+                        centerOfMass [ 0.001141 -0.001369 -0.058905 ]
+                        inertiaMatrix [
+                          4.400000e-05 4.300000e-05 4.000000e-06
+                          -0.000000e+00 -1.000000e-06 0.000000e+00
+                        ]
+                      }
+                    }
+                  }
+                ]
+                name "arm_crank_RF_1"
+                physics Physics {
+                  density -1
+                  mass 0.007003
+                  centerOfMass [ 0.018704 -0.013857 0.000096 ]
+                }
+              }
+            }
+          ]
+          name "shoulder_RF_1"
+          boundingObject Transform {
+            translation -0.039006 0.053000 -0.000000
+            scale 0.001000 0.001000 0.001000
+            children [
+              DEF shoulder_RF_1_c Mesh {
+                url "/home/tomasz/dev/QuadBotNG/sim/meshes/shoulder_RF_1_c.stl"
+              }
+            ]
+          }
+          physics Physics {
+            density -1
+            mass 0.068798
+            centerOfMass [ 0.073059 -0.006367 0.000017 ]
+            inertiaMatrix [
+              4.500000e-05 4.900000e-05 5.000000e-05
+              7.000000e-06 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor 0.039006 0.053000 0.000000
+        }
+        device [
+          RotationalMotor {
+            name "base_to_shoulder_LF"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "base_to_shoulder_LF_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.039006 0.053000 0.000000
+          children [
+            Transform {
+              translation -0.039006 -0.053000 -0.000000
+              scale 0.001000 0.001000 0.001000
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.500000 0.500000 0.500000
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry DEF shoulder_LF_1 Mesh {
+                    url "/home/tomasz/dev/QuadBotNG/sim/meshes/shoulder_LF_1.stl"
+                  }
+                }
+              ]
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 0.000000
+                anchor 0.079700 0.034500 0.000000
+              }
+              device [
+                RotationalMotor {
+                  name "shoulder_to_main_LF"
+                  maxTorque 10000
+                }
+                PositionSensor {
+                  name "shoulder_to_main_LF_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.079700 0.034500 0.000000
+                children [
+                  Transform {
+                    translation -0.118706 -0.087500 -0.000000
+                    scale 0.001000 0.001000 0.001000
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.500000 0.500000 0.500000
+                          roughness 1.000000
+                          metalness 0
+                        }
+                        geometry DEF arm_main_LF_1 Mesh {
+                          url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_main_LF_1.stl"
+                        }
+                      }
+                    ]
+                  }
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 1.000000 0.000000
+                      anchor 0.000000 0.015100 -0.120000
+                    }
+                    device [
+                      RotationalMotor {
+                        name "main_to_lower_LF"
+                        maxTorque 10000
+                      }
+                      PositionSensor {
+                        name "main_to_lower_LF_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.000000 0.015100 -0.120000
+                      children [
+                        Transform {
+                          translation -0.118702 -0.102600 0.119915
+                          scale 0.001000 0.001000 0.001000
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.500000 0.500000 0.500000
+                                roughness 1.000000
+                                metalness 0
+                              }
+                              geometry DEF arm_lower_LF_1 Mesh {
+                                url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_lower_LF_1.stl"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                      name "arm_lower_LF_1"
+                      boundingObject Transform {
+                        translation -0.118702 -0.102600 0.119915
+                        scale 0.001000 0.001000 0.001000
+                        children [
+                          DEF arm_lower_LF_1_c Mesh {
+                            url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_lower_LF_1_c.stl"
+                          }
+                        ]
+                      }
+                      physics Physics {
+                        density -1
+                        mass 0.039989
+                        centerOfMass [ 0.063221 -0.000000 -0.001920 ]
+                        inertiaMatrix [
+                          3.000000e-06 6.000000e-05 5.900000e-05
+                          -0.000000e+00 -2.000000e-06 0.000000e+00
+                        ]
+                      }
+                    }
+                  }
+                ]
+                name "arm_main_LF_1"
+                boundingObject Transform {
+                  translation -0.118706 -0.087500 -0.000000
+                  scale 0.001000 0.001000 0.001000
+                  children [
+                    DEF arm_main_LF_1_c Mesh {
+                      url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_main_LF_1_c.stl"
+                    }
+                  ]
+                }
+                physics Physics {
+                  density -1
+                  mass 0.047282
+                  centerOfMass [ -0.004248 0.014188 -0.048863 ]
+                  inertiaMatrix [
+                    7.800000e-05 7.700000e-05 6.000000e-06
+                    -0.000000e+00 2.000000e-06 2.000000e-06
+                  ]
+                }
+              }
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 0.000000
+                anchor 0.079700 0.034500 0.000000
+              }
+              device [
+                RotationalMotor {
+                  name "shoulder_to_crank_LF"
+                  maxTorque 10000
+                }
+                PositionSensor {
+                  name "shoulder_to_crank_LF_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.079700 0.034500 0.000000
+                children [
+                  Transform {
+                    translation -0.118706 -0.087500 -0.000000
+                    scale 0.001000 0.001000 0.001000
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.500000 0.500000 0.500000
+                          roughness 1.000000
+                          metalness 0
+                        }
+                        geometry DEF arm_crank_LF_1 Mesh {
+                          url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_crank_LF_1.stl"
+                        }
+                      }
+                    ]
+                  }
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 -1.000000 0.000000
+                      anchor 0.035000 0.015100 0.000000
+                    }
+                    device [
+                      RotationalMotor {
+                        name "crank_to_link_LF"
+                        maxTorque 10000
+                      }
+                      PositionSensor {
+                        name "crank_to_link_LF_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.035000 0.015100 0.000000
+                      children [
+                        Transform {
+                          translation -0.153706 -0.102600 -0.000000
+                          scale 0.001000 0.001000 0.001000
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.500000 0.500000 0.500000
+                                roughness 1.000000
+                                metalness 0
+                              }
+                              geometry DEF arm_link_LF_1 Mesh {
+                                url "/home/tomasz/dev/QuadBotNG/sim/meshes/arm_link_LF_1.stl"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                      name "arm_link_LF_1"
+                      physics Physics {
+                        density -1
+                        mass 0.033115
+                        centerOfMass [ 0.001141 0.001369 -0.058905 ]
+                        inertiaMatrix [
+                          4.400000e-05 4.300000e-05 4.000000e-06
+                          -0.000000e+00 -1.000000e-06 0.000000e+00
+                        ]
+                      }
+                    }
+                  }
+                ]
+                name "arm_crank_LF_1"
+                physics Physics {
+                  density -1
+                  mass 0.007003
+                  centerOfMass [ 0.018704 0.013857 0.000096 ]
+                }
+              }
+            }
+          ]
+          name "shoulder_LF_1"
+          boundingObject Transform {
+            translation -0.039006 -0.053000 -0.000000
+            scale 0.001000 0.001000 0.001000
+            children [
+              DEF shoulder_LF_1_c Mesh {
+                url "/home/tomasz/dev/QuadBotNG/sim/meshes/shoulder_LF_1_c.stl"
+              }
+            ]
+          }
+          physics Physics {
+            density -1
+            mass 0.068798
+            centerOfMass [ 0.073059 0.006367 0.000017 ]
+            inertiaMatrix [
+              4.500000e-05 4.900000e-05 5.000000e-05
+              -7.000000e-06 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor -0.195006 -0.053000 0.000000
+        }
+        device [
+          RotationalMotor {
+            name "base_to_shoulder_RB"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "base_to_shoulder_RB_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.195006 -0.053000 0.000000
+          children [
+            Transform {
+              translation -0.039006 0.053000 -0.000000
+              scale 0.001000 0.001000 0.001000
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.500000 0.500000 0.500000
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry USE shoulder_RF_1
+                }
+              ]
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 0.000000
+                anchor 0.079700 -0.034500 0.000000
+              }
+              device [
+                RotationalMotor {
+                  name "shoulder_to_main_RB"
+                  maxTorque 10000
+                }
+                PositionSensor {
+                  name "shoulder_to_main_RB_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.079700 -0.034500 0.000000
+                children [
+                  Transform {
+                    translation -0.118706 0.087500 -0.000000
+                    scale 0.001000 0.001000 0.001000
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.500000 0.500000 0.500000
+                          roughness 1.000000
+                          metalness 0
+                        }
+                        geometry USE arm_main_RF_1
+                      }
+                    ]
+                  }
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 1.000000 0.000000
+                      anchor 0.000000 -0.015100 -0.120000
+                    }
+                    device [
+                      RotationalMotor {
+                        name "main_to_lower_RB"
+                        maxTorque 10000
+                      }
+                      PositionSensor {
+                        name "main_to_lower_RB_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.000000 -0.015100 -0.120000
+                      children [
+                        Transform {
+                          translation -0.118702 0.102600 0.119915
+                          scale 0.001000 0.001000 0.001000
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.500000 0.500000 0.500000
+                                roughness 1.000000
+                                metalness 0
+                              }
+                              geometry USE arm_lower_RF_1
+                            }
+                          ]
+                        }
+                      ]
+                      name "arm_lower_RB_1"
+                      boundingObject Transform {
+                        translation -0.118702 0.102600 0.119915
+                        scale 0.001000 0.001000 0.001000
+                        children [
+                          USE arm_lower_RF_1_c
+                        ]
+                      }
+                      physics Physics {
+                        density -1
+                        mass 0.039989
+                        centerOfMass [ 0.063221 0.000000 -0.001920 ]
+                        inertiaMatrix [
+                          3.000000e-06 6.000000e-05 5.900000e-05
+                          -0.000000e+00 -2.000000e-06 0.000000e+00
+                        ]
+                      }
+                    }
+                  }
+                ]
+                name "arm_main_RB_1"
+                boundingObject Transform {
+                  translation -0.118706 0.087500 -0.000000
+                  scale 0.001000 0.001000 0.001000
+                  children [
+                    USE arm_main_RF_1_c
+                  ]
+                }
+                physics Physics {
+                  density -1
+                  mass 0.047282
+                  centerOfMass [ -0.004248 -0.014188 -0.048863 ]
+                  inertiaMatrix [
+                    7.800000e-05 7.700000e-05 6.000000e-06
+                    -0.000000e+00 2.000000e-06 -2.000000e-06
+                  ]
+                }
+              }
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 0.000000
+                anchor 0.079700 -0.034500 0.000000
+              }
+              device [
+                RotationalMotor {
+                  name "shoulder_to_crank_RB"
+                  maxTorque 10000
+                }
+                PositionSensor {
+                  name "shoulder_to_crank_RB_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.079700 -0.034500 0.000000
+                children [
+                  Transform {
+                    translation -0.118706 0.087500 -0.000000
+                    scale 0.001000 0.001000 0.001000
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.500000 0.500000 0.500000
+                          roughness 1.000000
+                          metalness 0
+                        }
+                        geometry USE arm_crank_RF_1
+                      }
+                    ]
+                  }
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 -1.000000 0.000000
+                      anchor 0.035000 -0.015100 0.000000
+                    }
+                    device [
+                      RotationalMotor {
+                        name "crank_to_link_RB"
+                        maxTorque 10000
+                      }
+                      PositionSensor {
+                        name "crank_to_link_RB_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.035000 -0.015100 0.000000
+                      children [
+                        Transform {
+                          translation -0.153706 0.102600 -0.000000
+                          scale 0.001000 0.001000 0.001000
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.500000 0.500000 0.500000
+                                roughness 1.000000
+                                metalness 0
+                              }
+                              geometry USE arm_link_RF_1
+                            }
+                          ]
+                        }
+                      ]
+                      name "arm_link_RB_1"
+                      physics Physics {
+                        density -1
+                        mass 0.033115
+                        centerOfMass [ 0.001141 -0.001369 -0.058905 ]
+                        inertiaMatrix [
+                          4.400000e-05 4.300000e-05 4.000000e-06
+                          -0.000000e+00 -1.000000e-06 0.000000e+00
+                        ]
+                      }
+                    }
+                  }
+                ]
+                name "arm_crank_RB_1"
+                physics Physics {
+                  density -1
+                  mass 0.007003
+                  centerOfMass [ 0.018704 -0.013857 0.000096 ]
+                }
+              }
+            }
+          ]
+          name "shoulder_RB_1"
+          boundingObject Transform {
+            translation -0.039006 0.053000 -0.000000
+            scale 0.001000 0.001000 0.001000
+            children [
+              USE shoulder_RF_1_c
+            ]
+          }
+          physics Physics {
+            density -1
+            mass 0.068798
+            centerOfMass [ 0.073059 -0.006367 0.000017 ]
+            inertiaMatrix [
+              4.500000e-05 4.900000e-05 5.000000e-05
+              7.000000e-06 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor -0.195006 0.053000 0.000000
+        }
+        device [
+          RotationalMotor {
+            name "base_to_shoulder_LB"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "base_to_shoulder_LB_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.195006 0.053000 0.000000
+          children [
+            Transform {
+              translation -0.039006 -0.053000 -0.000000
+              scale 0.001000 0.001000 0.001000
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.500000 0.500000 0.500000
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry USE shoulder_LF_1
+                }
+              ]
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 0.000000
+                anchor 0.079700 0.034500 0.000000
+              }
+              device [
+                RotationalMotor {
+                  name "shoulder_to_main_LB"
+                  maxTorque 10000
+                }
+                PositionSensor {
+                  name "shoulder_to_main_LB_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.079700 0.034500 0.000000
+                children [
+                  Transform {
+                    translation -0.118706 -0.087500 -0.000000
+                    scale 0.001000 0.001000 0.001000
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.500000 0.500000 0.500000
+                          roughness 1.000000
+                          metalness 0
+                        }
+                        geometry USE arm_main_LF_1
+                      }
+                    ]
+                  }
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 1.000000 0.000000
+                      anchor 0.000000 0.015100 -0.120000
+                    }
+                    device [
+                      RotationalMotor {
+                        name "main_to_lower_LB"
+                        maxTorque 10000
+                      }
+                      PositionSensor {
+                        name "main_to_lower_LB_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.000000 0.015100 -0.120000
+                      children [
+                        Transform {
+                          translation -0.118702 -0.102600 0.119915
+                          scale 0.001000 0.001000 0.001000
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.500000 0.500000 0.500000
+                                roughness 1.000000
+                                metalness 0
+                              }
+                              geometry USE arm_lower_LF_1
+                            }
+                          ]
+                        }
+                      ]
+                      name "arm_lower_LB_1"
+                      boundingObject Transform {
+                        translation -0.118702 -0.102600 0.119915
+                        scale 0.001000 0.001000 0.001000
+                        children [
+                          USE arm_lower_LF_1_c
+                        ]
+                      }
+                      physics Physics {
+                        density -1
+                        mass 0.039989
+                        centerOfMass [ 0.063221 -0.000000 -0.001920 ]
+                        inertiaMatrix [
+                          3.000000e-06 6.000000e-05 5.900000e-05
+                          -0.000000e+00 -2.000000e-06 0.000000e+00
+                        ]
+                      }
+                    }
+                  }
+                ]
+                name "arm_main_LB_1"
+                boundingObject Transform {
+                  translation -0.118706 -0.087500 -0.000000
+                  scale 0.001000 0.001000 0.001000
+                  children [
+                    USE arm_main_LF_1_c
+                  ]
+                }
+                physics Physics {
+                  density -1
+                  mass 0.047282
+                  centerOfMass [ -0.004248 0.014188 -0.048863 ]
+                  inertiaMatrix [
+                    7.800000e-05 7.700000e-05 6.000000e-06
+                    -0.000000e+00 2.000000e-06 2.000000e-06
+                  ]
+                }
+              }
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 0.000000
+                anchor 0.079700 0.034500 0.000000
+              }
+              device [
+                RotationalMotor {
+                  name "shoulder_to_crank_LB"
+                  maxTorque 10000
+                }
+                PositionSensor {
+                  name "shoulder_to_crank_LB_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.079700 0.034500 0.000000
+                children [
+                  Transform {
+                    translation -0.118706 -0.087500 -0.000000
+                    scale 0.001000 0.001000 0.001000
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.500000 0.500000 0.500000
+                          roughness 1.000000
+                          metalness 0
+                        }
+                        geometry USE arm_crank_LF_1
+                      }
+                    ]
+                  }
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 -1.000000 0.000000
+                      anchor 0.035000 0.015100 0.000000
+                    }
+                    device [
+                      RotationalMotor {
+                        name "crank_to_link_LB"
+                        maxTorque 10000
+                      }
+                      PositionSensor {
+                        name "crank_to_link_LB_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.035000 0.015100 0.000000
+                      children [
+                        Transform {
+                          translation -0.153706 -0.102600 -0.000000
+                          scale 0.001000 0.001000 0.001000
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.500000 0.500000 0.500000
+                                roughness 1.000000
+                                metalness 0
+                              }
+                              geometry USE arm_link_LF_1
+                            }
+                          ]
+                        }
+                      ]
+                      name "arm_link_LB_1"
+                      physics Physics {
+                        density -1
+                        mass 0.033115
+                        centerOfMass [ 0.001141 0.001369 -0.058905 ]
+                        inertiaMatrix [
+                          4.400000e-05 4.300000e-05 4.000000e-06
+                          -0.000000e+00 -1.000000e-06 0.000000e+00
+                        ]
+                      }
+                    }
+                  }
+                ]
+                name "arm_crank_LB_1"
+                physics Physics {
+                  density -1
+                  mass 0.007003
+                  centerOfMass [ 0.018704 0.013857 0.000096 ]
+                }
+              }
+            }
+          ]
+          name "shoulder_LB_1"
+          boundingObject Transform {
+            translation -0.039006 -0.053000 -0.000000
+            scale 0.001000 0.001000 0.001000
+            children [
+              USE shoulder_LF_1_c
+            ]
+          }
+          physics Physics {
+            density -1
+            mass 0.068798
+            centerOfMass [ 0.073059 0.006367 0.000017 ]
+            inertiaMatrix [
+              4.500000e-05 4.900000e-05 5.000000e-05
+              -7.000000e-06 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      Solid {
+        translation 0.039505 0.000000 0.018083
+        children [
+          Transform {
+            translation -0.039505 -0.000000 -0.018083
+            scale 0.001000 0.001000 0.001000
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.500000 0.500000 0.500000
+                  roughness 1.000000
+                  metalness 0
+                }
+                geometry DEF drives_1 Mesh {
+                  url "/home/tomasz/dev/QuadBotNG/sim/meshes/drives_1.stl"
+                }
+              }
+            ]
+          }
+        ]
+        name "drives_1"
+        physics Physics {
+          density -1
+          mass 3.702588
+          centerOfMass [ -0.039518 0.000000 -0.012055 ]
+          inertiaMatrix [
+            8.603000e-03 5.622900e-02 6.289300e-02
+            0.000000e+00 -0.000000e+00 0.000000e+00
+          ]
+        }
+      }
+    ]
+    name IS name
+    boundingObject Transform {
+      scale 0.001000 0.001000 0.001000
+      children [
+        DEF base_link_c Mesh {
+          url "/home/tomasz/dev/QuadBotNG/sim/meshes/base_link_c.stl"
+        }
+      ]
+    }
+    physics Physics {
+      density -1
+      mass 0.562156
+      centerOfMass [ 0.000140 -0.000389 -0.019061 ]
+      inertiaMatrix [
+        1.155000e-03 6.530000e-03 6.946000e-03
+        4.000000e-06 -2.400000e-05 2.000000e-06
+      ]
+    }
+  }
+}

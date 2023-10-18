@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iostream>
 
+#include <assert.h>
+
 inline uint16_t normalizeAngle(int32_t in, uint16_t period) {
   while (in < 0) {
     in += period;
@@ -51,8 +53,6 @@ int16_t sin15(int16_t i) {
   y = A1 - (y >> (p - q));
   y = (uint32_t)i * (y >> n);
   y = (y + (1UL << (q - a - 1))) >> (q - a);  // Rounding
-
-  y >>= 3;
 
   return c ? -y : y;
 }
@@ -376,26 +376,67 @@ void integerSinFOC2(int16_t U, uint16_t angle_el, int32_t &Ua, int32_t &Ub,
   int32_t pwm_b;
   int32_t pwm_c;
 
-  pwm_a = sin15(angle_el << 3);
-  pwm_b = sin15(normalizeAngle(angle_el + N_SIN_3, N_SIN) << 3);
-  pwm_c = sin15(normalizeAngle(angle_el + N_SIN_2_3, N_SIN) << 3);
+  // if (U > 28) {
+  //   U = max_power;
+  // } else if (U < -max_power) {
+  //   U = -max_power;
+  // }
 
-  uint16_t power = abs(U);
-  int32_t max_voltage = (12 * (1 << 9));
-  int32_t center = max_voltage / 2 - 1;
+  int angle = angle_el;
+  int16_t signed_angle = angle;
+  if (angle > 2048) {
+    signed_angle = 2048 - angle;
+  }
+  signed_angle *= (1 << 3);
+  pwm_a = static_cast<int32_t>(sin15(signed_angle)) + (1 << 12) + 1;
+  assert(pwm_a < (1 << 16));
+
+  angle = normalizeAngle(angle_el + N_SIN_3, N_SIN);
+  signed_angle = angle;
+  if (angle > 2048) {
+    signed_angle = 2048 - angle;
+  }
+  signed_angle *= (1 << 3);
+  pwm_b = static_cast<int32_t>(sin15(signed_angle)) + (1 << 12) + 1;
+  assert(pwm_b < (1 << 16));
+
+  angle = normalizeAngle(angle_el + N_SIN_2_3, N_SIN);
+  signed_angle = angle;
+  if (angle > 2048) {
+    signed_angle = 2048 - angle;
+  }
+  signed_angle *= (1 << 3);
+  pwm_c = static_cast<int32_t>(sin15(signed_angle)) + (1 << 12) + 1;
+  assert(pwm_c < (1 << 16));
+
+  // auto minv = std::min(pwm_a, std::min(pwm_b, pwm_c));
+  // pwm_a -= minv;
+  // pwm_b -= minv;
+  // pwm_c -= minv;
+
+  int16_t power = abs(U);
 
   // apply power factor
-  pwm_a = power * pwm_a;
-  pwm_a = pwm_a >> 10;
-  pwm_a += center;
+  uint32_t pwm_a_u = power * pwm_a;
 
-  pwm_b = power * pwm_b;
-  pwm_b = pwm_b >> 10;
-  pwm_b += center;
+  pwm_a_u /= 28 * 514;
 
-  pwm_c = power * pwm_c;
-  pwm_c = pwm_c >> 10;
-  pwm_c += center;
+  pwm_a_u = pwm_a_u >> 5;
+  // pwm_a += center;
+
+  uint32_t pwm_b_u = power * pwm_b;
+  
+  pwm_b_u /= 28 * 514;
+  
+  pwm_b_u = pwm_b_u >> 5;
+  // pwm_b += center;
+
+  uint32_t pwm_c_u = power * pwm_c;
+  
+  pwm_c_u /= 28 * 514;
+  
+  pwm_c_u = pwm_c_u >> 5;
+  // pwm_c += center;
 
   // pwm_a = std::max(0, std::min(pwm_a, 12 * 512));
   // pwm_b = std::max(0, std::min(pwm_b, 12 * 512));
@@ -408,15 +449,15 @@ void integerSinFOC2(int16_t U, uint16_t angle_el, int32_t &Ua, int32_t &Ub,
   // uint16_t uub = pwm_b;
   // uint16_t uuc = pwm_c;
 
-  Ua = pwm_a / (2 * (max_voltage >> 9));
-  Ub = pwm_b / (2 * (max_voltage >> 9));
-  Uc = pwm_c / (2 * (max_voltage >> 9));
+  Ua = pwm_a_u;
+  Ub = pwm_b_u;
+  Uc = pwm_c_u;
 }
 
 int main() {
   std::ofstream fout("output.txt");
 
-  for (int i = 0; i < 4096; ++i) {
+  for (int i = -8096; i <= 8096; ++i) {
     //   float angle_f = 2.0 * M_PI * (i / 4096.0);
     // int16_t elec_angle = electricalAngle(i);
     int16_t elec_angle = i;
@@ -487,9 +528,9 @@ int main() {
 
     uint16_t angle_corrected = static_cast<uint16_t>(4095 + 2) & (0xFFF);
 
-    std::cout << angle_corrected << std::endl;
+    //std::cout << angle_corrected << std::endl;
 
-    fout << i << " " << Ua << " " << Ub << " " << Uc << std ::endl;
+    fout << i << " " << Ua << " " << Ub << " " << Uc << " " << Ua+Ub+Uc << std ::endl;
   }
   return 0;
 }

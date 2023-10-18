@@ -52,19 +52,21 @@ class Leg {
     //   }
     // }
 
-    double gamma = NormalizeAngle(angle_i - angle_o) -
-                   1.4 * m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio();
+    // double gamma = NormalizeAngle(angle_i - angle_o) -
+    //                1.4 * m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio();
+    
+    float gamma = -0.5f * (angle_o - angle_i);
     gamma = NormalizeAngle(gamma);
     return gamma;
   }
 
   float GetTheta() const {
     float angle_o = GetAngleO();
-    // float angle_i = GetAngleI();
+    float angle_i = GetAngleI();
 
-    // float theta = 0.5 * (angle_o + angle_i);
-    float theta =
-        angle_o + 0.4 * m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio();
+    float theta = -0.5 * (angle_o + angle_i);
+    // float theta =
+    //     angle_o + 0.4 * m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio();
     theta = NormalizeAngle(theta) ;
     return theta;
   }

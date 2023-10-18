@@ -100,7 +100,7 @@ class BLDCMotor {
    * @param Ub - phase B voltage
    * @param Uc - phase C voltage
    */
-  void setPwm(Voltage Ua, Voltage Ub, Voltage Uc);
+  void setPwm(uint8_t Ua, uint8_t Ub, uint8_t Uc);
 
   /**
    * Set phase voltages to the harware

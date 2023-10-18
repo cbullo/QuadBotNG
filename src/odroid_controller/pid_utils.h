@@ -10,6 +10,7 @@ struct PIDState {
   float prev_error = 0.f;
   float i_sum = 0.f;
   float last_target = 0.f;
+  float last_reset = 0.f;
   bool last_target_set = false;
 
   float approx_running_mean = 0.f;
@@ -24,6 +25,7 @@ struct PIDState {
     prev_error = 0.f;
     i_sum = 0.f;
     last_target = 0.f;
+    last_reset = 0.f;
     last_target_set = false;
 
     approx_running_mean = 0.f;
@@ -43,6 +45,7 @@ inline void UpdatePIDStatistics(PIDState& state, float value, float dt,
     state.time_since_target_changed = 0.f;
     state.approx_running_mean = 0.f;
     state.approx_running_variance = 0.f;
+    //std::cout << "Target changed" << std::endl;
     return;
   }
 
@@ -88,10 +91,11 @@ inline float UpdatePIDControl(PIDState& state, const PIDParams& params,
   double tau = p_term + d_term + i_term;
   state.prev_error = error;
   UpdatePIDStatistics(state, value, dt,
-                      !state.last_target_set || fabsf(state.last_target - target) > 0.1);
-  if (fabsf(state.last_target - target) > 0.1) {
-    state.last_target = target;
+                      !state.last_target_set || fabsf(state.last_reset - target) > 0.1);
+  if (fabsf(state.last_reset - target) > 0.1) {
+    state.last_reset = target;
   }
+  state.last_target = target;
   state.last_target_set = true;
 
   if (debug) {

@@ -113,7 +113,8 @@ class InitializationLegControl : public LegControl {
     // DriveToReferenceTheta,
     FindMinZ,
     DriveToMinZ,
-    DriveToNextThetaRev
+    DriveToNextThetaRev,
+    Done
   };
 
  public:
@@ -145,15 +146,15 @@ bool DriveTo(Leg& leg, LegState& state, T theta, G gamma, Z z,
                              leg.GetThetaPIDConfig(), dt, tau_theta, false);
   float tau_gamma;
   bool gamma_reached = Drive(gamma, current.gamma, state.gamma_pid_state,
-                             leg.GetGammaPIDConfig(), dt, tau_gamma, false);
+                             leg.GetGammaPIDConfig(), dt, tau_gamma, true);
   float tau_z;
   bool z_reached = Drive(z, current.z, state.z_pid_state, leg.GetZPIDConfig(),
-                         dt, tau_z, true);
+                         dt, tau_z, false);
 
-  steering.steering_i = 0.0 * tau_theta + 1.0 * tau_gamma;
-  steering.steering_o = 1.0 * tau_theta - 1.0 * tau_gamma;
+  steering.steering_o = 0.5 * tau_theta + 0.5 * tau_gamma;
+  steering.steering_i = 0.5 * tau_theta - 0.5 * tau_gamma;
   steering.steering_z =
-      //0.4 * tau_theta - 1.4 * tau_gamma + 
+      // 0.4 * tau_theta - 1.4 * tau_gamma +
       tau_z; /*- 0.75f * tau_gamma*/
   ;
 
@@ -183,7 +184,9 @@ bool DriveTo(Leg& leg, LegState& state, T theta, G gamma, Z z,
   //                   ? std::to_string(state.gamma_pid_state.last_target)
   //                   : "NONE")
   //           << " MEAN:" << state.gamma_pid_state.approx_running_mean
-  //           << " VAR:" << state.gamma_pid_state.approx_running_variance;
+  //           << " VAR:" << state.gamma_pid_state.approx_running_variance
+  //           << " TSTB:" << state.gamma_pid_state.time_since_value_stable
+  //           << " TTRG" << state.gamma_pid_state.time_since_target_changed;
 
   // std::cout << "Z: "
   //           << "TRG:"

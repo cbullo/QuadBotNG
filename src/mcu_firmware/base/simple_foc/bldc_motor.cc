@@ -104,27 +104,77 @@ void BLDCMotor::setPhaseVoltageSin2(Voltage U, Angle angle_el) {
   int32_t pwm_b;
   int32_t pwm_c;
 
-  pwm_a = sin15(angle_el << 3);
-  pwm_b = sin15(normalizeAngle(angle_el + N_SIN_3, N_SIN) << 3);
-  pwm_c = sin15(normalizeAngle(angle_el + N_SIN_2_3, N_SIN) << 3);
+  if (U > MAX_VOLTAGE * 512) {
+    U = MAX_VOLTAGE * 512;
+  } else if (U < -MAX_VOLTAGE * 512) {
+    U = -MAX_VOLTAGE * 512;
+  }
 
-  Voltage power = abs(U);
-  int32_t center = voltage_power_supply / 2 - 1;
+  int angle = angle_el;
+  int16_t signed_angle = angle;
+  if (angle > 2048) {
+    signed_angle = 2048 - angle;
+  }
+  signed_angle *= (1 << 3);
+  pwm_a = static_cast<int32_t>(sin15(signed_angle)) + (1 << 12) + 1;
+
+  angle = normalizeAngle(angle_el + N_SIN_3, N_SIN);
+  signed_angle = angle;
+  if (angle > 2048) {
+    signed_angle = 2048 - angle;
+  }
+  signed_angle *= (1 << 3);
+  pwm_b = static_cast<int32_t>(sin15(signed_angle)) + (1 << 12) + 1;
+
+  angle = normalizeAngle(angle_el + N_SIN_2_3, N_SIN);
+  signed_angle = angle;
+  if (angle > 2048) {
+    signed_angle = 2048 - angle;
+  }
+  signed_angle *= (1 << 3);
+  pwm_c = static_cast<int32_t>(sin15(signed_angle)) + (1 << 12) + 1;
+
+  // auto minv = std::min(pwm_a, std::min(pwm_b, pwm_c));
+  // pwm_a -= minv;
+  // pwm_b -= minv;
+  // pwm_c -= minv;
+
+  int16_t power = abs(U);
 
   // apply power factor
-  pwm_a = power * pwm_a;
-  pwm_a = pwm_a >> 10;
-  pwm_a += center;
+  uint32_t pwm_a_u = power * pwm_a;
 
-  pwm_b = power * pwm_b;
-  pwm_b = pwm_b >> 10;
-  pwm_b += center;
+  pwm_a_u /= MAX_VOLTAGE * 514;
+  pwm_a_u = pwm_a_u >> 5;
+  // pwm_a += center;
 
-  pwm_c = power * pwm_c;
-  pwm_c = pwm_c >> 10;
-  pwm_c += center;
+  uint32_t pwm_b_u = power * pwm_b;
 
-  setPwm(pwm_a, pwm_b, pwm_c);
+  pwm_b_u /= MAX_VOLTAGE * 514;
+  pwm_b_u = pwm_b_u >> 5;
+  // pwm_b += center;
+
+  uint32_t pwm_c_u = power * pwm_c;
+
+  pwm_c_u /= MAX_VOLTAGE * 514;
+  pwm_c_u = pwm_c_u >> 5;
+  // pwm_c += center;
+
+  // pwm_a = std::max(0, std::min(pwm_a, 12 * 512));
+  // pwm_b = std::max(0, std::min(pwm_b, 12 * 512));
+  // pwm_c = std::max(0, std::min(pwm_c, 12 * 512));
+
+  // uint16_t vps = 8 * 512;
+  // vps >>= 9;
+
+  // uint16_t uua = pwm_a;
+  // uint16_t uub = pwm_b;
+  // uint16_t uuc = pwm_c;
+
+  uint8_t Ua = pwm_a_u;
+  uint8_t Ub = pwm_b_u;
+  uint8_t Uc = pwm_c_u;
+  setPwm(pwm_a_u, pwm_b_u, pwm_c_u);
 }
 
 void BLDCMotor::setPhaseVoltageSin(Voltage U, Angle angle_el) {
@@ -151,7 +201,7 @@ void BLDCMotor::setPhaseVoltageSin(Voltage U, Angle angle_el) {
 
   // setPwm(Ua, Ub, Uc);
 
-  setPwm(0, 3 * 512, 0);
+  // setPwm(0, 3 * 512, 0);
 }
 
 // Method using FOC to set Uq and Ud to the motor at the optimal angle
@@ -318,7 +368,7 @@ void BLDCMotor::setPhaseVoltage(Voltage U, Angle angle_el) {
   Uc = Tc * voltage_limit / (1 << 9);
 
   // set the voltages in driver
-  setPwm(Ua, Ub, Uc);
+  //setPwm(Ua, Ub, Uc);
 }
 
 // Function (iterative) generating open loop movement for target velocity
@@ -395,13 +445,17 @@ void BLDCMotor::setPhaseVoltage(Voltage U, Angle angle_el) {
 
 // init hardware pins
 int BLDCMotor::init() {
+  digitalWrite(pwmA, LOW);
+  digitalWrite(pwmB, LOW);
+  digitalWrite(pwmC, LOW);
+
   // PWM pins
   pinMode(pwmA, OUTPUT);
   pinMode(pwmB, OUTPUT);
   pinMode(pwmC, OUTPUT);
-  // digitalWrite(pwmA, 0);
-  // digitalWrite(pwmB, 0);
-  // digitalWrite(pwmC, 0);
+  // digitalWrite(pwmA, LOW);
+  // digitalWrite(pwmB, LOW);
+  // digitalWrite(pwmC, LOW);
   // if (_isset(enableA_pin)) pinMode(enableA_pin, OUTPUT);
   // if (_isset(enableB_pin)) pinMode(enableB_pin, OUTPUT);
   // if (_isset(enableC_pin)) pinMode(enableC_pin, OUTPUT);
@@ -417,7 +471,7 @@ int BLDCMotor::init() {
   //_delay(500);
   // enable motor
   disable();
-  _delay(500);
+  //_delay(500);
   return 0;
 }
 
@@ -443,7 +497,7 @@ extern uint8_t motor_pin_00;
 extern bool disable_motors_temp_read;
 
 // Set voltage to the pwm pin
-void BLDCMotor::setPwm(Voltage Ua, Voltage Ub, Voltage Uc) {
+void BLDCMotor::setPwm(uint8_t dc_a, uint8_t dc_b, uint8_t dc_c) {
   // limit the voltage in driver
   // Ua = max(0, min(Ua, voltage_limit));
   // Ub = max(0, min(Ub, voltage_limit));
@@ -452,27 +506,27 @@ void BLDCMotor::setPwm(Voltage Ua, Voltage Ub, Voltage Uc) {
   // uint16_t vps = voltage_power_supply;
   // vps >>= 8;
 
-  uint16_t uua = Ua;
-  uint16_t uub = Ub;
-  uint16_t uuc = Uc;
+  // uint16_t uua = Ua;
+  // uint16_t uub = Ub;
+  // uint16_t uuc = Uc;
 
-  dc_a = uua / (2 * (voltage_power_supply >> 9));
-  dc_b = uub / (2 * (voltage_power_supply >> 9));
-  dc_c = uuc / (2 * (voltage_power_supply >> 9));
+  // dc_a = uua / (2 * (voltage_power_supply >> 9));
+  // dc_b = uub / (2 * (voltage_power_supply >> 9));
+  // dc_c = uuc / (2 * (voltage_power_supply >> 9));
 
   // hardware specific writing
   // hardware specific function - depending on driver and mcu
   //_writeDutyCycle3PWM(dc_a, dc_b, dc_c, pwmA, pwmB, pwmC);
 
-  if (pwmA == motor_pin_00) {
-    dc_value_00 = dc_a;
-    dc_value_01 = dc_b;
-    dc_value_02 = dc_c;
-  } else {
-    dc_value_10 = dc_a;
-    dc_value_11 = dc_b;
-    dc_value_12 = dc_c;
-  }
+  // if (pwmA == motor_pin_00) {
+  //   dc_value_00 = dc_a;
+  //   dc_value_01 = dc_b;
+  //   dc_value_02 = dc_c;
+  // } else {
+  //   dc_value_10 = dc_a;
+  //   dc_value_11 = dc_b;
+  //   dc_value_12 = dc_c;
+  // }
 
   if (!disable_motors_temp_read) {
     _writeDutyCycle3PWM(dc_a, dc_b, dc_c, pwmA, pwmB, pwmC);

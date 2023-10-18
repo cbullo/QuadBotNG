@@ -52,7 +52,7 @@ void MainInitialize() {
   LEDPIN_OFF
 
   wdt_disable();
-  Serial.begin(115200);
+  Serial.begin(500000);
   // while (!Serial)
   //  ;
 

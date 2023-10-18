@@ -1,5 +1,7 @@
 #include "leg_controls.h"
 
+#include <unistd.h>
+
 #include "leg.h"
 #include "log_helper.h"
 #include "pid_utils.h"
@@ -342,7 +344,7 @@ bool Drive(Steering::DisabledT dir, float current, PIDState& state,
 bool Drive(Steering::PositiveT dir, float current, PIDState& state,
            const PIDParams& params, float dt, float& tau_theta, bool debug) {
   tau_theta =
-      UpdatePIDControl(state, params, dt, current + 0.1 * M_PI, current, debug);
+      UpdatePIDControl(state, params, dt, state.last_target_set ? state.last_target + 0.02 * dt * M_PI : current, current, debug);
   if (state.time_since_value_stable > 1.f) {
     return true;
   }
@@ -352,7 +354,7 @@ bool Drive(Steering::PositiveT dir, float current, PIDState& state,
 bool Drive(Steering::NegativeT dir, float current, PIDState& state,
            const PIDParams& params, float dt, float& tau_theta, bool debug) {
   tau_theta =
-      UpdatePIDControl(state, params, dt, current - 0.1 * M_PI, current, debug);
+      UpdatePIDControl(state, params, dt, state.last_target_set ? state.last_target - 0.02 * dt * M_PI : current, current, debug);
   if (state.time_since_value_stable > 1.f) {
     return true;
   }
@@ -396,7 +398,7 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
   const double kUpdateDelta = 0.005;
 
   delay_ -= dt;
-  if (delay_ <= 0.f) {
+  // if (delay_ <= 0.f) {
     switch (stage_) {
       case InitializationStage::PreInitialization:
         std::cout << "PreInitialization ";
@@ -421,18 +423,21 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
     switch (stage_) {
       case InitializationStage::PreInitialization: {
         locked_z_ = leg.GetAngleZ();
+        locked_theta_ = leg.GetTheta();
+        locked_gamma_ = leg.GetGamma();
       } break;
 
       case InitializationStage::DriveToMinGamma: {
-        if (DriveTo(leg, state_, Steering::Disabled, Steering::Negative,
-                    locked_z_, leg.GetState(), kUpdateDelta, steering)) {
+        if (DriveTo(leg, state_, locked_theta_, Steering::Negative,
+                    locked_z_, leg.GetState(), dt, steering)) {
           // if (!VerifyPosition<Gamma>(leg)) {
           //   return false;
           // }
-          locked_theta_ = leg.GetTheta();
-          locked_z_ = leg.GetAngleZ();
-          locked_gamma_ = leg.GetGamma();
-          ChangeStage(InitializationStage::FindMinZ);
+          // locked_theta_ = leg.GetTheta();
+          // locked_z_ = leg.GetAngleZ();
+          // locked_gamma_ = leg.GetGamma();
+          // ChangeStage(InitializationStage::FindMinZ);
+          ChangeStage(InitializationStage::Done);
         }
       } break;
 
@@ -505,6 +510,8 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
         }
         // steering.steering_z = -steering.steering_z;
       } break;
+      default:
+        return true;
     }
 
     steering.steering_i = std::clamp(steering.steering_i, -12.f, 12.f);
@@ -525,8 +532,10 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
                              steering.steering_z));
     delay_ = kUpdateDelta;
 
-    std::cout << steering.steering_i << " " << steering.steering_o << " "
-              << steering.steering_z << std::endl;
-  }
+    //usleep(100000);
+
+    // std::cout << steering.steering_i << " " << steering.steering_o << " "
+    //           << steering.steering_z << std::endl;
+  //}
   return true;
 }

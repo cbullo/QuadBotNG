@@ -26,29 +26,37 @@ void Motor::Update() {
 }
 
 void Motor::UpdateAngle(uint16_t new_angle) {
-  if (first_update) {
-    offset_angle_ = new_angle * kAS5600ToRadians;
-    zero_angle_ = offset_angle_;
-    first_update = false;
+    if (first_update) {
+      offset_angle_ = new_angle * kAS5600ToRadians;
+      zero_angle_ = offset_angle_;
+      first_update = false;
+      raw_angle_ = new_angle;
+      // std::cout << "Zero angle set: " << zero_angle_ << std::endl;
+      // std::cout << "Accumulated angle: " << GetAccumulatedAngle() <<
+      // std::endl;
+      return;
+    }
+
+    auto prev_angle = offset_angle_;
+    offset_angle_ = new_angle;
+
+    // std::cout << prev_offset_angle_ << " " << offset_angle_ << std::endl;
+
+    auto diff = new_angle - prev_angle;
+    if (diff <= -2048) {
+      diff += 4096;
+    } else if (diff > 2048) {
+      diff -= 4096;
+    }
+
+
+    accumulated_angle_ += diff;
+    
+
     raw_angle_ = new_angle;
-    // std::cout << "Zero angle set: " << zero_angle_ << std::endl;
+
     // std::cout << "Accumulated angle: " << GetAccumulatedAngle() << std::endl;
-    return;
   }
-
-  double new_angle_rad = new_angle * kAS5600ToRadians;
-
-  double prev_offset_angle_ = offset_angle_;
-  offset_angle_ = new_angle_rad;
-
-  // std::cout << prev_offset_angle_ << " " << offset_angle_ << std::endl;
-
-  double angle_diff = ClosestAngle(prev_offset_angle_, offset_angle_);
-  accumulated_angle_ += angle_diff;
-  raw_angle_ = new_angle;
-
-  // std::cout << "Accumulated angle: " << GetAccumulatedAngle() << std::endl;
-}
 
 // void Motor::SetZeroAngle(uint16_t zero_angle) {
 //   if (direction_ == -1) {

@@ -2,6 +2,16 @@
 
 #include "stdint.h"
 
+// https://www.nullhardware.com/blog/fixed-point-sine-and-cosine-for-embedded-systems/
+
+/*
+Implements the 5-order polynomial approximation to sin(x).
+@param i   angle (with 2^15 units/circle)
+@return    16 bit fixed point Sine value (4.12) (ie: +4096 = +1 & -4096 = -1)
+
+The result is accurate to within +- 1 count. ie: +/-2.44e-4.
+*/
+
 inline int16_t sin15(int16_t i) {
   /* Convert (signed) input to a value between 0 and 8192. (8192 is pi/2, which
    * is the region of the curve fit). */
@@ -30,7 +40,8 @@ inline int16_t sin15(int16_t i) {
   y = (uint32_t)i * (y >> n);
   y = (y + (1UL << (q - a - 1))) >> (q - a);  // Rounding
 
-  y >>= 3;
-
   return c ? -y : y;
 }
+
+//Cos(x) = sin(x + pi/2)
+#define fpcos(i) fpsin((int16_t)(((uint16_t)(i)) + 8192U))

@@ -3,12 +3,12 @@
 
 <xacro:property name="body_color" value="Gazebo/Silver" />
 
-<gazebo>
+<!-- <gazebo>
   <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
     <robot_param>robot_description</robot_param>
     <robot_param_node>robot_state_publisher</robot_param_node>
   </plugin>
-</gazebo>
+</gazebo> -->
 
 <gazebo reference="base_link">
   <material>${body_color}</material>

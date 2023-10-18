@@ -67,10 +67,10 @@ void InitController() {
 
   for (int i = 0; i < 2; ++i) {
     if (availability[i] & MOTOR_AVAILABLE) {
-      motors[i].voltage_power_supply = 12 * 512;
-      motors[i].voltage_limit = 12 * 512;
-      // motors[i].init();
-      // motors[i].enable();
+      motors[i].voltage_power_supply = 28 * 512;
+      motors[i].voltage_limit = 28 * 512;
+      motors[i].init();
+      motors[i].disable();
     }
   }
 
@@ -79,8 +79,8 @@ void InitController() {
     // Serial.print(i);
     // Serial.println(F(" ready"));
 
-    motors[i].init();
-    motors[i].disable();
+    // motors[i].init();
+    // motors[i].disable();
 
     if (availability[i] & MOTOR_AVAILABLE) {
       // motors[i].linkDriver(&drivers[i]);

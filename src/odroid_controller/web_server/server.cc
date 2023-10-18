@@ -439,7 +439,7 @@ int WebServer::Init(const Controller *controller) {
   static const struct lws_http_mount mount = {
       /* .mount_next */ &mount_sse, /* linked-list "next" */
       /* .mountpoint */ "/",        /* mountpoint URL */
-      /* .origin */ "./public",     /* serve from dir */
+      /* .origin */ "../public",     /* serve from dir */
       /* .def */ "index.html",      /* default filename */
       /* .protocol */ NULL,
       /* .cgienv */ NULL,

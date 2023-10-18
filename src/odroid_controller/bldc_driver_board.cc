@@ -60,7 +60,7 @@ bool BLDCDriverBoard::Connect() {
   config.c_cc[VMIN] = 0;
   config.c_cc[VTIME] = 0;
 
-  if (cfsetispeed(&config, B115200) < 0 || cfsetospeed(&config, B115200) < 0) {
+  if (cfsetispeed(&config, B500000) < 0 || cfsetospeed(&config, B500000) < 0) {
     Disconnect();
     return false;
   }
@@ -100,9 +100,14 @@ void BLDCDriverBoard::StartCommunicationThread() {
       std::make_unique<std::thread>(&BLDCDriverBoard::ProcessLoop, this);
 }
 
-void BLDCDriverBoard::ProcessSend() {
-  Command to_process;
+static int counter = 0;
 
+bool BLDCDriverBoard::AreCommandsScheduled() {
+  std::lock_guard<std::mutex> guard(commands_mutex_);
+  return !pending_commands_.empty();
+}
+
+void BLDCDriverBoard::ProcessSend() {
   const int MAX_SEND_BUFFER_BYTES = 1024;
 
   {
@@ -110,44 +115,48 @@ void BLDCDriverBoard::ProcessSend() {
     ssize_t bytes_read;
     int fd = serial_;
     while (true) {
+      // is_transmission_bound_ = true;
+      // tcdrain(fd);
+      // is_transmission_bound_ = false;
+
+      Command to_process;
       int bytes_in_send_buffer = 0;
       int error = ioctl(fd, TIOCOUTQ, &bytes_in_send_buffer);
-      //std::cout << bytes_in_send_buffer << std::endl;
-      if (error == -1) {
+      // std::cout << bytes_in_send_buffer << std::endl;
+      if (error != 0) {
         HandleCommunicationError(
             fmt::format("ProcessReceive ioctl() returned error {}: {}", errno,
                         strerror(errno)));
         return;
       }
 
-      if (bytes_in_send_buffer > MAX_SEND_BUFFER_BYTES) {
+      if (bytes_in_send_buffer > 0) {
         // Wait until data is flushed
         is_transmission_bound_ = true;
-        std::cout << "Transmission bound" << std::endl;
+        // std::cout << "Transmission bound" << std::endl;
+        //tcdrain(fd);
         return;
       } else {
         is_transmission_bound_ = false;
       }
 
-      std::lock_guard<std::mutex> guard(commands_mutex_);
-      if (pending_commands_.empty()) {
-        return;
-      }
+      {
+        std::lock_guard<std::mutex> guard(commands_mutex_);
+        if (pending_commands_.empty()) {
+          return;
+        }
 
-      if (!pending_commands_.empty()) {
-        to_process = pending_commands_.front();
-        pending_commands_.pop();
-        if (to_process.command_bytes[0] & GET_CMD_BIT) {
-          sent_get_commands_.push(to_process);
+        if (!pending_commands_.empty()) {
+          to_process = pending_commands_.front();
+          pending_commands_.pop();
+          if (to_process.command_bytes[0] & GET_CMD_BIT) {
+            sent_get_commands_.push(to_process);
+          }
         }
       }
+      SendCommand(to_process.command_bytes, to_process.command_length);
     }
   }
-
-  // std::cout << "Sending command: "
-  //           << "0x" << std::setfill('0') << std::setw(2) << std::right
-  //           << std::hex << (int)to_process.command_bytes[0] << std::endl;
-  SendCommand(to_process.command_bytes, to_process.command_length);
 }
 
 void BLDCDriverBoard::SendCommand(const uint8_t *bytes, int message_length) {
@@ -166,8 +175,14 @@ void BLDCDriverBoard::SendCommand(const uint8_t *bytes, int message_length) {
                         strerror(errno)));
       }
     }
+    // if (usb_address_ == "/dev/ardu4") {
+    //   std::cout << "Sending command: "
+    //             << "0x" << std::setfill('0') << std::setw(2) << std::right
+    //             << std::hex << (int)bytes[0] << std::endl;
+    // }
     message_length -= bytes_sent;
   }
+  std::cout << "Sent " << pending_commands_.size() << std::endl;
 }
 
 void BLDCDriverBoard::DiscardReceive() {
@@ -549,6 +564,8 @@ void BLDCDriverBoard::ProcessLoop() {
     }
     CheckTimeout();
   }
+
+  std::cout << "Disconnected" << std::endl;
 }
 
 void BLDCDriverBoard::ResetBoard() {

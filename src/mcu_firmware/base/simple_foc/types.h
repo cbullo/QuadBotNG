@@ -8,7 +8,7 @@ struct FullAngle {
 #define NOT_SET -12345.0
 #define _isset(a) ((a) != (NOT_SET))
 
-#define MAX_VOLTAGE 30
+#define MAX_VOLTAGE 28
 
 using Velocity = int16_t;
 using Angle = uint16_t;
