@@ -49,19 +49,19 @@ inline void UpdatePIDStatistics(PIDState& state, float value, float dt,
     return;
   }
 
-  state.approx_running_mean = state.approx_running_mean * 0.95f + value * 0.05f;
+  state.approx_running_mean = state.approx_running_mean * (1.0f - dt) + value * dt;
   state.variance =
       (value - state.approx_running_mean) * (value - state.approx_running_mean);
   state.approx_running_variance =
-      state.approx_running_variance * 0.95f + state.variance * 0.05f;
+      state.approx_running_variance * (1.0f - dt) + state.variance * dt;
 
-  if (state.time_since_target_changed > 1.f) {
-    if (state.variance > 0.1f) {
+  //if (state.time_since_target_changed > 1.f) {
+    if (state.variance > 0.0001f) {
       state.time_since_value_stable = 0.f;
     } else {
       state.time_since_value_stable += dt;
     }
-  }
+  //}
 
   state.time_since_target_changed += dt;
 }
