@@ -1,9 +1,10 @@
 #pragma once
 
 struct PIDParams {
-  float p;
-  float d;
-  float i;
+  float p = 0.f;
+  float d = 0.f;
+  float i = 0.f;
+  //float dir = 1.f;
 };
 
 struct PIDState {
@@ -60,7 +61,8 @@ inline void UpdatePIDStatistics(PIDState& state, float value, float dt,
   state.variance =
       (value - state.approx_running_mean) * (value - state.approx_running_mean);
   state.approx_running_variance =
-      state.approx_running_variance * (1.0f - 10.f * dt) + state.variance * 10.f * dt;
+      state.approx_running_variance * (1.0f - 10.f * dt) +
+      state.variance * 10.f * dt;
 
   if (fabsf(state.tau) > 30.f) {
     state.time_since_tau_high += dt;
@@ -103,7 +105,7 @@ inline float UpdatePIDControl(PIDState& state, const PIDParams& params,
   double i_term = params.i * state.i_sum;
   double tau = p_term + d_term + i_term;
   state.prev_error = error;
-  state.tau = tau;
+  state.tau = /*params.dir **/ tau;
   UpdatePIDStatistics(
       state, value, dt,
       !state.last_target_set || fabsf(state.last_reset - target) > 0.1);

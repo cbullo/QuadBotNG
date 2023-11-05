@@ -186,7 +186,7 @@ legs:
     ref_theta: 0.0
     ref_z: 0.534678
 
-    z_direction: -1
+    z_dir: -1
   leg_FR:
     motor_I: "motor_FRI"
     motor_O: "motor_FRO"
@@ -210,7 +210,7 @@ legs:
     ref_theta: 0.0
     ref_z: 0.534678
 
-    z_direction: -1
+    z_dir: -1
   leg_BR:
     motor_I: "motor_BRI"
     motor_O: "motor_BRO"
@@ -221,9 +221,10 @@ legs:
     gamma_p: 30.0
     gamma_i: 50.0
     gamma_d: 0.0
-    z_p: 50.0
-    z_i: 25.0
+    z_p: -50.0
+    z_i: -25.0
     z_d: 0
+    z_dir: -1
     
     min_z: -0.2
     max_z: 1.4              
@@ -234,8 +235,6 @@ legs:
     max_gamma: 1.0472  # 60 degrees
 
     ref_theta: -1.039  # -75 degrees
-
-    z_direction: -1
     
     
   leg_BL:
@@ -261,4 +260,4 @@ legs:
     ref_theta: 0.0
     ref_z: 0.534678             # Raw encoder value
 
-    z_direction: -1
+    z_dir: -1

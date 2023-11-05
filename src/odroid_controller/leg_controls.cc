@@ -393,7 +393,7 @@ bool Drive(Steering::NegativeLightT dir, float current, PIDState& state,
       state, current, dt,
       false);
 
-  tau_theta = -8.f;
+  tau_theta = -/*params.dir **/ 8.f;
   
   return state.time_since_value_stable > 0.5f;
 }
@@ -661,7 +661,7 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
                            steering.steering_o));
   leg.GetMotorZ()->GetController()->SendSetCommand(
       leg.GetMotorZ()->GetIndex(), CMD_MOTOR_VOLTAGE,
-      static_cast<int16_t>(leg.GetZDirection() * leg.GetMotorZ()->GetDirection() * 512.0 *
+      static_cast<int16_t>(leg.GetMotorZ()->GetDirection() * 512.0 *
                            steering.steering_z));
   delay_ = kUpdateDelta;
 

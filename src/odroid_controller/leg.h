@@ -97,8 +97,6 @@ class Leg {
   float GetMaxGamma() const { return max_gamma_; }
   float GetRefTheta() const { return ref_theta_; }  
 
-  float GetZDirection() const { return z_direction_; }
-
   // float GetZeroThetaOffset() const { return zero_theta_offset_; }
   // float GetInitSafeZ() const { return init_safe_z_; }
   // float GetInitRefTheta() const { return init_ref_theta_; }
@@ -197,8 +195,6 @@ class Leg {
 
   float ref_theta_ = 0.0;
   float zero_offset_theta_ = 0.0;
-
-  float z_direction_ = 1.0f;
 };
 
 class ThetaGammaZControl;
