@@ -46,14 +46,13 @@ motors:
     swap_wires: 0
 
   motor_FLI:
-    # THIS ONE IS NOT WORKING CORRECTLY
-    # linearization_offset: 13
-    # linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
-    linearization_offset: 28
-    linearization_coeffs: [42, 37, 31, 29, 9, 9, 21, 22, 32, 29, 17, 10, 9, 0, 20, 30]
+    # linearization_offset: 28
+    # linearization_coeffs: [42, 37, 31, 29, 9, 9, 21, 22, 32, 29, 17, 10, 9, 0, 20, 30]
+    linearization_offset: 0
+    linearization_coeffs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     controller: "controller_FL"
     index: 0
-    electric_zero_offset: 572
+    electric_zero_offset: 240
     encoder_direction: 1
     gear_ratio_inv: 9
     swap_wires: 0
@@ -86,14 +85,12 @@ motors:
     linearization_coeffs: [23, 5, 11, 16, 13, 6, 23, 9, 6, 0, 5, 21, 35, 55, 53, 40]
     controller: "controller_FZ"
     index: 1  
-    electric_zero_offset: 441
+    electric_zero_offset: 435
     encoder_direction: 1
     gear_ratio_inv: 9
     swap_wires: 1
 
   motor_BRZ:
-    # linearization_offset: 13
-    # linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
     linearization_offset: 0
     linearization_coeffs: [11, 8, 13, 15, 24, 15, 23, 25, 25, 22, 15, 32, 16, 6, 13, 12]
     controller: "controller_BZ"
@@ -104,13 +101,14 @@ motors:
     swap_wires: 0
 
   motor_BLZ:
-    # linearization_offset: 13
-    # linearization_coeffs: [30,0,9,48,113,172,200,188,150,96,83,62,84,118,97,63]
-    linearization_offset: 3
-    linearization_coeffs: [11, 11, 12, 14, 5, 1, 6, 10, 5, 2, 8, 13, 10, 0, 10, 12]
+    #linearization_offset: 3
+    #linearization_coeffs: [11, 11, 12, 14, 5, 1, 6, 10, 5, 2, 8, 13, 10, 0, 10, 12]
+    linearization_offset: 0
+    linearization_coeffs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    
     controller: "controller_BZ"
     index: 0
-    electric_zero_offset: 160
+    electric_zero_offset: 277
     encoder_direction: 1
     gear_ratio_inv: 9
     swap_wires: 1
@@ -134,7 +132,7 @@ motors:
     linearization_coeffs: [16, 7, 12, 12, 3, 3, 15, 15, 9, 5, 9, 15, 11, 0, 6, 13]
     controller: "controller_BR"
     index: 1
-    electric_zero_offset: 174
+    electric_zero_offset: 245
     encoder_direction: 1
     gear_ratio_inv: 9
     swap_wires: 1
@@ -169,22 +167,26 @@ legs:
     motor_I: "motor_FLI"
     motor_O: "motor_FLO"
     motor_Z: "motor_FLZ"
-    theta_p: 100.0
-    theta_i: 0.0
-    theta_d: 0.0
-    gamma_p: 100.0
-    gamma_i: 0.0
-    gamma_d: 0.0
+    theta_p: 200.0
+    theta_i: 200.0
+    theta_d: 0.01
+    gamma_p: 200.0
+    gamma_i: 200.0
+    gamma_d: 0.01
     z_p: -100.0
     z_i: -0.0
     z_d: 0.0
-    min_z: 0.0
-    max_z: 0.0
-    min_gamma: 0.0
-    max_gamma: 0.0
-    zero_theta_offset: 0.0
-    init_safe_z: 0.0
-    init_ref_theta: 0.0
+    min_z: -0.2
+    max_z: 0.8              # In case of Z angle should be equal -zero_offset_z
+    
+    ref_gamma: 0.2
+    min_gamma: -1.0
+    max_gamma: 1.0
+
+    ref_theta: 0.0
+    ref_z: 0.534678
+
+    z_direction: -1
   leg_FR:
     motor_I: "motor_FRI"
     motor_O: "motor_FRO"
@@ -198,50 +200,65 @@ legs:
     z_p: 10.0
     z_i: 10.0
     z_d: 0.0
-    min_z: -0.75
-    max_z: 1.46
-    min_gamma: 0.0
-    max_gamma: 0.0
-    zero_theta_offset: 0.0
-    init_safe_z: 1.0
-    init_ref_theta: 0.0
+    min_z: -0.2
+    max_z: 0.8              # In case of Z angle should be equal -zero_offset_z
+    
+    ref_gamma: 0.2
+    min_gamma: -1.0
+    max_gamma: 1.0
+
+    ref_theta: 0.0
+    ref_z: 0.534678
+
+    z_direction: -1
   leg_BR:
     motor_I: "motor_BRI"
     motor_O: "motor_BRO"
     motor_Z: "motor_BRZ"
-    theta_p: 10.0
-    theta_i: 0.0
-    theta_d: 0.0
-    gamma_p: 10.0
-    gamma_i: 0.0
+    theta_p: 100.0
+    theta_i: 50.0
+    theta_d: 0.01
+    gamma_p: 30.0
+    gamma_i: 50.0
     gamma_d: 0.0
-    z_p: 10.0
-    z_i: 0.0
-    z_d: 0.0
-    min_z: 0.0
-    max_z: 0.0
-    min_gamma: 0.0
-    max_gamma: 0.0
-    zero_theta_offset: 0.0
-    init_safe_z: 0.0
-    init_ref_theta: 0.0
+    z_p: 50.0
+    z_i: 25.0
+    z_d: 0
+    
+    min_z: -0.2
+    max_z: 1.4              
+    ref_z: 0.534678
+
+    ref_gamma: 0.2
+    min_gamma: -1.4835 #-85 degrees
+    max_gamma: 1.0472  # 60 degrees
+
+    ref_theta: -1.039  # -75 degrees
+
+    z_direction: -1
+    
+    
   leg_BL:
     motor_I: "motor_BLI"
     motor_O: "motor_BLO"
     motor_Z: "motor_BLZ"
-    theta_p: 20.0
-    theta_i: 0.0
-    theta_d: 0.0
-    gamma_p: -20.0
-    gamma_i: -20.0
-    gamma_d: 0.0
-    z_p: -20.0
+    theta_p: 200.0
+    theta_i: 200.0
+    theta_d: 0.01
+    gamma_p: 200.0
+    gamma_i: 200.0
+    gamma_d: 0.01
+    z_p: -200.0
     z_i: 0.0
     z_d: 0.0
-    min_z: 0.0
-    max_z: 0.0
-    min_gamma: 0.0
-    max_gamma: 0.0
-    zero_theta_offset: 0.0
-    init_safe_z: 0.0
-    init_ref_theta: 0.0
+    min_z: -1.5
+    max_z: 1.5              
+    
+    ref_gamma: 0.2
+    min_gamma: -1.0
+    max_gamma: 1.0
+
+    ref_theta: 0.0
+    ref_z: 0.534678             # Raw encoder value
+
+    z_direction: -1

@@ -31,6 +31,7 @@ void Motor::UpdateAngle(uint16_t new_angle) {
       zero_angle_ = offset_angle_;
       first_update = false;
       raw_angle_ = new_angle;
+      accumulated_angle_ = zero_angle_;
       // std::cout << "Zero angle set: " << zero_angle_ << std::endl;
       // std::cout << "Accumulated angle: " << GetAccumulatedAngle() <<
       // std::endl;

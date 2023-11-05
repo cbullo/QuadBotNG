@@ -60,7 +60,7 @@ bool BLDCDriverBoard::Connect() {
   config.c_cc[VMIN] = 0;
   config.c_cc[VTIME] = 0;
 
-  if (cfsetispeed(&config, B500000) < 0 || cfsetospeed(&config, B500000) < 0) {
+  if (cfsetispeed(&config, B115200) < 0 || cfsetospeed(&config, B115200) < 0) {
     Disconnect();
     return false;
   }
@@ -182,7 +182,6 @@ void BLDCDriverBoard::SendCommand(const uint8_t *bytes, int message_length) {
     // }
     message_length -= bytes_sent;
   }
-  std::cout << "Sent " << pending_commands_.size() << std::endl;
 }
 
 void BLDCDriverBoard::DiscardReceive() {

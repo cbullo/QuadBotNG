@@ -16,6 +16,8 @@ struct LegSteering {
 namespace Steering {
 struct NegativeT {
 } static Negative;
+struct NegativeLightT {
+} static NegativeLight;
 struct PositiveT {
 } static Positive;
 struct DisabledT {
@@ -110,16 +112,23 @@ class InitializationLegControl : public LegControl {
     PreInitialization,
     DriveToMinGamma,
     DriveToSafeZ,
-    // DriveToReferenceTheta,
     FindMinZ,
-    DriveToMinZ,
     DriveToNextThetaRev,
+    DriveToInitKnownTheta,
+    DriveToKnownTheta,
+    DriveToInitGamma,
+    DriveToZeros,
     Done
   };
 
  public:
   bool Process(Leg& leg, float dt) override;
-  void Restart() { stage_ = InitializationStage::DriveToMinGamma; }
+  void Restart(Leg& leg) {
+    stage_ = InitializationStage::DriveToMinGamma;
+    locked_z_ = leg.GetAngleZ();
+    locked_theta_ = leg.GetTheta();
+    locked_gamma_ = leg.GetGamma();
+  }
 
  private:
   void ChangeStage(InitializationStage new_stage);
@@ -136,26 +145,28 @@ class InitializationLegControl : public LegControl {
 
   LegState state_;
   float delay_ = -0.01f;
+  float elapsed_ = 0.0f;
 };
 
 template <class T, class G, class Z>
 bool DriveTo(Leg& leg, LegState& state, T theta, G gamma, Z z,
-             const LegConfiguration& current, float dt, LegSteering& steering) {
+             const LegConfiguration& current, float dt, LegSteering& steering,
+             bool theta_target = true, bool gamma_target = true,
+             bool z_target = true) {
   float tau_theta;
   bool theta_reached = Drive(theta, current.theta, state.theta_pid_state,
                              leg.GetThetaPIDConfig(), dt, tau_theta, false);
   float tau_gamma;
   bool gamma_reached = Drive(gamma, current.gamma, state.gamma_pid_state,
-                             leg.GetGammaPIDConfig(), dt, tau_gamma, true);
+                             leg.GetGammaPIDConfig(), dt, tau_gamma, false);
   float tau_z;
   bool z_reached = Drive(z, current.z, state.z_pid_state, leg.GetZPIDConfig(),
                          dt, tau_z, false);
 
-  steering.steering_o = 0.5 * tau_theta + 0.5 * tau_gamma;
-  steering.steering_i = 0.5 * tau_theta - 0.5 * tau_gamma;
+  steering.steering_o = 0.5 * tau_theta - tau_gamma;
+  steering.steering_i = 0.5 * tau_theta + tau_gamma;
   steering.steering_z =
-      // 0.4 * tau_theta - 1.4 * tau_gamma +
-      tau_z; /*- 0.75f * tau_gamma*/
+      tau_z + 1.33333333f * tau_gamma;
   ;
 
   // if (theta_reached) {
@@ -185,8 +196,9 @@ bool DriveTo(Leg& leg, LegState& state, T theta, G gamma, Z z,
   //                   : "NONE")
   //           << " MEAN:" << state.gamma_pid_state.approx_running_mean
   //           << " VAR:" << state.gamma_pid_state.approx_running_variance
-  //           << " TSTB:" << state.gamma_pid_state.time_since_value_stable
-  //           << " TTRG" << state.gamma_pid_state.time_since_target_changed;
+  //           << " TSTB:" << state.gamma_pid_state.time_since_tau_high
+  //           << " TAU" << state.gamma_pid_state.tau <<
+  //           std::endl;
 
   // std::cout << "Z: "
   //           << "TRG:"
@@ -196,5 +208,6 @@ bool DriveTo(Leg& leg, LegState& state, T theta, G gamma, Z z,
   //           << " MEAN:" << state.z_pid_state.approx_running_mean
   //           << " VAR:" << state.z_pid_state.approx_running_variance;
 
-  return theta_reached && gamma_reached && z_reached;
+  return (!theta_target || theta_reached) && (!gamma_target || gamma_reached) &&
+         (!z_target || z_reached);
 }

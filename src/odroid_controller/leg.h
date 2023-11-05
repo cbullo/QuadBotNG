@@ -38,7 +38,9 @@ class Leg {
     return m_o_->GetAccumulatedAngle() * m_o_->GetGearRatio();
   }
   float GetAngleZ() const {
-    return m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio() - z_offset_;
+    auto z =
+        m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio() - zero_offset_z_;
+    return z;
   }
 
   float GetGamma() const {
@@ -54,8 +56,9 @@ class Leg {
 
     // double gamma = NormalizeAngle(angle_i - angle_o) -
     //                1.4 * m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio();
-    
-    float gamma = -0.5f * (angle_o - angle_i);
+
+    float gamma =
+        (angle_o - angle_i) - 1.33333333f * GetAngleZ() - zero_offset_gamma_;
     gamma = NormalizeAngle(gamma);
     return gamma;
   }
@@ -67,7 +70,7 @@ class Leg {
     float theta = -0.5 * (angle_o + angle_i);
     // float theta =
     //     angle_o + 0.4 * m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio();
-    theta = NormalizeAngle(theta) ;
+    theta = theta - zero_offset_theta_;
     return theta;
   }
 
@@ -92,9 +95,13 @@ class Leg {
   float GetMaxZ() const { return max_z_; }
   float GetMinGamma() const { return min_gamma_; }
   float GetMaxGamma() const { return max_gamma_; }
-  float GetZeroThetaOffset() const { return zero_theta_offset_; }
-  float GetInitSafeZ() const { return init_safe_z_; }
-  float GetInitRefTheta() const { return init_ref_theta_; }
+  float GetRefTheta() const { return ref_theta_; }  
+
+  float GetZDirection() const { return z_direction_; }
+
+  // float GetZeroThetaOffset() const { return zero_theta_offset_; }
+  // float GetInitSafeZ() const { return init_safe_z_; }
+  // float GetInitRefTheta() const { return init_ref_theta_; }
 
   const PIDParams& GetThetaPIDConfig() const { return theta_pd_config_; }
   const PIDParams& GetGammaPIDConfig() const { return gamma_pd_config_; }
@@ -104,9 +111,55 @@ class Leg {
     return {GetTheta(), GetGamma(), GetAngleZ()};
   }
 
-  void UpdateZOffset(float reference_angle) {
-    z_offset_ =
-        m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio() - reference_angle;
+  void SetGammaOffset(float value) { zero_offset_gamma_ = value; }
+  void SetThetaOffset(float value) { zero_offset_theta_ = value; }
+  void SetZOffset(float value) { zero_offset_z_ = value; }
+
+  void UpdateZAngle() {
+    // auto reference_angle =
+    //     m_z_->GetRawAngle() * Motor::kAS5600ToRadians * m_z_->GetGearRatio();
+    // auto angle = reference_angle;  //= fmodf(reference_angle, (2.f/9.f) *
+    // M_PI);
+
+    // const auto period = (2.f / 9.f) * M_PI;
+
+    // while (angle > period) {
+    //   angle -= period;
+    // }
+
+    // while (angle <= -period) {
+    //   angle += period;
+    // }
+
+    // auto angle = reference_angle + GetMaxZ();
+    // m_z_->SetAccumulatedAngle(angle / m_z_->GetGearRatio());
+
+    auto z = GetAngleZ();
+
+    const auto period = (2.f / 9.f) * M_PI;
+
+    auto offset = ref_z_ + floorf(z / period) * period -
+                  floorf(max_z_ / period) * period;
+
+    SetZOffset(offset);
+  }
+
+  void UpdateGammaOffset() {
+    auto gamma = GetGamma();
+
+    //const auto period = (2.f / 9.f) * M_PI;
+    //auto cycles = floorf(gamma / period);
+
+    SetGammaOffset(gamma - GetMinGamma());
+  }
+
+  void UpdateThetaOffset() {
+    auto theta = GetTheta();
+
+    //const auto period = (2.f / 9.f) * M_PI;
+    //auto cycles = floorf(gamma / period);
+
+    SetThetaOffset(theta - GetRefTheta());
   }
 
  private:
@@ -122,8 +175,6 @@ class Leg {
   float z_max_ = 1000.0;
   float theta_offset = 0.0;
 
-  float z_offset_ = 0.0;
-
   std::chrono::system_clock::duration prev_update_time_;
 
   bool time_initialized_ = false;
@@ -136,11 +187,18 @@ class Leg {
  private:
   float min_z_ = 0.0;
   float max_z_ = 0.0;
+  float ref_z_ = 0.0;
+  float zero_offset_z_ = 0.0;
+
   float min_gamma_ = 0.0;
   float max_gamma_ = 0.0;
-  float zero_theta_offset_ = 0.0;
-  float init_safe_z_ = 0.0;
-  float init_ref_theta_ = 0.0;
+  float ref_gamma_ = 0.0;
+  float zero_offset_gamma_ = 0.0;
+
+  float ref_theta_ = 0.0;
+  float zero_offset_theta_ = 0.0;
+
+  float z_direction_ = 1.0f;
 };
 
 class ThetaGammaZControl;

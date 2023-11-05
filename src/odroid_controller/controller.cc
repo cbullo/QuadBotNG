@@ -4,6 +4,8 @@
 
 #include "log_helper.h"
 
+#include <unistd.h>
+
 Controller::Controller(const Legs& legs,
                        const std::vector<ControllerType*>& controllers,
                        std::shared_ptr<StoppedBehavior> stopped_behavior,
@@ -569,20 +571,28 @@ void WalkBehavior::ProcessInputEvents(const std::deque<ControlEvent>& events) {
   for (const auto& event : events) {
     switch (event.event_id) {
       case EventId::kControlEventConfirm: {
-        auto leg = legs.fl;
-        leg->SetControl(init_control_);
-        init_control_->Restart();
-        if (auto* motor = leg->GetMotorI()) {
-          motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                 static_cast<uint8_t>(3));
-        }
-        if (auto* motor = leg->GetMotorO()) {
-          motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                 static_cast<uint8_t>(3));
-        }
-        if (auto* motor = leg->GetMotorZ()) {
-          motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                 static_cast<uint8_t>(3));
+
+        {
+          auto leg = legs.br;
+          leg->SetControl(&init_control_[0]);
+          
+          if (auto* motor = leg->GetMotorI()) {
+            motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                  static_cast<uint8_t>(3));
+          }
+          if (auto* motor = leg->GetMotorO()) {
+            motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                  static_cast<uint8_t>(3));
+          }
+          if (auto* motor = leg->GetMotorZ()) {
+            motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                  static_cast<uint8_t>(3));
+          }
+
+          // TODO
+          sleep(1.0);
+        
+          init_control_[0].Restart(*leg);
         }
       } break;
     }

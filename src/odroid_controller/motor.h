@@ -25,8 +25,13 @@ class Motor {
 
   void SetZeroAngle(uint16_t zero_angle);
   inline double GetAccumulatedAngle() const {
-    return accumulated_angle_ * kAS5600ToRadians/*- zero_angle_*/;
+    return accumulated_angle_ * kAS5600ToRadians;
   }
+
+  void SetAccumulatedAngle(double angle) {
+    accumulated_angle_ = static_cast<int64_t>(angle * kRadiansToAS5600);
+  }
+
   // double GetAngleDelta() const {
   //   return ClosestAngle(prev_offset_angle_, offset_angle_);
   // }
@@ -67,7 +72,6 @@ class Motor {
 
   uint16_t raw_angle_ = 0.0;
   float zero_angle_ = 0.f;
-  float z_offset_ = 0.f;
 
   int16_t offset_angle_ = 0.0;
   //  float prev_offset_angle_ = 0.0;

@@ -19,11 +19,16 @@ struct PIDState {
   float time_since_value_stable = 0.f;
   float time_since_target_changed = 0.f;
 
+  float time_since_tau_high = 0.f;
+
   float variance = 0.f;
+
+  float tau = 0.f;
 
   void Reset() {
     prev_error = 0.f;
     i_sum = 0.f;
+    tau = 0.f;
     last_target = 0.f;
     last_reset = 0.f;
     last_target_set = false;
@@ -33,7 +38,8 @@ struct PIDState {
 
     time_since_value_stable = 0.f;
     time_since_target_changed = 0.f;
-  
+    time_since_tau_high = 0.f;
+
     variance = 0.f;
   }
 };
@@ -41,34 +47,41 @@ struct PIDState {
 inline void UpdatePIDStatistics(PIDState& state, float value, float dt,
                                 bool target_changed) {
   if (target_changed) {
-    state.time_since_value_stable = 0.f;
-    state.time_since_target_changed = 0.f;
-    state.approx_running_mean = 0.f;
-    state.approx_running_variance = 0.f;
-    //std::cout << "Target changed" << std::endl;
-    return;
+    // state.time_since_value_stable = 0.f;
+    // state.time_since_target_changed = 0.f;
+    // state.approx_running_mean = 0.f;
+    // state.approx_running_variance = 0.f;
+    // std::cout << "Target changed" << std::endl;
+    // return;
   }
 
-  state.approx_running_mean = state.approx_running_mean * (1.0f - dt) + value * dt;
+  state.approx_running_mean =
+      state.approx_running_mean * (1.0f - 10.f * dt) + value * 10.f * dt;
   state.variance =
       (value - state.approx_running_mean) * (value - state.approx_running_mean);
   state.approx_running_variance =
-      state.approx_running_variance * (1.0f - dt) + state.variance * dt;
+      state.approx_running_variance * (1.0f - 10.f * dt) + state.variance * 10.f * dt;
 
-  //if (state.time_since_target_changed > 1.f) {
-    if (state.variance > 0.0001f) {
-      state.time_since_value_stable = 0.f;
-    } else {
-      state.time_since_value_stable += dt;
-    }
+  if (fabsf(state.tau) > 30.f) {
+    state.time_since_tau_high += dt;
+  } else {
+    state.time_since_tau_high = 0.f;
+  }
+
+  // if (state.time_since_target_changed > 1.f) {
+  if (state.variance > 0.001f) {
+    state.time_since_value_stable = 0.f;
+  } else {
+    state.time_since_value_stable += dt;
+  }
   //}
 
   state.time_since_target_changed += dt;
 }
 
-inline void DebugPIDControl(PIDState& state, float target, float value, float variance,
-                            float p_term, float d_term, float i_term,
-                            float tau) {
+inline void DebugPIDControl(PIDState& state, float target, float value,
+                            float variance, float p_term, float d_term,
+                            float i_term, float tau) {
   std::cout << " T: " << target;
   std::cout << " V: " << value;
   std::cout << " Var: " << variance;
@@ -90,8 +103,10 @@ inline float UpdatePIDControl(PIDState& state, const PIDParams& params,
   double i_term = params.i * state.i_sum;
   double tau = p_term + d_term + i_term;
   state.prev_error = error;
-  UpdatePIDStatistics(state, value, dt,
-                      !state.last_target_set || fabsf(state.last_reset - target) > 0.1);
+  state.tau = tau;
+  UpdatePIDStatistics(
+      state, value, dt,
+      !state.last_target_set || fabsf(state.last_reset - target) > 0.1);
   if (fabsf(state.last_reset - target) > 0.1) {
     state.last_reset = target;
   }
@@ -99,7 +114,8 @@ inline float UpdatePIDControl(PIDState& state, const PIDParams& params,
   state.last_target_set = true;
 
   if (debug) {
-    DebugPIDControl(state, target, value, state.variance, p_term, d_term, i_term, tau);
+    DebugPIDControl(state, target, value, state.variance, p_term, d_term,
+                    i_term, tau);
   }
   return tau;
 }

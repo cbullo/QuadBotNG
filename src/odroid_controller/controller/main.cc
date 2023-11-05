@@ -157,14 +157,14 @@ Controller SetupController() {
   auto motor_testing_behavior = std::make_shared<MotorTestingBehavior>();
   auto walk_behavior = std::make_shared<WalkBehavior>();
 
-  // motor_testing_behavior->SetPreviousBehavior(walk_behavior.get());
-  // motor_testing_behavior->SetNextBehavior(leg_testing_behavior.get());
+  motor_testing_behavior->SetPreviousBehavior(walk_behavior.get());
+  motor_testing_behavior->SetNextBehavior(leg_testing_behavior.get());
 
-  // leg_testing_behavior->SetPreviousBehavior(motor_testing_behavior.get());
-  // leg_testing_behavior->SetNextBehavior(walk_behavior.get());
+  leg_testing_behavior->SetPreviousBehavior(motor_testing_behavior.get());
+  leg_testing_behavior->SetNextBehavior(walk_behavior.get());
 
-  walk_behavior->SetPreviousBehavior(leg_testing_behavior.get());
-  walk_behavior->SetNextBehavior(motor_testing_behavior.get());
+  // walk_behavior->SetPreviousBehavior(leg_testing_behavior.get());
+  // walk_behavior->SetNextBehavior(motor_testing_behavior.get());
 
   joystick_input->Init();
 
@@ -242,6 +242,7 @@ Controller SetupController() {
                                    EventId::kControlEventConfirm);
 
   stopped_behavior->SetPreviousBehavior(walk_behavior.get());
+  //stopped_behavior->SetPreviousBehavior(motor_testing_behavior.get());
   stopped_behavior->Activate();
   std::cout << "SetupController 2" << std::endl;
 

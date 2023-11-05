@@ -30,11 +30,15 @@ void Leg::UpdateConfig(const YAML::Node& config) {
 
   min_z_ = config["min_z"].as<double>();
   max_z_ = config["max_z"].as<double>();
+  ref_z_ = config["ref_z"].as<double>();
+  z_direction_ = config["z_direction"].as<double>();
+
   min_gamma_ = config["min_gamma"].as<double>();
   max_gamma_ = config["max_gamma"].as<double>();
-  zero_theta_offset_ = config["zero_theta_offset"].as<double>();
-  init_safe_z_ = config["init_safe_z"].as<double>();
-  init_ref_theta_ = config["init_ref_theta"].as<double>();
+  ref_gamma_ = config["ref_gamma"].as<double>();
+  
+  ref_theta_ = config["ref_theta"].as<double>();
+  
 }
 
 void Leg::UpdateControl(float dt) {

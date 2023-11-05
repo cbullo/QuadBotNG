@@ -49,7 +49,7 @@ class TestMotor {
 
   int16_t offset_angle_ = 0.0;
   //  float prev_offset_angle_ = 0.0;
-  int64_t accumulated_angle_ = 0.0;
+  int64_t accumulated_angle_ = 0;
   float gear_ratio_ = 1.0;
   int direction_ = 1;
   bool first_update = true;
