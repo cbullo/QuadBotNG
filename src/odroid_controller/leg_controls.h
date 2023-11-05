@@ -18,6 +18,8 @@ struct NegativeT {
 } static Negative;
 struct NegativeLightT {
 } static NegativeLight;
+struct PositiveLightT {
+} static PositiveLight;
 struct PositiveT {
 } static Positive;
 struct DisabledT {

@@ -43,9 +43,9 @@ class Leg {
     return z;
   }
 
-  float GetZGammaDir() const {
-    return z_gamma_dir_;
-  }
+  float GetZGammaDir() const { return z_gamma_dir_; }
+  float GetGammaDir() const { return gamma_dir_; }
+  float GetThetaDir() const { return theta_dir_; }
 
   float GetGamma() const {
     float angle_o = GetAngleO();
@@ -61,9 +61,10 @@ class Leg {
     // double gamma = NormalizeAngle(angle_i - angle_o) -
     //                1.4 * m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio();
 
-    float gamma =
-        (angle_o - angle_i) - GetZGammaDir() * 1.33333333f * GetAngleZ() - zero_offset_gamma_;
-    //gamma = NormalizeAngle(gamma);
+    float gamma = (angle_o - angle_i) -
+                  GetZGammaDir() * 1.33333333f * GetAngleZ() -
+                  zero_offset_gamma_;
+    // gamma = NormalizeAngle(gamma);
     return gamma;
   }
 
@@ -99,7 +100,7 @@ class Leg {
   float GetMaxZ() const { return max_z_; }
   float GetMinGamma() const { return min_gamma_; }
   float GetMaxGamma() const { return max_gamma_; }
-  float GetRefTheta() const { return ref_theta_; }  
+  float GetRefTheta() const { return ref_theta_; }
 
   // float GetZeroThetaOffset() const { return zero_theta_offset_; }
   // float GetInitSafeZ() const { return init_safe_z_; }
@@ -140,8 +141,8 @@ class Leg {
 
     const auto period = (2.f / 9.f) * M_PI;
 
-    auto offset = ref_z_ + floorf(z / period) * period -
-                  floorf(max_z_ / period) * period;
+    auto offset =
+        ref_z_ + floorf(z / period) * period - floorf(max_z_ / period) * period;
 
     SetZOffset(offset);
   }
@@ -149,17 +150,18 @@ class Leg {
   void UpdateGammaOffset() {
     auto gamma = GetGamma();
 
-    //const auto period = (2.f / 9.f) * M_PI;
-    //auto cycles = floorf(gamma / period);
+    // const auto period = (2.f / 9.f) * M_PI;
+    // auto cycles = floorf(gamma / period);
 
-    SetGammaOffset(gamma - GetMinGamma());
+    SetGammaOffset(GetGammaDir() > 0 ? gamma - GetMinGamma()
+                                     : gamma - GetMaxGamma());
   }
 
   void UpdateThetaOffset() {
     auto theta = GetTheta();
 
-    //const auto period = (2.f / 9.f) * M_PI;
-    //auto cycles = floorf(gamma / period);
+    // const auto period = (2.f / 9.f) * M_PI;
+    // auto cycles = floorf(gamma / period);
 
     SetThetaOffset(theta - GetRefTheta());
   }
@@ -200,6 +202,8 @@ class Leg {
   float zero_offset_theta_ = 0.0;
 
   float z_gamma_dir_ = 1.0;
+  float gamma_dir_ = 1.0;
+  float theta_dir_ = 1.0;
 };
 
 class ThetaGammaZControl;

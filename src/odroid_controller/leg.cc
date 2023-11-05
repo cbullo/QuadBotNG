@@ -39,6 +39,8 @@ void Leg::UpdateConfig(const YAML::Node& config) {
   ref_theta_ = config["ref_theta"].as<double>();
 
   z_gamma_dir_ = config["z_gamma_dir"].as<double>();
+  gamma_dir_ = config["gamma_dir"].as<double>();
+  theta_dir_ = config["theta_dir"].as<double>();
   
 }
 

@@ -376,27 +376,22 @@ bool Drive(Steering::NegativeT dir, float current, PIDState& state,
 
 bool Drive(Steering::NegativeLightT dir, float current, PIDState& state,
            const PIDParams& params, float dt, float& tau_theta, bool debug) {
-  // tau_theta = UpdatePIDControl(
-  //     state, params, dt,
-  //     state.last_target_set ? state.last_target - 0.8 * dt * M_PI : current,
-  //     current, debug);
-  // if (state.time_since_value_stable > 1.f) {
-  //   return true;
-  // }
-
-  // if (state.time_since_tau_high > 0.5f) {
-  //   return true;
-  // }
-  // return false;
-
-  UpdatePIDStatistics(
-      state, current, dt,
-      false);
+  UpdatePIDStatistics(state, current, dt, false);
 
   tau_theta = -/*params.dir **/ 8.f;
-  
+
   return state.time_since_value_stable > 0.5f;
 }
+
+bool Drive(Steering::PositiveLightT dir, float current, PIDState& state,
+           const PIDParams& params, float dt, float& tau_theta, bool debug) {
+  UpdatePIDStatistics(state, current, dt, false);
+
+  tau_theta = /*params.dir **/ 8.f;
+
+  return state.time_since_value_stable > 0.5f;
+}
+
 
 bool Drive(float target, float current, PIDState& state,
            const PIDParams& params, float dt, float& tau_theta, bool debug) {
@@ -502,9 +497,18 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
     } break;
 
     case InitializationStage::DriveToMinGamma: {
-      if (DriveTo(leg, state_, Steering::Disabled, Steering::Negative,
-                  locked_z_, leg.GetState(), dt, steering, false, true,
-                  false)) {
+      bool done = false;
+      if (leg.GetGammaDir() > 0.f) {
+        done =
+            DriveTo(leg, state_, Steering::Disabled, Steering::Negative,
+                    locked_z_, leg.GetState(), dt, steering, false, true, false);
+      } else {
+        done =
+            DriveTo(leg, state_, Steering::Disabled, Steering::Positive,
+                    locked_z_, leg.GetState(), dt, steering, false, true, false);
+      }
+
+      if (done) {
         // if (!VerifyPosition<Gamma>(leg)) {
         //   return false;
         // }
@@ -512,7 +516,7 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
         locked_z_ = leg.GetAngleZ();
         // locked_gamma_ = leg.GetGamma();
 
-        locked_gamma_ = leg.GetGamma() + 0.1f;
+        locked_gamma_ = leg.GetGamma() + leg.GetGammaDir() * 0.1f;
 
         std::cout << "Min gamma: " << locked_gamma_ << std::endl;
         ChangeStage(InitializationStage::FindMinZ);
@@ -523,14 +527,12 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
       if (DriveTo(leg, state_, Steering::Disabled, locked_gamma_,
                   Steering::Positive, leg.GetState(), dt, steering, false,
                   false, true)) {
-
-
-//        if (IsClose(leg.GetMotorZ()->GetRawAngle(), leg.GetRefZ())) {
-          leg.UpdateZAngle();
-          leg.UpdateGammaOffset();
-          locked_gamma_ = leg.GetGamma();
-          locked_theta_ = leg.GetTheta();
-          ChangeStage(InitializationStage::DriveToSafeZ);
+        //        if (IsClose(leg.GetMotorZ()->GetRawAngle(), leg.GetRefZ())) {
+        leg.UpdateZAngle();
+        leg.UpdateGammaOffset();
+        locked_gamma_ = leg.GetGamma();
+        locked_theta_ = leg.GetTheta();
+        ChangeStage(InitializationStage::DriveToSafeZ);
         // } else {
         //   ChangeStage(InitializationStage::Done);
         // }
@@ -590,14 +592,14 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
         // };
 
         ChangeStage(InitializationStage::DriveToInitGamma);
-        //ChangeStage(InitializationStage::Done);
+        // ChangeStage(InitializationStage::Done);
       }
     } break;
     case InitializationStage::DriveToInitGamma: {
       if (DriveTo(leg, state_, locked_theta_, 0.0, 0.0, leg.GetState(), dt,
                   steering, true, false, false)) {
         ChangeStage(InitializationStage::DriveToKnownTheta);
-        //ChangeStage(InitializationStage::Done);
+        // ChangeStage(InitializationStage::Done);
       }
     } break;
 
@@ -609,8 +611,17 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
     } break;
 
     case InitializationStage::DriveToKnownTheta: {
-      if (DriveTo(leg, state_, Steering::NegativeLight, 0.0f, 0.0f, leg.GetState(),
-                  dt, steering, true, false, false)) {
+      bool done = false;
+
+      if (leg.GetThetaDir() > 0.f) {
+        done = DriveTo(leg, state_, Steering::NegativeLight, 0.0f, 0.0f,
+                  leg.GetState(), dt, steering, true, false, false); 
+      } else {
+        done = DriveTo(leg, state_, Steering::PositiveLight, 0.0f, 0.0f,
+                  leg.GetState(), dt, steering, true, false, false); 
+      }
+
+      if (done) {
         leg.UpdateThetaOffset();
 
         std::cout << "Final values Theta: " << leg.GetTheta()
@@ -622,8 +633,8 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
       // steering.steering_z = -steering.steering_z;
     } break;
     case InitializationStage::DriveToZeros: {
-      if (DriveTo(leg, state_, 0.0f, 0.0f, 0.0f, leg.GetState(),
-                  dt, steering, true, true, true)) {
+      if (DriveTo(leg, state_, 0.0f, 0.0f, 0.0f, leg.GetState(), dt, steering,
+                  true, true, true)) {
         ChangeStage(InitializationStage::Done);
       }
       // steering.steering_z = -steering.steering_z;

@@ -573,7 +573,7 @@ void WalkBehavior::ProcessInputEvents(const std::deque<ControlEvent>& events) {
       case EventId::kControlEventConfirm: {
 
         {
-          auto leg = legs.bl;
+          auto leg = legs.fl;
           leg->SetControl(&init_control_[0]);
           
           if (auto* motor = leg->GetMotorI()) {

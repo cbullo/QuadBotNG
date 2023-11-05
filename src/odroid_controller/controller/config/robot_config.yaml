@@ -167,27 +167,29 @@ legs:
     motor_I: "motor_FLI"
     motor_O: "motor_FLO"
     motor_Z: "motor_FLZ"
-    theta_p: 200.0
-    theta_i: 200.0
+    theta_p: 100.0
+    theta_i: 50.0
     theta_d: 0.01
-    gamma_p: 200.0
-    gamma_i: 200.0
-    gamma_d: 0.01
-    z_p: -100.0
-    z_i: -0.0
-    z_d: 0.0
-    min_z: -0.2
-    max_z: 0.8              # In case of Z angle should be equal -zero_offset_z
-    
-    min_gamma: -1.0
-    max_gamma: 1.0
+    gamma_p: 30.0
+    gamma_i: 50.0
+    gamma_d: 0.0
+    z_p: 50.0
+    z_i: 25.0
+    z_d: 0
+    z_dir: -1.0
 
-    ref_theta: 0.0
-    ref_z: 0.534678
-
+    gamma_dir: -1.0
+    theta_dir: -1.0
     z_gamma_dir: 1.0
+    
+    min_z: -0.2
+    max_z: 1.4              
+    ref_z: 0.412811
 
-    z_dir: -1
+    min_gamma: -1.0472 #-60 degrees
+    max_gamma: 1.4835  # 85 degrees
+
+    ref_theta: 1.039  # -75 degrees
   leg_FR:
     motor_I: "motor_FRI"
     motor_O: "motor_FRO"
@@ -203,6 +205,8 @@ legs:
     z_d: 0
     z_dir: -1.0
 
+    gamma_dir: 1.0
+    theta_dir: 1.0
     z_gamma_dir: -1.0
     
     min_z: -0.2
@@ -228,6 +232,8 @@ legs:
     z_d: 0
     z_dir: -1.0
 
+    gamma_dir: 1.0
+    theta_dir: 1.0
     z_gamma_dir: 1.0
     
     min_z: -0.2
@@ -244,24 +250,26 @@ legs:
     motor_I: "motor_BLI"
     motor_O: "motor_BLO"
     motor_Z: "motor_BLZ"
-    theta_p: 200.0
-    theta_i: 200.0
+    theta_p: 100.0
+    theta_i: 50.0
     theta_d: 0.01
-    gamma_p: 200.0
-    gamma_i: 200.0
-    gamma_d: 0.01
-    z_p: -200.0
-    z_i: 0.0
-    z_d: 0.0
-    min_z: -1.5
-    max_z: 1.5 
+    gamma_p: 30.0
+    gamma_i: 50.0
+    gamma_d: 0.0
+    z_p: 50.0
+    z_i: 25.0
+    z_d: 0
+    z_dir: -1.0
 
-    z_gamma_dir: -1.0             
+    gamma_dir: -1.0
+    theta_dir: -1.0
+    z_gamma_dir: -1.0
     
-    min_gamma: -1.0
-    max_gamma: 1.0
+    min_z: -0.2
+    max_z: 1.4              
+    ref_z: 0.0 
 
-    ref_theta: 0.0
-    ref_z: 0.534678             # Raw encoder value
+    min_gamma: -1.0472 #-60 degrees
+    max_gamma: 1.4835  # 85 degrees
 
-    z_dir: -1
+    ref_theta: 1.039  # -75 degrees
