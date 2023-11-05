@@ -43,6 +43,10 @@ class Leg {
     return z;
   }
 
+  float GetZGammaDir() const {
+    return z_gamma_dir_;
+  }
+
   float GetGamma() const {
     float angle_o = GetAngleO();
     float angle_i = GetAngleI();
@@ -58,8 +62,8 @@ class Leg {
     //                1.4 * m_z_->GetAccumulatedAngle() * m_z_->GetGearRatio();
 
     float gamma =
-        (angle_o - angle_i) - 1.33333333f * GetAngleZ() - zero_offset_gamma_;
-    gamma = NormalizeAngle(gamma);
+        (angle_o - angle_i) - GetZGammaDir() * 1.33333333f * GetAngleZ() - zero_offset_gamma_;
+    //gamma = NormalizeAngle(gamma);
     return gamma;
   }
 
@@ -190,11 +194,12 @@ class Leg {
 
   float min_gamma_ = 0.0;
   float max_gamma_ = 0.0;
-  float ref_gamma_ = 0.0;
   float zero_offset_gamma_ = 0.0;
 
   float ref_theta_ = 0.0;
   float zero_offset_theta_ = 0.0;
+
+  float z_gamma_dir_ = 1.0;
 };
 
 class ThetaGammaZControl;

@@ -166,7 +166,7 @@ bool DriveTo(Leg& leg, LegState& state, T theta, G gamma, Z z,
   steering.steering_o = 0.5 * tau_theta - tau_gamma;
   steering.steering_i = 0.5 * tau_theta + tau_gamma;
   steering.steering_z =
-      tau_z + 1.33333333f * tau_gamma;
+      tau_z + leg.GetZGammaDir() * 1.33333333f * tau_gamma;
   ;
 
   // if (theta_reached) {

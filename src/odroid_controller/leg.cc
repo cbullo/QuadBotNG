@@ -35,9 +35,10 @@ void Leg::UpdateConfig(const YAML::Node& config) {
 
   min_gamma_ = config["min_gamma"].as<double>();
   max_gamma_ = config["max_gamma"].as<double>();
-  ref_gamma_ = config["ref_gamma"].as<double>();
   
   ref_theta_ = config["ref_theta"].as<double>();
+
+  z_gamma_dir_ = config["z_gamma_dir"].as<double>();
   
 }
 

@@ -179,12 +179,13 @@ legs:
     min_z: -0.2
     max_z: 0.8              # In case of Z angle should be equal -zero_offset_z
     
-    ref_gamma: 0.2
     min_gamma: -1.0
     max_gamma: 1.0
 
     ref_theta: 0.0
     ref_z: 0.534678
+
+    z_gamma_dir: 1.0
 
     z_dir: -1
   leg_FR:
@@ -197,19 +198,21 @@ legs:
     gamma_p: 30.0
     gamma_i: 50.0
     gamma_d: 0.0
-    z_p: 50.0
-    z_i: 25.0
+    z_p: 30.0
+    z_i: 15.0
     z_d: 0
     z_dir: -1.0
+
+    z_gamma_dir: -1.0
     
-    ref_gamma: 0.2
-    min_gamma: -1.0
-    max_gamma: 1.0
+    min_z: -0.2
+    max_z: 1.4              
+    ref_z: 0.5
 
-    ref_theta: 0.0
-    ref_z: 0.534678
+    min_gamma: -1.4835 #-85 degrees
+    max_gamma: 1.0472  # 60 degrees
 
-    z_dir: -1
+    ref_theta: -1.039  # -75 degrees
   leg_BR:
     motor_I: "motor_BRI"
     motor_O: "motor_BRO"
@@ -224,12 +227,13 @@ legs:
     z_i: 25.0
     z_d: 0
     z_dir: -1.0
+
+    z_gamma_dir: 1.0
     
     min_z: -0.2
     max_z: 1.4              
     ref_z: 0.534678
 
-    ref_gamma: 0.2
     min_gamma: -1.4835 #-85 degrees
     max_gamma: 1.0472  # 60 degrees
 
@@ -250,9 +254,10 @@ legs:
     z_i: 0.0
     z_d: 0.0
     min_z: -1.5
-    max_z: 1.5              
+    max_z: 1.5 
+
+    z_gamma_dir: -1.0             
     
-    ref_gamma: 0.2
     min_gamma: -1.0
     max_gamma: 1.0
 
