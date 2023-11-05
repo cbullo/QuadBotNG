@@ -191,17 +191,16 @@ legs:
     motor_I: "motor_FRI"
     motor_O: "motor_FRO"
     motor_Z: "motor_FRZ"
-    theta_p: 10.0
-    theta_i: 10.0
-    theta_d: 0.0
-    gamma_p: 10.0
-    gamma_i: 10.0
+    theta_p: 100.0
+    theta_i: 50.0
+    theta_d: 0.01
+    gamma_p: 30.0
+    gamma_i: 50.0
     gamma_d: 0.0
-    z_p: 10.0
-    z_i: 10.0
-    z_d: 0.0
-    min_z: -0.2
-    max_z: 0.8              # In case of Z angle should be equal -zero_offset_z
+    z_p: 50.0
+    z_i: 25.0
+    z_d: 0
+    z_dir: -1.0
     
     ref_gamma: 0.2
     min_gamma: -1.0
@@ -221,10 +220,10 @@ legs:
     gamma_p: 30.0
     gamma_i: 50.0
     gamma_d: 0.0
-    z_p: -50.0
-    z_i: -25.0
+    z_p: 50.0
+    z_i: 25.0
     z_d: 0
-    z_dir: -1
+    z_dir: -1.0
     
     min_z: -0.2
     max_z: 1.4              

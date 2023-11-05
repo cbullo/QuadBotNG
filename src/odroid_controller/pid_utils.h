@@ -4,7 +4,7 @@ struct PIDParams {
   float p = 0.f;
   float d = 0.f;
   float i = 0.f;
-  //float dir = 1.f;
+  float dir = 1.f;
 };
 
 struct PIDState {
@@ -100,9 +100,9 @@ inline float UpdatePIDControl(PIDState& state, const PIDParams& params,
     state.i_sum = 0.0;
   }
   state.i_sum = state.i_sum + dt * 0.5 * (error + state.prev_error);
-  double p_term = params.p * error;
-  double d_term = -params.d * (error - state.prev_error) / dt;
-  double i_term = params.i * state.i_sum;
+  double p_term = params.dir * params.p * error;
+  double d_term = params.dir * -params.d * (error - state.prev_error) / dt;
+  double i_term = params.dir * params.i * state.i_sum;
   double tau = p_term + d_term + i_term;
   state.prev_error = error;
   state.tau = /*params.dir **/ tau;

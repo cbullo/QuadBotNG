@@ -27,7 +27,7 @@ void Leg::UpdateConfig(const YAML::Node& config) {
   z_pd_config_.p = config["z_p"].as<double>();
   z_pd_config_.i = config["z_i"].as<double>();
   z_pd_config_.d = config["z_d"].as<double>();
-  //z_pd_config_.dir = config["z_dir"].as<double>();
+  z_pd_config_.dir = config["z_dir"].as<double>();
 
   min_z_ = config["min_z"].as<double>();
   max_z_ = config["max_z"].as<double>();
