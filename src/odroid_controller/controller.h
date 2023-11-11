@@ -118,8 +118,17 @@ class WalkBehavior : public Behavior {
   public:
   void Activate() override;
   void ProcessInputEvents(const std::deque<ControlEvent>& events) override;
+  void Tick(float dt) override;
 
   private:
+  enum class Stage {
+    Pre,
+    FirstPair,
+    SecondPair,
+    Done
+  };
+
+  Stage stage_ = Stage::Pre;
   InitializationLegControl init_control_[4];
 };
 

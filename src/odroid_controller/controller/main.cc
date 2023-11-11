@@ -211,6 +211,7 @@ Controller SetupController() {
   main_controller.AttachBehavior(walk_behavior);
 
   main_controller.SubscribeToTick(joystick_input.get());
+  main_controller.SubscribeToTick(walk_behavior.get());
 
   main_controller.SubscribeToEvent(leg_testing_behavior.get(),
                                    EventId::kControlEventConfirm);

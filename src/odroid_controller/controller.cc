@@ -1,10 +1,10 @@
 #include "controller.h"
 
+#include <unistd.h>
+
 #include <iostream>
 
 #include "log_helper.h"
-
-#include <unistd.h>
 
 Controller::Controller(const Legs& legs,
                        const std::vector<ControllerType*>& controllers,
@@ -30,12 +30,9 @@ Controller::Controller(const Legs& legs,
 
 void Controller::DistributeEvents(const std::deque<ControlEvent>& events) {
   for (const auto& e : events) {
-    std::cout << "DE2" << std::endl;
     auto values_range = subscriptions_.equal_range(e.event_id);
     for (auto v_it = values_range.first; v_it != values_range.second; ++v_it) {
-      std::cout << "DE3" << std::endl;
       if (v_it->second->IsActive()) {
-        std::cout << "DE4" << std::endl;
         v_it->second->AddToInputQueue(e);
       }
     }
@@ -565,34 +562,84 @@ void WalkBehavior::Activate() {
   Behavior::Activate();
 }
 
+void WalkBehavior::Tick(float dt) {
+  switch (stage_) {
+    case Stage::FirstPair: {
+      if (init_control_[0].GetStage() ==
+              InitializationLegControl::InitializationStage::Done &&
+          init_control_[2].GetStage() ==
+              InitializationLegControl::InitializationStage::Done) {
+        stage_ = Stage::SecondPair;
+        const auto& legs = GetController()->GetLegs();
+        for (auto& leg_index : {1, 3}) {
+          const auto leg = legs.GetLeg(leg_index);
+          leg->SetControl(&init_control_[leg_index]);
+
+          if (auto* motor = leg->GetMotorI()) {
+            motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                   static_cast<uint8_t>(3));
+          }
+          if (auto* motor = leg->GetMotorO()) {
+            motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                   static_cast<uint8_t>(3));
+          }
+          if (auto* motor = leg->GetMotorZ()) {
+            motor->GetController()->SendSetCommand(0, CMD_STATE,
+                                                   static_cast<uint8_t>(3));
+          }
+
+          // TODO
+          sleep(1.0);
+
+          init_control_[leg_index].Restart(*leg);
+        }
+      }
+      break;
+    }
+    case Stage::SecondPair: {
+      if (init_control_[1].GetStage() ==
+              InitializationLegControl::InitializationStage::Done &&
+          init_control_[3].GetStage() ==
+              InitializationLegControl::InitializationStage::Done) {
+        OutputEvent({EventId::kInitializationDone, 0.f});
+
+        for (auto& ic : init_control_) {
+          ic.SetStandUp();
+        }
+      }
+      break;
+    }
+  }
+};
+
 void WalkBehavior::ProcessInputEvents(const std::deque<ControlEvent>& events) {
   Behavior::ProcessInputEvents(events);
   const auto& legs = GetController()->GetLegs();
   for (const auto& event : events) {
     switch (event.event_id) {
       case EventId::kControlEventConfirm: {
+        stage_ = Stage::FirstPair;
+        for (auto& leg_index : {0, 2}) {
+          const auto leg = legs.GetLeg(leg_index);
+          leg->SetControl(&init_control_[leg_index]);
 
-        {
-          auto leg = legs.fl;
-          leg->SetControl(&init_control_[0]);
-          
           if (auto* motor = leg->GetMotorI()) {
             motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                  static_cast<uint8_t>(3));
+                                                   static_cast<uint8_t>(3));
           }
           if (auto* motor = leg->GetMotorO()) {
             motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                  static_cast<uint8_t>(3));
+                                                   static_cast<uint8_t>(3));
           }
           if (auto* motor = leg->GetMotorZ()) {
             motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                  static_cast<uint8_t>(3));
+                                                   static_cast<uint8_t>(3));
           }
 
           // TODO
           sleep(1.0);
-        
-          init_control_[0].Restart(*leg);
+
+          init_control_[leg_index].Restart(*leg);
         }
       } break;
     }

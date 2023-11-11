@@ -110,6 +110,7 @@ class ThetaGammaZLegControl : public LegControl {
 };
 
 class InitializationLegControl : public LegControl {
+ public:
   enum class InitializationStage {
     PreInitialization,
     DriveToMinGamma,
@@ -120,10 +121,10 @@ class InitializationLegControl : public LegControl {
     DriveToKnownTheta,
     DriveToInitGamma,
     DriveToZeros,
-    Done
+    Done,
+    StandUp
   };
 
- public:
   bool Process(Leg& leg, float dt) override;
   void Restart(Leg& leg) {
     stage_ = InitializationStage::DriveToMinGamma;
@@ -131,6 +132,10 @@ class InitializationLegControl : public LegControl {
     locked_theta_ = leg.GetTheta();
     locked_gamma_ = leg.GetGamma();
   }
+
+  InitializationStage GetStage() const { return stage_; }
+
+  void SetStandUp() { stage_ = InitializationStage::StandUp; }
 
  private:
   void ChangeStage(InitializationStage new_stage);
@@ -167,8 +172,7 @@ bool DriveTo(Leg& leg, LegState& state, T theta, G gamma, Z z,
 
   steering.steering_o = 0.5 * tau_theta - tau_gamma;
   steering.steering_i = 0.5 * tau_theta + tau_gamma;
-  steering.steering_z =
-      tau_z + leg.GetZGammaDir() * 1.33333333f * tau_gamma;
+  steering.steering_z = tau_z + leg.GetZGammaDir() * 1.33333333f * tau_gamma;
   ;
 
   // if (theta_reached) {

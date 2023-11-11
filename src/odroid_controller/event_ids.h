@@ -17,5 +17,6 @@ enum class EventId {
   kControlEventStop = 14,
   kControlEventStart = 15,
   kControlEventLegTilt = 16,
-  kControlEventConfirm = 17
+  kControlEventConfirm = 17,
+  kInitializationDone = 18
 };

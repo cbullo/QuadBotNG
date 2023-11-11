@@ -38,16 +38,16 @@ class EventNode {
 
  private:
   void FetchOutputs(std::deque<ControlEvent>& out_events) {
-    if (output_queue_.size() > 0) {
-      std::cout << "Some events fetch" << std::endl;
-    }
+    // if (output_queue_.size() > 0) {
+    //   std::cout << "Some events fetch" << std::endl;
+    // }
     output_queue_.swap(out_events);
   }
   void AddToInputQueue(ControlEvent event) { input_queue_.push_back(event); }
   void ProcessInputs() {
-    if (input_queue_.size() > 0) {
-      std::cout << "Some events process" << std::endl;
-    }
+    // if (input_queue_.size() > 0) {
+    //   std::cout << "Some events process" << std::endl;
+    // }
     ProcessInputEvents(input_queue_);
     input_queue_.clear();
   }

@@ -395,7 +395,7 @@ bool Drive(Steering::PositiveLightT dir, float current, PIDState& state,
 
 bool Drive(float target, float current, PIDState& state,
            const PIDParams& params, float dt, float& tau_theta, bool debug) {
-  auto step = 0.8f * dt * M_PI;
+  auto step = 0.2f * dt * M_PI;
 
   float prev_target = (state.last_target_set ? state.last_target : current);
 
@@ -632,12 +632,17 @@ bool InitializationLegControl::Process(Leg& leg, float dt) {
       }
       // steering.steering_z = -steering.steering_z;
     } break;
-    case InitializationStage::DriveToZeros: {
+    case InitializationStage::DriveToZeros:
+    case InitializationStage::Done: {
       if (DriveTo(leg, state_, 0.0f, 0.0f, 0.0f, leg.GetState(), dt, steering,
                   true, true, true)) {
         ChangeStage(InitializationStage::Done);
       }
       // steering.steering_z = -steering.steering_z;
+    } break;
+    case InitializationStage::StandUp: {
+      DriveTo(leg, state_, -2.0f * leg.GetThetaDir(), -0.4f * leg.GetGammaDir(), 0.0f, leg.GetState(), dt, steering,
+                  true, true, true);
     } break;
     default:
       std::cout << "Theta: " << leg.GetTheta() << " Gamma: " << leg.GetGamma()
