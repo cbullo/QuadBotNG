@@ -5,4 +5,3 @@ build --copt="-pie"
 #build --copt="-ffat-lto-objects"
 
 build --sandbox_writable_path=/home/tomasz/.ccache
-build --incompatible_enable_cc_toolchain_resolution=true 
