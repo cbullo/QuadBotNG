@@ -1,0 +1,22 @@
+{
+  "description": "Candidate CAD-to-controller alignment; see docs/physical-model.md. Encoder/electrical calibration is deliberately not copied here.",
+  "rotor_inertia_kg_m2": 0.000001,
+  "motor_damping_nm_s_per_rad": 0.00002,
+  "demo_motor_torque_limit_nm": 0.2941995,
+  "joint_damping_nm_s_per_rad": 0.002,
+  "joint_frictionloss_nm": {
+    "description": "Estimated output-side dry friction, lumped at the three independent hinges. About 10% above CAD self-weight loads with the chassis upside down and main=crank=pi/4, shoulder=0; see docs/physical-model.md.",
+    "shoulder_to_main": 0.071,
+    "shoulder_to_crank": 0.029,
+    "base_to_shoulder": 0.073,
+    "main_to_lower": 0.0,
+    "crank_to_link": 0.0
+  },
+  "crank_ixx_kg_m2": 0.0000004,
+  "legs": {
+    "FR": {"cad": "RF", "z_gamma_dir": -1, "theta_sign": -1, "gamma_sign": 1, "z_sign": -1, "gear_ratio": [9, 9, 9], "boards": ["controller_FR", "controller_FR", "controller_FZ"], "channels": [0, 1, 0]},
+    "FL": {"cad": "LF", "z_gamma_dir": 1, "theta_sign": 1, "gamma_sign": -1, "z_sign": 1, "gear_ratio": [9, 9, 9], "boards": ["controller_FL", "controller_FL", "controller_FZ"], "channels": [0, 1, 1]},
+    "BR": {"cad": "RB", "z_gamma_dir": 1, "theta_sign": -1, "gamma_sign": 1, "z_sign": -1, "gear_ratio": [9, 9, 9], "boards": ["controller_BR", "controller_BR", "controller_BZ"], "channels": [1, 0, 1]},
+    "BL": {"cad": "LB", "z_gamma_dir": -1, "theta_sign": 1, "gamma_sign": -1, "z_sign": 1, "gear_ratio": [9, 9, 9], "boards": ["controller_BL", "controller_BL", "controller_BZ"], "channels": [0, 1, 0]}
+  }
+}

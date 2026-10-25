@@ -1,4 +1,6 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("@sim_deps//:requirements.bzl", "requirement")
 
@@ -9,6 +11,54 @@ PC_CONSTRAINTS = [
     "@platforms//cpu:x86_64",
     "@platforms//os:linux",
 ]
+
+py_library(
+    name = "robot_model",
+    srcs = ["robot_model.py"],
+    data = [
+        "collision_geometry.json",
+        "robot_parameters.json",
+        "urdf/quadbot.urdf",
+        "//src/odroid_controller/controller:config/robot_config.yaml",
+    ] + glob(["meshes/*.stl"]),
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        requirement("mujoco"),
+        requirement("numpy"),
+        requirement("pyyaml"),
+    ],
+)
+
+py_binary(
+    name = "generate_model",
+    srcs = ["robot_model.py"],
+    main = "robot_model.py",
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":robot_model"],
+)
+
+py_test(
+    name = "robot_model_test",
+    size = "small",
+    srcs = ["robot_model_test.py"],
+    data = [
+        "mujoco/quadbot.xml",
+        "mujoco/quadbot_suspended.xml",
+        "//src/odroid_controller/controller:config/robot_config.yaml",
+    ],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":robot_model"],
+)
+
+py_binary(
+    name = "robot_demo",
+    srcs = ["robot_demo.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        ":robot_model",
+        requirement("pillow"),
+    ],
+)
 
 py_binary(
     name = "viewer",
@@ -24,6 +74,77 @@ py_test(
     target_compatible_with = PC_CONSTRAINTS,
     deps = [
         requirement("gymnasium"),
+        requirement("mujoco"),
+        requirement("numpy"),
+    ],
+)
+
+cc_library(
+    name = "native_runner",
+    srcs = ["native/runner.cc"],
+    data = [
+        "motor_model.yaml",
+        "mujoco/quadbot.xml",
+        "mujoco/quadbot_suspended.xml",
+        "//src/odroid_controller/controller:config/robot_config.yaml",
+    ] + glob(["meshes/*.stl"]),
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        ":motor_plant",
+        "//src/odroid_controller:controller_lib",
+        "//src/odroid_controller:emulated_board",
+        "@sim_deps_312_mujoco//:native",
+    ],
+)
+
+cc_test(
+    name = "motor_plant_test",
+    size = "small",
+    srcs = ["native/motor_plant_test.cc"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        ":motor_plant",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+py_test(
+    name = "native_runner_test",
+    size = "small",
+    srcs = ["native_runner_test.py"],
+    data = ["//src/odroid_controller/controller"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [requirement("numpy")],
+)
+
+cc_library(
+    name = "motor_plant",
+    hdrs = ["native/motor_plant.h"],
+)
+
+py_binary(
+    name = "controller_viewer",
+    srcs = ["controller_viewer.py"],
+    data = ["//src/odroid_controller/controller"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        "@rules_python//python/runfiles",
+        requirement("mujoco"),
+        requirement("numpy"),
+    ],
+)
+
+py_test(
+    name = "controller_viewer_test",
+    size = "small",
+    srcs = [
+        "controller_viewer.py",
+        "controller_viewer_test.py",
+    ],
+    main = "controller_viewer_test.py",
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        "@rules_python//python/runfiles",
         requirement("mujoco"),
         requirement("numpy"),
     ],

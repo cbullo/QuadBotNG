@@ -1,12 +1,38 @@
 #include "leg_controls.h"
 
 #include <unistd.h>
+#include <stdexcept>
 
 #include "leg.h"
 #include "log_helper.h"
 #include "pid_utils.h"
 
 float next_read_delta_ = 0.f;
+
+void RotorPoseLegControl::Capture(Leg& leg, double p, double d, int voltage_sign, double voltage_limit) {
+  if (!std::isfinite(p) || p <= 0 || !std::isfinite(d) || d < 0 ||
+      std::abs(voltage_sign) != 1 || !std::isfinite(voltage_limit) ||
+      voltage_limit <= 0 || voltage_limit > 32767.0 / 512)
+    throw std::invalid_argument("invalid rotor pose controller parameters");
+  p_ = p; d_ = d; voltage_sign_ = voltage_sign; voltage_limit_ = voltage_limit;
+  std::array<Motor*,3> motors{leg.GetMotorI(),leg.GetMotorO(),leg.GetMotorZ()};
+  for (size_t i = 0; i < motors.size(); ++i)
+    previous_[i] = target_[i] = motors[i]->GetAccumulatedAngle();
+}
+bool RotorPoseLegControl::Process(Leg& leg, float dt) {
+  if (!(dt > 0)) return true;
+  std::array<Motor*,3> motors{leg.GetMotorI(),leg.GetMotorO(),leg.GetMotorZ()};
+  for (size_t i = 0; i < motors.size(); ++i) {
+    const double angle = motors[i]->GetAccumulatedAngle();
+    const double velocity = (angle - previous_[i]) / dt;
+    previous_[i] = angle;
+    const double voltage = std::clamp(voltage_sign_ *
+        (p_ * (target_[i] - angle) - d_ * velocity), -voltage_limit_, voltage_limit_);
+    motors[i]->GetController()->SendSetCommand(motors[i]->GetIndex(),CMD_MOTOR_VOLTAGE,
+                                              static_cast<int16_t>(voltage * 512));
+  }
+  return true;
+}
 
 bool ThetaGammaZLegControl::Process(Leg& leg, float dt) {
   // auto t = leg.GetTheta();
@@ -24,20 +50,23 @@ bool ThetaGammaZLegControl::Process(Leg& leg, float dt) {
 
   // std::cout << dt << std::endl;
 
+  elapsed_dt_ += dt;
   delay_ -= dt;
   if (delay_ <= 0.f) {
+    const float control_dt = elapsed_dt_;
+    elapsed_dt_ = 0;
     double az = leg.GetAngleZ();
     double theta = leg.GetTheta();
     double gamma = leg.GetGamma();
 
     float tau_theta =
         UpdatePIDControl(state_.theta_pid_state, leg.GetThetaPIDConfig(),
-                         kUpdateDelta, state_.theta_setpoint, theta, false);
+                         control_dt, state_.theta_setpoint, theta, false);
     float tau_gamma =
         UpdatePIDControl(state_.gamma_pid_state, leg.GetGammaPIDConfig(),
-                         kUpdateDelta, state_.gamma_setpoint, gamma, false);
+                         control_dt, state_.gamma_setpoint, gamma, false);
     float tau_z = UpdatePIDControl(state_.z_pid_state, leg.GetZPIDConfig(),
-                                   kUpdateDelta, state_.z_setpoint, az, false);
+                                   control_dt, state_.z_setpoint, az, false);
 
     float steering_i = (0.5 * tau_theta + 0.5 * tau_gamma);
     float steering_o = (0.5 * tau_theta - 0.5 * tau_gamma);

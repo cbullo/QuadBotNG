@@ -1,6 +1,8 @@
 # Build architecture and Bzlmod migration
 
-Updated 2026-10-25. [README](../README.md) contains the supported commands.
+Updated 2026-10-25. Subsequent controller/simulator integration is documented in
+[simulated-boards.md](simulated-boards.md); the earlier migration findings below
+describe their validation stage. [README](../README.md) contains the supported commands.
 
 Odroid cross-toolchain restoration is now deferred in [TODO.md](../TODO.md).
 The user clarified that crosstool-NG was chosen to target the Odroid's libc,

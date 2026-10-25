@@ -27,14 +27,10 @@ void Motor::Update() {
 
 void Motor::UpdateAngle(uint16_t new_angle) {
     if (first_update) {
-      offset_angle_ = new_angle * kAS5600ToRadians;
-      zero_angle_ = offset_angle_;
+      offset_angle_ = new_angle;
+      accumulated_angle_ = new_angle;
       first_update = false;
       raw_angle_ = new_angle;
-      accumulated_angle_ = zero_angle_;
-      // std::cout << "Zero angle set: " << zero_angle_ << std::endl;
-      // std::cout << "Accumulated angle: " << GetAccumulatedAngle() <<
-      // std::endl;
       return;
     }
 
@@ -67,3 +63,12 @@ void Motor::UpdateAngle(uint16_t new_angle) {
 //   first_update = true;
 //   accumulated_angle_ = 0.0;
 // }
+void Motor::ResetFeedback() {
+  raw_angle_ = 0;
+  offset_angle_ = 0;
+  accumulated_angle_ = 0;
+  current_raw_angle_ = 0;
+  temperature_ = 20;
+  angle_received_ = false;
+  first_update = true;
+}

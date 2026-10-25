@@ -26,8 +26,9 @@ pip.parse(
     hub_name = "sim_deps",
     python_version = "3.12",
     requirements_lock = "//sim/deps:requirements.txt",
+    whl_modifications = {"//sim/deps:mujoco_native.json": "mujoco"},
 )
-use_repo(pip, "sim_deps")
+use_repo(pip, "sim_deps", "sim_deps_312_mujoco")
 
 # Preserve existing names for dependencies without Bazel modules.
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")

@@ -1,6 +1,15 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
+# The simulator checks its transmission/board mapping against this source.
+exports_files(
+    ["config/robot_config.yaml"],
+    visibility = [
+        "//sim:__pkg__",
+        "//src/odroid_controller/tests:__pkg__",
+    ],
+)
+
 # Preserve the old flag spelling while sharing one setting with controller_lib.
 alias(
     name = "simulator",
@@ -19,7 +28,7 @@ cc_binary(
     ],
     data = ["config/robot_config.yaml"],
     defines = select({
-        "//src/odroid_controller:simulator_mode": ["QUADBOT_SIMULATOR=1"],
+        ":pc_backend": ["QUADBOT_NATIVE_SIM=1"],
         "//conditions:default": [],
     }),
     linkopts = [
@@ -27,24 +36,13 @@ cc_binary(
         "-lm",
     ],
     visibility = ["//visibility:public"],
-    deps =
-        select(
-            {
-                "//src/odroid_controller:simulator_mode": [
-                    "//src/libs/communication:binary_communication",
-                    "//src/odroid_controller:controller_lib",
-                    "//src/odroid_controller:gazebo_sim_lib",
-                    "@fmt",
-                    "@yaml-cpp",
-                ],
-                "//conditions:default": [
-                    "//src/libs/communication:binary_communication",
-                    "//src/odroid_controller:controller_lib",
-                    "@fmt",
-                    "@yaml-cpp",
-                ],
-            },
-        ),
+    deps = [
+        "//src/odroid_controller:controller_lib",
+        "@bazel_tools//tools/cpp/runfiles",
+    ] + select({
+        ":pc_backend": ["//sim:native_runner"],
+        "//conditions:default": [],
+    }),
 )
 
 sh_binary(
@@ -87,4 +85,12 @@ sh_binary(
 sh_binary(
     name = "run",
     srcs = ["scripts/run.sh"],
+)
+
+config_setting(
+    name = "pc_backend",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
 )

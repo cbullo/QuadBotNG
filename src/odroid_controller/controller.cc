@@ -16,6 +16,8 @@ Controller::Controller(const Legs& legs,
     : legs_(legs), controllers_(controllers) {
   stopped_behavior_ = stopped_behavior;
   estopped_behavior_ = estopped_behavior;
+  stopped_behavior_->SetController(this);
+  estopped_behavior_->SetController(this);
 
   SubscribeToEvent(stopped_behavior_.get(), EventId::kControlEventStart);
   SubscribeToEvent(stopped_behavior_.get(), EventId::kControlEventNextMode);
@@ -40,6 +42,7 @@ void Controller::DistributeEvents(const std::deque<ControlEvent>& events) {
 }
 
 void Controller::Update(float dt) {
+  for (auto* board : controllers_) board->Tick();
   bool trigger_estop = false;
   bool trigger_stop = false;
 
@@ -63,7 +66,7 @@ void Controller::Update(float dt) {
       break;
     }
 
-    trigger_stop =
+    trigger_stop = trigger_stop ||
         std::find_if(events.begin(), events.end(), [](const auto& e) {
           return e.event_id == EventId::kControlEventStop;
         }) != events.end();
@@ -100,6 +103,11 @@ void Controller::Update(float dt) {
     estopped_behavior_->Activate();
   }
 
+  if (trigger_stop || trigger_estop) {
+    for (int i = 0; i < 4; ++i) if (auto* leg = legs_.GetLeg(i)) leg->SetControl(nullptr);
+    if (trigger_stop && !trigger_estop)
+      for (auto* board : controllers_) board->SendSetCommand(0, CMD_STATE, uint8_t(2));
+  }
   auto& controllers = GetControllers();
   bool any_transmission_bound = false;
   for (auto& controller : controllers) {
@@ -562,86 +570,49 @@ void WalkBehavior::Activate() {
   Behavior::Activate();
 }
 
-void WalkBehavior::Tick(float dt) {
-  switch (stage_) {
-    case Stage::FirstPair: {
-      if (init_control_[0].GetStage() ==
-              InitializationLegControl::InitializationStage::Done &&
-          init_control_[2].GetStage() ==
-              InitializationLegControl::InitializationStage::Done) {
-        stage_ = Stage::SecondPair;
-        const auto& legs = GetController()->GetLegs();
-        for (auto& leg_index : {1, 3}) {
-          const auto leg = legs.GetLeg(leg_index);
-          leg->SetControl(&init_control_[leg_index]);
-
-          if (auto* motor = leg->GetMotorI()) {
-            motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                   static_cast<uint8_t>(3));
-          }
-          if (auto* motor = leg->GetMotorO()) {
-            motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                   static_cast<uint8_t>(3));
-          }
-          if (auto* motor = leg->GetMotorZ()) {
-            motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                   static_cast<uint8_t>(3));
-          }
-
-          // TODO
-          sleep(1.0);
-
-          init_control_[leg_index].Restart(*leg);
-        }
-      }
-      break;
-    }
-    case Stage::SecondPair: {
-      if (init_control_[1].GetStage() ==
-              InitializationLegControl::InitializationStage::Done &&
-          init_control_[3].GetStage() ==
-              InitializationLegControl::InitializationStage::Done) {
-        OutputEvent({EventId::kInitializationDone, 0.f});
-
-        for (auto& ic : init_control_) {
-          ic.SetStandUp();
-        }
-      }
-      break;
-    }
+void WalkBehavior::StartPair(int first) {
+  const auto& legs = GetController()->GetLegs();
+  for (int i : {first, first + 2}) {
+    auto* leg = legs.GetLeg(i);
+    if (!leg) continue;
+    leg->SetControl(nullptr);
+    for (auto* motor : {leg->GetMotorI(), leg->GetMotorO(), leg->GetMotorZ()})
+      if (motor) motor->GetController()->SendSetCommand(0, CMD_STATE, uint8_t(3));
   }
-};
+  startup_wait_ = 1.0f;
+  stage_ = first == 0 ? Stage::WaitingFirstPair : Stage::WaitingSecondPair;
+}
+
+void WalkBehavior::Tick(float dt) {
+  if (!IsActive()) return;
+  if (stage_ == Stage::WaitingFirstPair || stage_ == Stage::WaitingSecondPair) {
+    startup_wait_ -= dt;
+    if (startup_wait_ > 0) return;
+    int first = stage_ == Stage::WaitingFirstPair ? 0 : 1;
+    for (int i : {first, first + 2}) {
+      auto* leg = GetController()->GetLegs().GetLeg(i);
+      if (!leg) continue;
+      init_control_[i] = InitializationLegControl();
+      init_control_[i].Restart(*leg);
+      leg->SetControl(&init_control_[i]);
+    }
+    stage_ = first == 0 ? Stage::FirstPair : Stage::SecondPair;
+  }
+  if (stage_ == Stage::FirstPair &&
+      init_control_[0].GetStage() == InitializationLegControl::InitializationStage::Done &&
+      init_control_[2].GetStage() == InitializationLegControl::InitializationStage::Done) {
+    StartPair(1);
+  } else if (stage_ == Stage::SecondPair &&
+      init_control_[1].GetStage() == InitializationLegControl::InitializationStage::Done &&
+      init_control_[3].GetStage() == InitializationLegControl::InitializationStage::Done) {
+    OutputEvent({EventId::kInitializationDone, 0.f});
+    for (auto& control : init_control_) control.SetStandUp();
+    stage_ = Stage::Done;
+  }
+}
 
 void WalkBehavior::ProcessInputEvents(const std::deque<ControlEvent>& events) {
   Behavior::ProcessInputEvents(events);
-  const auto& legs = GetController()->GetLegs();
-  for (const auto& event : events) {
-    switch (event.event_id) {
-      case EventId::kControlEventConfirm: {
-        stage_ = Stage::FirstPair;
-        for (auto& leg_index : {0, 2}) {
-          const auto leg = legs.GetLeg(leg_index);
-          leg->SetControl(&init_control_[leg_index]);
-
-          if (auto* motor = leg->GetMotorI()) {
-            motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                   static_cast<uint8_t>(3));
-          }
-          if (auto* motor = leg->GetMotorO()) {
-            motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                   static_cast<uint8_t>(3));
-          }
-          if (auto* motor = leg->GetMotorZ()) {
-            motor->GetController()->SendSetCommand(0, CMD_STATE,
-                                                   static_cast<uint8_t>(3));
-          }
-
-          // TODO
-          sleep(1.0);
-
-          init_control_[leg_index].Restart(*leg);
-        }
-      } break;
-    }
-  }
+  for (const auto& event : events)
+    if (event.event_id == EventId::kControlEventConfirm) StartPair(0);
 }

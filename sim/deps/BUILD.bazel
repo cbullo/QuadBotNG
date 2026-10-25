@@ -10,3 +10,5 @@ compile_pip_requirements(
     requirements_txt = "requirements.txt",
     tags = ["manual"],
 )
+
+exports_files(["mujoco_native.json"])

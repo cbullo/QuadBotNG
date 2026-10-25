@@ -62,7 +62,7 @@ class StoppedBehavior : public Behavior {
   void SetPreviousBehavior(Behavior* b) { previous_behavior_ = b; }
 
  private:
-  Behavior* previous_behavior_;
+  Behavior* previous_behavior_ = nullptr;
 };
 
 class EStoppedBehavior : public Behavior {
@@ -123,11 +123,15 @@ class WalkBehavior : public Behavior {
   private:
   enum class Stage {
     Pre,
+    WaitingFirstPair,
     FirstPair,
+    WaitingSecondPair,
     SecondPair,
     Done
   };
 
+  void StartPair(int first);
+  float startup_wait_ = 0;
   Stage stage_ = Stage::Pre;
   InitializationLegControl init_control_[4];
 };

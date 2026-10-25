@@ -88,7 +88,8 @@ inline uint8_t GetArgumentLength(uint8_t byte) {
     // case CMD_STATUS:
     //   return sizeof(uint8_t);
     case CMD_LIMITS:
-      return sizeof(int8_t);
+      // SCMD_LIM_VOLT uses Voltage (signed 16-bit, 1/512 V) for SET and GET.
+      return sizeof(int16_t);
     case CMD_MOTION_TYPE:
       return sizeof(uint8_t);
     case CMD_MOTION_DOWNSAMPLE:

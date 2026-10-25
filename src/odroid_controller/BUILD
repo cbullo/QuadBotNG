@@ -39,6 +39,9 @@ cc_library(
         "angle.h",
         "bldc_driver_board.cc",
         "bldc_driver_board.h",
+        "boards/protocol.h",
+        "boards/transport.cc",
+        "boards/transport.h",
         "controller.cc",
         "controller.h",
         "event_factory.h",
@@ -53,35 +56,31 @@ cc_library(
         "motor.cc",
         "motor.h",
         "pid_utils.h",
+        "robot_system.cc",
+        "robot_system.h",
+        "runtime_options.h",
     ],
     copts = [
         "-flto",
         "-fuse-linker-plugin",
         "-ffat-lto-objects",
     ],
-    defines = select({
-        ":simulator_mode": ["QUADBOT_SIMULATOR=1"],
-        "//conditions:default": [],
-    }),
     linkopts = [
         "-lpthread",
         "-lm",
     ],
     visibility = ["//visibility:public"],
-    deps =
-        select(
-            {
-                ":simulator_mode": [
-                    ":gazebo_sim_lib",
-                    "//src/libs/communication:binary_communication",
-                    "@fmt",
-                    "@yaml-cpp",
-                ],
-                "//conditions:default": [
-                    "//src/libs/communication:binary_communication",
-                    "@fmt",
-                    "@yaml-cpp",
-                ],
-            },
-        ),
+    deps = [
+        "//src/libs/communication:binary_communication",
+        "@fmt",
+        "@yaml-cpp",
+    ],
+)
+
+cc_library(
+    name = "emulated_board",
+    srcs = ["boards/emulated_board.cc"],
+    hdrs = ["boards/emulated_board.h"],
+    visibility = ["//visibility:public"],
+    deps = [":controller_lib"],
 )

@@ -3,3 +3,4 @@
 gymnasium[mujoco]==1.4.0
 mujoco==3.17.0
 numpy
+pyyaml

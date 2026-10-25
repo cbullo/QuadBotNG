@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <array>
 #include <optional>
 
 #include "leg.h"
@@ -107,6 +108,19 @@ class ThetaGammaZLegControl : public LegControl {
   LegState state_;
 
   float delay_ = -0.01f;
+  float elapsed_dt_ = 0;
+};
+
+// Known-pose hold in rotor coordinates. Feedback is exclusively the board
+// encoder stream; the differential remains in the physical transmission.
+class RotorPoseLegControl : public LegControl {
+ public:
+  void Capture(Leg& leg, double p, double d, int voltage_sign, double voltage_limit);
+  bool Process(Leg& leg, float dt) override;
+ private:
+  std::array<double,3> target_{}, previous_{};
+  double p_ = 0, d_ = 0, voltage_limit_ = 0;
+  int voltage_sign_ = 1;
 };
 
 class InitializationLegControl : public LegControl {

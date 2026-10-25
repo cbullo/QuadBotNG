@@ -1,0 +1,61 @@
+{
+  "description": "Candidate collision primitives in URDF body-local metres, mirrored in Y for LF/LB. Outer envelopes follow STL bounds and the 120 mm/35 mm linkage. within_leg uses smaller clearance proxies for the configured gamma range; these are not full CAD solids. See docs/physical-model.md. Mass/inertia remain from URDF.",
+  "base_link": [
+    {"type": "box", "pos": [0, 0, -0.03], "size": [0.1965, 0.042, 0.0275]},
+    {"type": "box", "pos": [0, 0, 0.004], "size": [0.0395, 0.0805, 0.0455]},
+    {"type": "box", "pos": [0.15, 0, 0.012], "size": [0.0155, 0.024, 0.015]}
+  ],
+  "shoulder": [
+    {"type": "cylinder", "fromto": [0.0497, 0, 0, 0.0697, 0, 0], "size": [0.0352]},
+    {"type": "box", "pos": [0.08795, -0.007, 0.0], "size": [0.01825, 0.0275, 0.0265]}
+  ],
+  "arm_main": [
+    {"type": "capsule", "fromto": [0, -0.0141, 0, 0, -0.0141, -0.12], "size": [0.0141]},
+    {"type": "cylinder", "fromto": [0, -0.0282, 0, 0, 0, 0], "size": [0.0162]}
+  ],
+  "arm_lower": [
+    {"type": "capsule", "fromto": [0, 0, -0.0045, 0.1, 0, -0.0045], "size": [0.0101]},
+    {"type": "sphere", "pos": [0.1065, 0, -0.00025], "size": [0.019]}
+  ],
+  "arm_crank": [
+    {"type": "capsule", "fromto": [0, -0.01005, 0, 0.035, -0.01005, 0], "size": [0.01005]}
+  ],
+  "arm_link": [
+    {"type": "capsule", "fromto": [0, -0.0005, 0, 0, -0.0005, -0.12], "size": [0.0126]}
+  ],
+  "within_leg": {
+    "shoulder": [
+      {"type": "cylinder", "fromto": [0.0497, 0, 0, 0.0697, 0, 0], "size": [0.0352]},
+      {"type": "box", "pos": [0.08795, -0.007, 0], "size": [0.01825, 0.0275, 0.0265]}
+    ],
+    "arm_main": [
+      {"type": "capsule", "fromto": [-0.008, -0.0141, -0.018, -0.008, -0.0141, -0.108], "size": [0.004]},
+      {"type": "cylinder", "fromto": [0, -0.0282, 0, 0, -0.022, 0], "size": [0.0162]},
+      {"type": "cylinder", "fromto": [0, -0.008, 0, 0, 0, 0], "size": [0.0162]}
+    ],
+    "arm_link": [
+      {"type": "capsule", "fromto": [0.006, -0.0005, 0, 0.006, -0.0005, -0.12], "size": [0.003]}
+    ],
+    "arm_crank": [
+      {"type": "capsule", "fromto": [0, -0.01005, 0, 0.035, -0.01005, 0], "size": [0.003]}
+    ],
+    "arm_lower": [
+      {"type": "capsule", "fromto": [0, 0, -0.0045, 0.1, 0, -0.0045], "size": [0.004]},
+      {"type": "sphere", "pos": [0.1065, 0, -0.00025], "size": [0.006]}
+    ]
+  },
+  "drives_1": [
+    {"type": "cylinder", "fromto": [-0.233954, -0.053, -0.018083, -0.185854, -0.053, -0.018083], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [-0.233954, 0.053, -0.018083, -0.185854, 0.053, -0.018083], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [-0.127154, -0.053, -0.018083, -0.079054, -0.053, -0.018083], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [-0.127154, 0.053, -0.018083, -0.079054, 0.053, -0.018083], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [0.0, -0.053, -0.018083, 0.0481, -0.053, -0.018083], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [0.0, 0.053, -0.018083, 0.0481, 0.053, -0.018083], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [0.1068, -0.053, -0.018083, 0.1549, -0.053, -0.018083], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [0.1068, 0.053, -0.018083, 0.1549, 0.053, -0.018083], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [-0.1985, 0, 0, -0.1504, 0, 0], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [-0.1271, 0, 0, -0.079, 0, 0], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [0.0, 0, 0, 0.0481, 0, 0], "size": [0.0275]},
+    {"type": "cylinder", "fromto": [0.0714, 0, 0, 0.1195, 0, 0], "size": [0.0275]}
+  ]
+}

@@ -6,8 +6,11 @@ an Odroid-C4 Linux host and six two-motor ATmega328P power controllers.
 Simulator research selects **MuJoCo**, with Gymnasium initially and a later
 MJX / MuJoCo Playground training path. See the
 [simulator comparison and implementation gates](docs/simulator-research.md).
-Dependency tooling is available through Bazel; the robot simulator itself is
-not implemented yet. Odroid cross-toolchain restoration is
+A MuJoCo robot model and six simulated motor boards are available in `sim/`.
+The PC executable can run the production controller against serial hardware or
+the simulated boards. See [launch commands and limitations](docs/simulated-boards.md)
+and the [implementation plan/status](docs/simulated-boards-plan.md).
+Odroid cross-toolchain restoration is
 [deferred](TODO.md).
 
 ## Build setup
@@ -41,12 +44,12 @@ bazel build --config=pc //:example_compdb
 
 The compilation database is `bazel-bin/compile_commands.json`.
 
-The PC binary currently uses the hardware board backend; it is not yet a
-simulator. Running it attempts to open devices from `config/robot_config.yaml`
-and the joystick. Simulation will reuse the host control code with a mock or
-simulated board backend instead of compiling AVR register/PWM/I2C code for PC.
-The existing Gazebo backend is unfinished. Its simulator flag remains a
-placeholder, not a working launch mode.
+The PC binary supports `--backend=serial` (the deployment-compatible default)
+and `--backend=sim`. Both use the same board client and binary protocol.
+Simulation uses a deterministic clock, six board emulators and native MuJoCo;
+it does not open physical devices. Hardware runs still use the configured serial
+devices and joystick. The unfinished Gazebo backend is not selected by the old
+simulator build flag; backend selection is now a runtime option.
 
 **The web server is disabled pending rework:** the controller does not link or
 start it, and deployment bundles omit its browser assets. Its source and manual
@@ -58,7 +61,14 @@ Bazel downloads Python 3.12 and the locked MuJoCo 3.17.0 / Gymnasium 1.4.0
 dependencies. No virtual environment or separate MuJoCo installation is needed.
 
 ```sh
-# Headless physics and Gymnasium integration check:
+# Run production C++ controller/leg control through simulated boards:
+bazel run --config=pc //src/odroid_controller/controller:controller -- \
+  --backend=sim --scenario=hold --suspended --duration=10
+
+# View the ground stance through the host controller and simulated boards:
+bazel run --config=pc //sim:controller_viewer -- --scenario=stand --duration=8
+
+# Headless physics and Gymnasium dependency check:
 bazel test --config=pc //sim:smoke_test
 
 # Desktop viewer (opens empty; drag in a model):
@@ -71,8 +81,24 @@ The viewer needs a desktop session and working system OpenGL drivers. CPU
 physics and the headless check need no CUDA installation or display. These
 targets support x86-64 Linux (`//:PC`); they do not use the Odroid sysroot.
 The check uses Gymnasium's packaged HalfCheetah example, not our quadruped.
-The existing URDF still needs conversion and validation of its differential
-and closed linkage before it can serve as the robot simulation model.
+The [candidate robot model](docs/physical-model.md) preserves the differential and
+closed linkage. Controller integration uses an explicitly approximate voltage
+motor model. Homing remains disabled until physical stops and absolute encoder
+references are validated. See the [simulated-board guide](docs/simulated-boards.md)
+for tests, scenarios, trace output and virtual serial ports.
+
+`stand` starts at the controller YAML's extension-side gamma bounds (about
+150-degree leg opening), supported during board setup, then
+releases into host rotor-position voltage control. The eight-second preview
+keeps the thermal/watchdog model active; its current unmeasured constants cause
+over-temperature resets in longer standing runs. A host pose
+fault then stops all remaining motors, allowing passive settling. Use
+`--show-collisions` to inspect the primitive collision shapes; leg/chassis and
+leg/leg self-collision is enabled with bearing-interface exclusions.
+Dedicated internal linkage proxies allow the configured gamma extrema while
+retaining the outer foot and limb envelopes for external contact.
+Dry joint friction is estimated to hold an unloaded raised leg with a small
+margin; see [the friction parameters and calibration](docs/physical-model.md#joint-friction).
 
 Direct dependencies live in `sim/deps/requirements.in`; all resolved versions
 and wheel hashes are recorded in `sim/deps/requirements.txt`. After editing

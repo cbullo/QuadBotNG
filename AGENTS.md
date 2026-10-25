@@ -44,4 +44,9 @@ validated physical model or working simulator.
   dependencies in `sim/deps/`; update them with
   `bazel run --config=pc //sim/deps:requirements.update`. The smoke test uses
   upstream HalfCheetah, not a validated quadruped model. The PC controller
-  still uses hardware transport; no mock backend exists yet.
+  supports runtime `--backend=serial|sim`; serial remains the
+  default. Read `docs/simulated-boards.md` for the common protocol client, six
+  board emulators, native MuJoCo runner and tests. `//sim:controller_viewer`
+  renders the production controller's simulation; `//sim:robot_demo` is a
+  separate demo servo controller. Homing is gated pending validated mechanical
+  stops and encoder references. Hardware calibration remains unchanged.

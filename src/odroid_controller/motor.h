@@ -1,18 +1,14 @@
 #pragma once
 
 #include <math.h>
+#include <atomic>
 
 #include <vector>
 
 #include "angle.h"
 
-#if QUADBOT_SIMULATOR
-#include "gazebo_driver.h"
-using ControllerType = GazeboDriver;
-#else
 #include "bldc_driver_board.h"
 using ControllerType = BLDCDriverBoard;
-#endif
 
 class Motor {
  public:
@@ -52,6 +48,7 @@ class Motor {
   }
 
   void Update();
+  void ResetFeedback();
 
   // void SetCurrentAngle(float new_angle) {
   //   accumulated_angle_ = new_angle / GetGearRatio();
@@ -80,8 +77,8 @@ class Motor {
   int direction_ = 1;
   bool first_update = true;
 
-  std::atomic<uint16_t> temperature_;
-  std::atomic<uint16_t> current_raw_angle_;
+  std::atomic<uint16_t> temperature_{20};
+  std::atomic<uint16_t> current_raw_angle_{0};
   bool angle_received_ = false;
 
   float sensor_angle_;

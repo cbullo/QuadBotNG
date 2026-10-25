@@ -1,0 +1,8 @@
+{
+  "additive_build_content": "load(\"@rules_cc//cc:defs.bzl\", \"cc_import\", \"cc_library\")\ncc_import(\n    name = \"native_library\",\n    shared_library = \"site-packages/mujoco/libmujoco.so.3.17.0\",\n)\ncc_library(\n    name = \"native\",\n    hdrs = glob([\"site-packages/mujoco/include/**/*.h\"]),\n    includes = [\"site-packages/mujoco/include\"],\n    deps = [\":native_library\"],\n    target_compatible_with = [\"@platforms//cpu:x86_64\", \"@platforms//os:linux\"],\n    visibility = [\"//visibility:public\"],\n)\n",
+  "data": [],
+  "data_exclude_glob": [],
+  "srcs_exclude_glob": [],
+  "copy_files": {},
+  "copy_executables": {}
+}

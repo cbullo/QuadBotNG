@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <iostream>
 
 struct PIDParams {
   float p = 0.f;
