@@ -27,38 +27,41 @@ all_compile_actions = [
 ]
 
 def _impl(ctx):
+    # Keep the existing crosstool-NG layout, with a per-machine override.
+    root = ctx.var.get("AARCH64_TOOLCHAIN_ROOT", "/home/tomasz/x-tools/aarch64-linux-gnu")
+    sysroot = root + "/aarch64-linux-gnu/sysroot"
     tool_paths = [
         tool_path(
             name = "ar",
-            path = "/home/tomasz/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-ar",
+            path = root + "/bin/aarch64-linux-gnu-ar",
         ),
         tool_path(
             name = "cpp",
-            path = "/home/tomasz/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-cpp",
+            path = root + "/bin/aarch64-linux-gnu-cpp",
         ),
         tool_path(
             name = "gcc",
-            path = "/home/tomasz/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc",
+            path = root + "/bin/aarch64-linux-gnu-gcc",
         ),
         tool_path(
             name = "gcov",
-            path = "/home/tomasz/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-gcov",
+            path = root + "/bin/aarch64-linux-gnu-gcov",
         ),
         tool_path(
             name = "ld",
-            path = "/home/tomasz/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-ld",
+            path = root + "/bin/aarch64-linux-gnu-ld",
         ),
         tool_path(
             name = "nm",
-            path = "/home/tomasz/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-nm",
+            path = root + "/bin/aarch64-linux-gnu-nm",
         ),
         tool_path(
             name = "objdump",
-            path = "/home/tomasz/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-objdump",
+            path = root + "/bin/aarch64-linux-gnu-objdump",
         ),
         tool_path(
             name = "strip",
-            path = "/home/tomasz/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-strip",
+            path = root + "/bin/aarch64-linux-gnu-strip",
         ),
     ]
 
@@ -71,7 +74,7 @@ def _impl(ctx):
                 flag_groups = [
                     flag_group(
                         flags = [
-                            "--sysroot=/home/tomasz/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/sysroot",
+                            "--sysroot=" + sysroot,
                             "-no-canonical-prefixes",
                             "-fno-canonical-system-headers",
                             "-Wno-builtin-macro-redefined",
@@ -94,7 +97,7 @@ def _impl(ctx):
                 flag_groups = ([
                     flag_group(
                         flags = [
-                            "--sysroot=/home/tomasz/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/sysroot",
+                            "--sysroot=" + sysroot,
                             "-lstdc++",
                         ],
                     ),
@@ -110,7 +113,7 @@ def _impl(ctx):
 
     return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
-        cxx_builtin_include_directories = ["/home/tomasz/x-tools/aarch64-linux-gnu"],
+        cxx_builtin_include_directories = [root],
         features = features,
         toolchain_identifier = "aarch64-toolchain",
         host_system_name = "local",

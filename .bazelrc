@@ -1,7 +1,14 @@
-build --cxxopt="-std=c++17"
-build --copt="-pie"
-#build --copt="-flto"
-#build --copt="-fuse-linker-plugin"
-#build --copt="-ffat-lto-objects"
+common --enable_bzlmod
+common --noenable_workspace
 
-build --sandbox_writable_path=/home/tomasz/.ccache
+build --cxxopt=-std=c++17
+build --incompatible_enable_cc_toolchain_resolution
+
+# Platform choice is independent of the eventual simulation backend.
+build:pc --platforms=//:PC
+build:odroid --platforms=//:Odroid-C4
+build:rctimer --platforms=//:RCTimer
+build:rctimer --features=-gnu99
+
+# Machine-specific compiler/cache settings belong in this optional file.
+try-import %workspace%/.bazelrc.local

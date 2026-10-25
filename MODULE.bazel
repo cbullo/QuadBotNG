@@ -1,0 +1,95 @@
+module(
+    name = "quadbotng",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_shell", version = "0.3.0")
+bazel_dep(name = "rules_foreign_cc", version = "0.15.1")
+bazel_dep(name = "rules_python", version = "1.2.0")
+bazel_dep(name = "fmt", version = "8.1.1")
+bazel_dep(name = "yaml-cpp", version = "0.8.0")
+bazel_dep(name = "googletest", version = "1.14.0.bcr.1", repo_name = "com_google_googletest")
+
+# Simulator tooling runs on the development PC, independently of host Python.
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    extra_pip_args = ["--only-binary=:all:"],
+    hub_name = "sim_deps",
+    python_version = "3.12",
+    requirements_lock = "//sim/deps:requirements.txt",
+)
+use_repo(pip, "sim_deps")
+
+# Preserve existing names for dependencies without Bazel modules.
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "EmbeddedSystemsBuildScripts",
+    patch_args = ["-p1"],
+    patches = ["//toolchain:embedded_bzlmod.patch"],
+    sha256 = "31aa912ec7588f302859b180d85cb02043af5f13fd11a07a274e1f44d3e52fb3",
+    strip_prefix = "EmbeddedSystemsBuildScripts-1.0.2",
+    type = "tar.gz",
+    urls = ["https://codeload.github.com/es-ude/EmbeddedSystemsBuildScripts/tar.gz/refs/tags/v1.0.2"],
+)
+
+avr = use_extension("//toolchain:extensions.bzl", "avr")
+use_repo(avr, "AvrToolchain")
+
+register_toolchains("@AvrToolchain//cc_toolchain:cc-toolchain-avr-atmega328p")
+
+register_toolchains("//toolchain/aarch64-linux-gnu:aarch64_linux_toolchain")
+
+http_archive(
+    name = "arduino",
+    build_file = "//:BUILD.arduino",
+    sha256 = "528b317a0a70d5a7d2bae0d995c22d4bf10f386bc92d51777956a101342ccc31",
+    strip_prefix = "ArduinoCore-avr-1.8.5",
+    type = "zip",
+    urls = ["https://codeload.github.com/arduino/ArduinoCore-avr/zip/refs/tags/1.8.5"],
+)
+
+http_archive(
+    name = "simplefoc",
+    build_file = "//:BUILD.simplefoc",
+    sha256 = "0523e6d02f67766325b26a567af7b1a089b6ec003260ee733eb4505d00f7f2b5",
+    strip_prefix = "Arduino-FOC-23cc4d23faf0b56e907b6365da610e69246c3d9a/src",
+    type = "zip",
+    urls = ["https://codeload.github.com/cbullo/Arduino-FOC/zip/23cc4d23faf0b56e907b6365da610e69246c3d9a"],
+)
+
+http_archive(
+    name = "libwebsockets",
+    build_file_content = """
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)
+""",
+    sha256 = "fe628cee633f89606eb220a2be5243b719b6920b5d27716fc4d53835fa3044eb",
+    strip_prefix = "libwebsockets-4.3.2",
+    type = "zip",
+    urls = ["https://codeload.github.com/warmcat/libwebsockets/zip/refs/tags/v4.3.2"],
+)
+
+http_archive(
+    name = "com_grail_bazel_compdb",
+    sha256 = "d32835b26dd35aad8fd0ba0d712265df6565a3ad860d39e4c01ad41059ea7eda",
+    strip_prefix = "bazel-compilation-database-0.5.2",
+    type = "tar.gz",
+    urls = ["https://codeload.github.com/grailbio/bazel-compilation-database/tar.gz/refs/tags/0.5.2"],
+)
+
+output_base = use_repo_rule("@com_grail_bazel_compdb//:tools.bzl", "bazel_output_base_util")
+
+output_base(name = "com_grail_bazel_output_base_util")

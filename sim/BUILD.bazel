@@ -1,0 +1,30 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@sim_deps//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+# Python wheels are for the development PC, not AVR or the Odroid sysroot.
+PC_CONSTRAINTS = [
+    "@platforms//cpu:x86_64",
+    "@platforms//os:linux",
+]
+
+py_binary(
+    name = "viewer",
+    srcs = ["viewer.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [requirement("mujoco")],
+)
+
+py_test(
+    name = "smoke_test",
+    size = "small",
+    srcs = ["smoke_test.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        requirement("gymnasium"),
+        requirement("mujoco"),
+        requirement("numpy"),
+    ],
+)

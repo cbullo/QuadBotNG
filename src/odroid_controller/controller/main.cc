@@ -20,7 +20,6 @@
 #include "src/odroid_controller/controller.h"
 #include "src/odroid_controller/joystick_input.h"
 #include "src/odroid_controller/leg.h"
-#include "src/odroid_controller/web_server/server.h"
 
 volatile bool estop_triggered = false;
 bool stopped = true;
@@ -39,7 +38,6 @@ std::vector<Motor*> motors;
 std::vector<Leg*> legs;
 // std::unique_ptr<Controller> main_controller;
 
-WebServer web_server;
 
 void EStop() {
   if (!estop_triggered) {
@@ -246,8 +244,6 @@ Controller SetupController() {
   //stopped_behavior->SetPreviousBehavior(motor_testing_behavior.get());
   stopped_behavior->Activate();
   std::cout << "SetupController 2" << std::endl;
-
-  web_server.Init(&main_controller);
 
   return main_controller;
 }

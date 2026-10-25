@@ -1,20 +1,27 @@
 def _impl(ctx):
+    firmware = ctx.attr.actual_binary[0][DefaultInfo]
     return [
         DefaultInfo(
-            data_runfiles =
-                ctx.attr.actual_binary[0][DefaultInfo].data_runfiles,
+            files = firmware.files,
+            runfiles = ctx.runfiles(transitive_files = firmware.files).merge(
+                firmware.default_runfiles,
+            ),
         ),
     ]
 
 def _transition_impl(settings, attr):
     return {
         "//command_line_option:platforms": ["//:RCTimer"],
-        "//command_line_option:features": ["-gnu99"],
+        "//command_line_option:features": [
+            feature
+            for feature in settings["//command_line_option:features"]
+            if feature not in ["gnu99", "-gnu99"]
+        ] + ["-gnu99"],
     }
 
 _comp_mode_transition = transition(
     implementation = _transition_impl,
-    inputs = [],
+    inputs = ["//command_line_option:features"],
     outputs = ["//command_line_option:platforms", "//command_line_option:features"],
 )
 

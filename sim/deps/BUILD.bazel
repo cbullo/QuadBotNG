@@ -1,0 +1,12 @@
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+compile_pip_requirements(
+    name = "requirements",
+    srcs = ["requirements.in"],
+    extra_args = [
+        "--index-url=https://pypi.org/simple",
+        "--pip-args=--only-binary=:all:",
+    ],
+    requirements_txt = "requirements.txt",
+    tags = ["manual"],
+)

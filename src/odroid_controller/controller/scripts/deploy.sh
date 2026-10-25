@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-RUNFILES=${BASH_SOURCE[0]}.runfiles
-DATA_FILES=$RUNFILES/__main__/src
+RUNFILES=${RUNFILES_DIR:-${BASH_SOURCE[0]}.runfiles}
+DATA_FILES=$RUNFILES/_main/src
 
 TARGET_ADDRESS=robot@192.168.0.12
 

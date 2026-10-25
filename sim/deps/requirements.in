@@ -1,0 +1,5 @@
+# PC simulator dependencies. Update the hashed lock with:
+# bazel run --config=pc //sim/deps:requirements.update
+gymnasium[mujoco]==1.4.0
+mujoco==3.17.0
+numpy

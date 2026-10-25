@@ -1,8 +1,10 @@
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
 string_flag(
     name = "simulator",
     build_setting_default = "0",
+    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -10,6 +12,7 @@ config_setting(
     flag_values = {
         ":simulator": "1",
     },
+    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -25,6 +28,8 @@ cc_library(
         "gazebo_driver.cc",
         "gazebo_driver.h",
     ],
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
     # deps = "@gazebo",
 )
 
@@ -55,8 +60,8 @@ cc_library(
         "-ffat-lto-objects",
     ],
     defines = select({
-        ":simulator_mode": {"QUADBOT_SIMULATOR": "1"},
-        "//conditions:default": {},
+        ":simulator_mode": ["QUADBOT_SIMULATOR=1"],
+        "//conditions:default": [],
     }),
     linkopts = [
         "-lpthread",
