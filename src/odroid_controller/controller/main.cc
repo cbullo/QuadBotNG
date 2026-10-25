@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
       else if (arg == "--headless") {}  // native runner is headless
       else if (arg == "--help") {
         std::cout << "--backend=serial|sim --config=PATH --duration=SECONDS --joystick\n"
-                     "Simulation: --scenario=idle|hold|stand|bob|pulse|stop --suspended --realtime\n"
+                     "Simulation: --scenario=idle|hold|stand|bob|init|standup|pulse|stop --suspended --realtime\n"
                      "            --trace=CSV --step-us=500 --motor-config=PATH --pty-server\n"
                      "Dashboard: --dashboard-port=9876 [--dashboard-control] (loopback only)\n";
         return 0;
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
       throw std::invalid_argument("attach dashboard to the serial client, not the PTY server");
     if (options.backend == "sim") {
       if (options.dashboard_port) options.realtime = true;
-      if (options.duration == 0) options.duration = 10;
+      if (options.duration == 0) options.duration = options.scenario == "standup" ? 50 : options.scenario == "init" ? 30 : 10;
 #ifdef QUADBOT_NATIVE_SIM
       return RunSimulation(options);
 #else

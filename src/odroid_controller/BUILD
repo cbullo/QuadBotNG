@@ -49,6 +49,8 @@ cc_library(
         "event_factory.h",
         "event_ids.h",
         "joystick_input.h",
+        "homing.cc",
+        "homing.h",
         "leg.cc",
         "leg.h",
         "leg_control.h",

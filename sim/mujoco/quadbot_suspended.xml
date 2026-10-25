@@ -44,7 +44,7 @@
       <geom name="base_link_collision_1" class="collision" type="box" size="0.0395 0.0805 0.0455" pos="0 0 0.004" />
       <geom name="base_link_collision_2" class="collision" type="box" size="0.0155 0.024 0.015" pos="0.15 0 0.012" />
       <body name="shoulder_RF_1" pos="0.039006 -0.053 0.0" euler="0 0 0">
-        <joint name="base_to_shoulder_RF" type="hinge" axis="1.0 -0.0 -0.0" frictionloss="0.073" range="-1.4 0.2" />
+        <joint name="base_to_shoulder_RF" type="hinge" axis="1.0 -0.0 -0.0" frictionloss="0.0629" range="-1.4 0.2" />
         <inertial pos="0.07305887126794519 -0.006366818449876278 1.737939750193092e-05" mass="0.0687982302950686" fullinertia="4.5e-05 4.9e-05 5e-05 7e-06 0.0 0.0" />
         <geom name="shoulder_RF_1_visual_0" class="visual" type="mesh" mesh="shoulder_RF_1" pos="-0.039006 0.053 -0.0" euler="0 0 0" />
         <geom name="shoulder_RF_1_collision_0" class="collision" type="cylinder" size="0.0352" contype="4" conaffinity="59" fromto="0.0497 0 0 0.0697 0 0" />
@@ -52,7 +52,7 @@
         <geom name="shoulder_RF_1_self_collision_0" class="collision" type="cylinder" size="0.0352" contype="64" conaffinity="64" rgba="0.9 0.55 0.15 0.6" fromto="0.0497 0 0 0.0697 0 0" />
         <geom name="shoulder_RF_1_self_collision_1" class="collision" type="box" size="0.01825 0.0275 0.0265" contype="64" conaffinity="64" rgba="0.9 0.55 0.15 0.6" pos="0.08795 -0.007 0" />
         <body name="arm_main_RF_1" pos="0.0797 -0.0345 0.0" euler="0 0 0">
-          <joint name="shoulder_to_main_RF" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.071" />
+          <joint name="shoulder_to_main_RF" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.0608" />
           <inertial pos="-0.004247618304285272 -0.014187952596475387 -0.04886253447598682" mass="0.047281594844868054" fullinertia="7.8e-05 7.7e-05 6e-06 -0.0 2e-06 -2e-06" />
           <geom name="arm_main_RF_1_visual_0" class="visual" type="mesh" mesh="arm_main_RF_1" pos="-0.118706 0.0875 -0.0" euler="0 0 0" />
           <geom name="arm_main_RF_1_collision_0" class="collision" type="capsule" size="0.0141" contype="4" conaffinity="59" fromto="0 -0.0141 0 0 -0.0141 -0.12" />
@@ -72,7 +72,7 @@
           </body>
         </body>
         <body name="arm_crank_RF_1" pos="0.0797 -0.0345 0.0" euler="0 0 0">
-          <joint name="shoulder_to_crank_RF" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.029" />
+          <joint name="shoulder_to_crank_RF" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.0247" />
           <inertial pos="0.01870365879895089 -0.01385715444565519 9.569436468071744e-05" mass="0.007002755420396213" fullinertia="4e-07 2e-06 2e-06 0.0 -0.0 0.0" />
           <geom name="arm_crank_RF_1_visual_0" class="visual" type="mesh" mesh="arm_crank_RF_1" pos="-0.118706 0.0875 -0.0" euler="0 0 0" />
           <geom name="arm_crank_RF_1_collision_0" class="collision" type="capsule" size="0.01005" contype="4" conaffinity="59" fromto="0 -0.01005 0 0.035 -0.01005 0" />
@@ -88,7 +88,7 @@
         </body>
       </body>
       <body name="shoulder_LF_1" pos="0.039006 0.053 0.0" euler="0 0 0">
-        <joint name="base_to_shoulder_LF" type="hinge" axis="1.0 -0.0 -0.0" frictionloss="0.073" range="-0.2 1.4" />
+        <joint name="base_to_shoulder_LF" type="hinge" axis="1.0 -0.0 -0.0" frictionloss="0.0629" range="-0.2 1.4" />
         <inertial pos="0.07305887126794519 0.006366818449876278 1.737939750193092e-05" mass="0.0687982302950686" fullinertia="4.5e-05 4.9e-05 5e-05 -7e-06 0.0 0.0" />
         <geom name="shoulder_LF_1_visual_0" class="visual" type="mesh" mesh="shoulder_LF_1" pos="-0.039006 -0.053 -0.0" euler="0 0 0" />
         <geom name="shoulder_LF_1_collision_0" class="collision" type="cylinder" size="0.0352" contype="8" conaffinity="55" fromto="0.0497 0 0 0.0697 0 0" />
@@ -96,7 +96,7 @@
         <geom name="shoulder_LF_1_self_collision_0" class="collision" type="cylinder" size="0.0352" contype="128" conaffinity="128" rgba="0.9 0.55 0.15 0.6" fromto="0.0497 0 0 0.0697 0 0" />
         <geom name="shoulder_LF_1_self_collision_1" class="collision" type="box" size="0.01825 0.0275 0.0265" contype="128" conaffinity="128" rgba="0.9 0.55 0.15 0.6" pos="0.08795 0.007 0" />
         <body name="arm_main_LF_1" pos="0.0797 0.0345 0.0" euler="0 0 0">
-          <joint name="shoulder_to_main_LF" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.071" />
+          <joint name="shoulder_to_main_LF" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.0608" />
           <inertial pos="-0.004247618304285272 0.014187952596475387 -0.04886253447598682" mass="0.047281594844868054" fullinertia="7.8e-05 7.7e-05 6e-06 -0.0 2e-06 2e-06" />
           <geom name="arm_main_LF_1_visual_0" class="visual" type="mesh" mesh="arm_main_LF_1" pos="-0.118706 -0.0875 -0.0" euler="0 0 0" />
           <geom name="arm_main_LF_1_collision_0" class="collision" type="capsule" size="0.0141" contype="8" conaffinity="55" fromto="0 0.0141 0 0 0.0141 -0.12" />
@@ -116,7 +116,7 @@
           </body>
         </body>
         <body name="arm_crank_LF_1" pos="0.0797 0.0345 0.0" euler="0 0 0">
-          <joint name="shoulder_to_crank_LF" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.029" />
+          <joint name="shoulder_to_crank_LF" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.0247" />
           <inertial pos="0.01870365879895089 0.01385715444565519 9.569436468071744e-05" mass="0.007002755420396213" fullinertia="4e-07 2e-06 2e-06 0.0 -0.0 0.0" />
           <geom name="arm_crank_LF_1_visual_0" class="visual" type="mesh" mesh="arm_crank_LF_1" pos="-0.118706 -0.0875 -0.0" euler="0 0 0" />
           <geom name="arm_crank_LF_1_collision_0" class="collision" type="capsule" size="0.01005" contype="8" conaffinity="55" fromto="0 0.01005 0 0.035 0.01005 0" />
@@ -132,7 +132,7 @@
         </body>
       </body>
       <body name="shoulder_RB_1" pos="-0.195006 -0.053 0.0" euler="0 0 0">
-        <joint name="base_to_shoulder_RB" type="hinge" axis="1.0 -0.0 -0.0" frictionloss="0.073" range="-1.4 0.2" />
+        <joint name="base_to_shoulder_RB" type="hinge" axis="1.0 -0.0 -0.0" frictionloss="0.0629" range="-0.2 1.4" />
         <inertial pos="0.07305887126794519 -0.006366818449876278 1.737939750193092e-05" mass="0.0687982302950686" fullinertia="4.5e-05 4.9e-05 5e-05 7e-06 0.0 0.0" />
         <geom name="shoulder_RB_1_visual_0" class="visual" type="mesh" mesh="shoulder_RF_1" pos="-0.039006 0.053 -0.0" euler="0 0 0" />
         <geom name="shoulder_RB_1_collision_0" class="collision" type="cylinder" size="0.0352" contype="16" conaffinity="47" fromto="0.0497 0 0 0.0697 0 0" />
@@ -140,7 +140,7 @@
         <geom name="shoulder_RB_1_self_collision_0" class="collision" type="cylinder" size="0.0352" contype="256" conaffinity="256" rgba="0.9 0.55 0.15 0.6" fromto="0.0497 0 0 0.0697 0 0" />
         <geom name="shoulder_RB_1_self_collision_1" class="collision" type="box" size="0.01825 0.0275 0.0265" contype="256" conaffinity="256" rgba="0.9 0.55 0.15 0.6" pos="0.08795 -0.007 0" />
         <body name="arm_main_RB_1" pos="0.0797 -0.0345 0.0" euler="0 0 0">
-          <joint name="shoulder_to_main_RB" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.071" />
+          <joint name="shoulder_to_main_RB" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.0608" />
           <inertial pos="-0.004247618304285272 -0.014187952596475387 -0.04886253447598682" mass="0.047281594844868054" fullinertia="7.8e-05 7.7e-05 6e-06 -0.0 2e-06 -2e-06" />
           <geom name="arm_main_RB_1_visual_0" class="visual" type="mesh" mesh="arm_main_RF_1" pos="-0.118706 0.0875 -0.0" euler="0 0 0" />
           <geom name="arm_main_RB_1_collision_0" class="collision" type="capsule" size="0.0141" contype="16" conaffinity="47" fromto="0 -0.0141 0 0 -0.0141 -0.12" />
@@ -160,7 +160,7 @@
           </body>
         </body>
         <body name="arm_crank_RB_1" pos="0.0797 -0.0345 0.0" euler="0 0 0">
-          <joint name="shoulder_to_crank_RB" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.029" />
+          <joint name="shoulder_to_crank_RB" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.0247" />
           <inertial pos="0.01870365879895089 -0.01385715444565519 9.569436468071744e-05" mass="0.007002755420396213" fullinertia="4e-07 2e-06 2e-06 0.0 -0.0 0.0" />
           <geom name="arm_crank_RB_1_visual_0" class="visual" type="mesh" mesh="arm_crank_RF_1" pos="-0.118706 0.0875 -0.0" euler="0 0 0" />
           <geom name="arm_crank_RB_1_collision_0" class="collision" type="capsule" size="0.01005" contype="16" conaffinity="47" fromto="0 -0.01005 0 0.035 -0.01005 0" />
@@ -176,7 +176,7 @@
         </body>
       </body>
       <body name="shoulder_LB_1" pos="-0.195006 0.053 0.0" euler="0 0 0">
-        <joint name="base_to_shoulder_LB" type="hinge" axis="1.0 -0.0 -0.0" frictionloss="0.073" range="-0.2 1.4" />
+        <joint name="base_to_shoulder_LB" type="hinge" axis="1.0 -0.0 -0.0" frictionloss="0.0629" range="-1.4 0.2" />
         <inertial pos="0.07305887126794519 0.006366818449876278 1.737939750193092e-05" mass="0.0687982302950686" fullinertia="4.5e-05 4.9e-05 5e-05 -7e-06 0.0 0.0" />
         <geom name="shoulder_LB_1_visual_0" class="visual" type="mesh" mesh="shoulder_LF_1" pos="-0.039006 -0.053 -0.0" euler="0 0 0" />
         <geom name="shoulder_LB_1_collision_0" class="collision" type="cylinder" size="0.0352" contype="32" conaffinity="31" fromto="0.0497 0 0 0.0697 0 0" />
@@ -184,7 +184,7 @@
         <geom name="shoulder_LB_1_self_collision_0" class="collision" type="cylinder" size="0.0352" contype="512" conaffinity="512" rgba="0.9 0.55 0.15 0.6" fromto="0.0497 0 0 0.0697 0 0" />
         <geom name="shoulder_LB_1_self_collision_1" class="collision" type="box" size="0.01825 0.0275 0.0265" contype="512" conaffinity="512" rgba="0.9 0.55 0.15 0.6" pos="0.08795 0.007 0" />
         <body name="arm_main_LB_1" pos="0.0797 0.0345 0.0" euler="0 0 0">
-          <joint name="shoulder_to_main_LB" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.071" />
+          <joint name="shoulder_to_main_LB" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.0608" />
           <inertial pos="-0.004247618304285272 0.014187952596475387 -0.04886253447598682" mass="0.047281594844868054" fullinertia="7.8e-05 7.7e-05 6e-06 -0.0 2e-06 2e-06" />
           <geom name="arm_main_LB_1_visual_0" class="visual" type="mesh" mesh="arm_main_LF_1" pos="-0.118706 -0.0875 -0.0" euler="0 0 0" />
           <geom name="arm_main_LB_1_collision_0" class="collision" type="capsule" size="0.0141" contype="32" conaffinity="31" fromto="0 0.0141 0 0 0.0141 -0.12" />
@@ -204,7 +204,7 @@
           </body>
         </body>
         <body name="arm_crank_LB_1" pos="0.0797 0.0345 0.0" euler="0 0 0">
-          <joint name="shoulder_to_crank_LB" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.029" />
+          <joint name="shoulder_to_crank_LB" type="hinge" axis="0.0 1.0 0.0" frictionloss="0.0247" />
           <inertial pos="0.01870365879895089 0.01385715444565519 9.569436468071744e-05" mass="0.007002755420396213" fullinertia="4e-07 2e-06 2e-06 0.0 -0.0 0.0" />
           <geom name="arm_crank_LB_1_visual_0" class="visual" type="mesh" mesh="arm_crank_LF_1" pos="-0.118706 -0.0875 -0.0" euler="0 0 0" />
           <geom name="arm_crank_LB_1_collision_0" class="collision" type="capsule" size="0.01005" contype="32" conaffinity="31" fromto="0 0.01005 0 0.035 0.01005 0" />
@@ -256,12 +256,26 @@
     <exclude body1="arm_lower_LB_1" body2="arm_link_LB_1" />
   </contact>
   <equality>
-    <connect name="four_bar_FR" site1="closure_link_FR" site2="closure_lower_FR" solref="0.002 1" solimp="0.99 0.9999 0.001" />
-    <connect name="four_bar_FL" site1="closure_link_FL" site2="closure_lower_FL" solref="0.002 1" solimp="0.99 0.9999 0.001" />
-    <connect name="four_bar_BR" site1="closure_link_BR" site2="closure_lower_BR" solref="0.002 1" solimp="0.99 0.9999 0.001" />
-    <connect name="four_bar_BL" site1="closure_link_BL" site2="closure_lower_BL" solref="0.002 1" solimp="0.99 0.9999 0.001" />
+    <tendon name="four_bar_FR_main_to_lower" tendon1="four_bar_FR_main_to_lower" polycoef="0 0 0 0 0" solref="0.002 1" solimp="0.9999 0.9999 0.001" />
+    <tendon name="four_bar_FR_crank_to_link" tendon1="four_bar_FR_crank_to_link" polycoef="0 0 0 0 0" solref="0.002 1" solimp="0.9999 0.9999 0.001" />
+    <tendon name="four_bar_FL_main_to_lower" tendon1="four_bar_FL_main_to_lower" polycoef="0 0 0 0 0" solref="0.002 1" solimp="0.9999 0.9999 0.001" />
+    <tendon name="four_bar_FL_crank_to_link" tendon1="four_bar_FL_crank_to_link" polycoef="0 0 0 0 0" solref="0.002 1" solimp="0.9999 0.9999 0.001" />
+    <tendon name="four_bar_BR_main_to_lower" tendon1="four_bar_BR_main_to_lower" polycoef="0 0 0 0 0" solref="0.002 1" solimp="0.9999 0.9999 0.001" />
+    <tendon name="four_bar_BR_crank_to_link" tendon1="four_bar_BR_crank_to_link" polycoef="0 0 0 0 0" solref="0.002 1" solimp="0.9999 0.9999 0.001" />
+    <tendon name="four_bar_BL_main_to_lower" tendon1="four_bar_BL_main_to_lower" polycoef="0 0 0 0 0" solref="0.002 1" solimp="0.9999 0.9999 0.001" />
+    <tendon name="four_bar_BL_crank_to_link" tendon1="four_bar_BL_crank_to_link" polycoef="0 0 0 0 0" solref="0.002 1" solimp="0.9999 0.9999 0.001" />
   </equality>
   <tendon>
+    <fixed name="four_bar_FR_main_to_lower">
+      <joint joint="main_to_lower_RF" coef="1" />
+      <joint joint="shoulder_to_crank_RF" coef="-1" />
+      <joint joint="shoulder_to_main_RF" coef="1" />
+    </fixed>
+    <fixed name="four_bar_FR_crank_to_link">
+      <joint joint="crank_to_link_RF" coef="1" />
+      <joint joint="shoulder_to_crank_RF" coef="-1" />
+      <joint joint="shoulder_to_main_RF" coef="1" />
+    </fixed>
     <fixed name="gamma_FR" limited="true" range="-1.4835 1.0472" solreflimit="0.002 1" solimplimit="0.99 0.9999 0.001">
       <joint joint="shoulder_to_main_RF" coef="-1" />
       <joint joint="shoulder_to_crank_RF" coef="1" />
@@ -276,6 +290,16 @@
     </fixed>
     <fixed name="motor_FRZ" armature="1e-06" damping="2e-05">
       <joint joint="base_to_shoulder_RF" coef="-9" />
+    </fixed>
+    <fixed name="four_bar_FL_main_to_lower">
+      <joint joint="main_to_lower_LF" coef="1" />
+      <joint joint="shoulder_to_crank_LF" coef="-1" />
+      <joint joint="shoulder_to_main_LF" coef="1" />
+    </fixed>
+    <fixed name="four_bar_FL_crank_to_link">
+      <joint joint="crank_to_link_LF" coef="1" />
+      <joint joint="shoulder_to_crank_LF" coef="-1" />
+      <joint joint="shoulder_to_main_LF" coef="1" />
     </fixed>
     <fixed name="gamma_FL" limited="true" range="-1.0472 1.4835" solreflimit="0.002 1" solimplimit="0.99 0.9999 0.001">
       <joint joint="shoulder_to_main_LF" coef="1" />
@@ -292,20 +316,40 @@
     <fixed name="motor_FLZ" armature="1e-06" damping="2e-05">
       <joint joint="base_to_shoulder_LF" coef="9" />
     </fixed>
+    <fixed name="four_bar_BR_main_to_lower">
+      <joint joint="main_to_lower_RB" coef="1" />
+      <joint joint="shoulder_to_crank_RB" coef="-1" />
+      <joint joint="shoulder_to_main_RB" coef="1" />
+    </fixed>
+    <fixed name="four_bar_BR_crank_to_link">
+      <joint joint="crank_to_link_RB" coef="1" />
+      <joint joint="shoulder_to_crank_RB" coef="-1" />
+      <joint joint="shoulder_to_main_RB" coef="1" />
+    </fixed>
     <fixed name="gamma_BR" limited="true" range="-1.4835 1.0472" solreflimit="0.002 1" solimplimit="0.99 0.9999 0.001">
       <joint joint="shoulder_to_main_RB" coef="-1" />
       <joint joint="shoulder_to_crank_RB" coef="1" />
     </fixed>
     <fixed name="motor_BRI" armature="1e-06" damping="2e-05">
       <joint joint="shoulder_to_main_RB" coef="9" />
-      <joint joint="base_to_shoulder_RB" coef="6" />
+      <joint joint="base_to_shoulder_RB" coef="-6" />
     </fixed>
     <fixed name="motor_BRO" armature="1e-06" damping="2e-05">
       <joint joint="shoulder_to_crank_RB" coef="9" />
-      <joint joint="base_to_shoulder_RB" coef="-6" />
+      <joint joint="base_to_shoulder_RB" coef="6" />
     </fixed>
     <fixed name="motor_BRZ" armature="1e-06" damping="2e-05">
-      <joint joint="base_to_shoulder_RB" coef="-9" />
+      <joint joint="base_to_shoulder_RB" coef="9" />
+    </fixed>
+    <fixed name="four_bar_BL_main_to_lower">
+      <joint joint="main_to_lower_LB" coef="1" />
+      <joint joint="shoulder_to_crank_LB" coef="-1" />
+      <joint joint="shoulder_to_main_LB" coef="1" />
+    </fixed>
+    <fixed name="four_bar_BL_crank_to_link">
+      <joint joint="crank_to_link_LB" coef="1" />
+      <joint joint="shoulder_to_crank_LB" coef="-1" />
+      <joint joint="shoulder_to_main_LB" coef="1" />
     </fixed>
     <fixed name="gamma_BL" limited="true" range="-1.0472 1.4835" solreflimit="0.002 1" solimplimit="0.99 0.9999 0.001">
       <joint joint="shoulder_to_main_LB" coef="1" />
@@ -313,14 +357,14 @@
     </fixed>
     <fixed name="motor_BLI" armature="1e-06" damping="2e-05">
       <joint joint="shoulder_to_main_LB" coef="-9" />
-      <joint joint="base_to_shoulder_LB" coef="6" />
+      <joint joint="base_to_shoulder_LB" coef="-6" />
     </fixed>
     <fixed name="motor_BLO" armature="1e-06" damping="2e-05">
       <joint joint="shoulder_to_crank_LB" coef="-9" />
-      <joint joint="base_to_shoulder_LB" coef="-6" />
+      <joint joint="base_to_shoulder_LB" coef="6" />
     </fixed>
     <fixed name="motor_BLZ" armature="1e-06" damping="2e-05">
-      <joint joint="base_to_shoulder_LB" coef="9" />
+      <joint joint="base_to_shoulder_LB" coef="-9" />
     </fixed>
   </tendon>
   <actuator>
@@ -380,5 +424,6 @@
   <keyframe>
     <key name="stance" qpos="0 0.785398163397 0 0.785398163397 0 0 0.785398163397 0 0.785398163397 0 0 0.785398163397 0 0.785398163397 0 0 0.785398163397 0 0.785398163397 0" />
     <key name="stand" qpos="0 0.261798163397 1.0472 1.3089981634 1.0472 0 0.261798163397 1.0472 1.3089981634 1.0472 0 0.261798163397 1.0472 1.3089981634 1.0472 0 0.261798163397 1.0472 1.3089981634 1.0472" />
+    <key name="init" qpos="0 -2.35619449019 0 -2.35619449019 0 0 -2.35619449019 0 -2.35619449019 0 0 -2.35619449019 0 -2.35619449019 0 0 -2.35619449019 0 -2.35619449019 0" />
   </keyframe>
 </mujoco>

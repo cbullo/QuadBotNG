@@ -566,53 +566,86 @@ void MotorTestingBehavior::ProcessInputEvents(
 };
 
 void WalkBehavior::Activate() {
-  std::cout << "Walk behavior" << std::endl;
+  stage_ = Stage::Pre;
   Behavior::Activate();
 }
 
-void WalkBehavior::StartPair(int first) {
+void WalkBehavior::Deactivate() {
+  stage_ = Stage::Pre;  // Stop must cancel any pending next-leg transition.
+  Behavior::Deactivate();
+}
+
+void WalkBehavior::StartInitialization() {
+  if (stage_ != Stage::Pre || !fault_.empty()) return;
   const auto& legs = GetController()->GetLegs();
-  for (int i : {first, first + 2}) {
+  // Capture and actively hold every leg, including those waiting for a turn.
+  // Shared Z boards are enabled once, without leaving another leg uncontrolled.
+  for (int i = 0; i < 4; ++i) {
     auto* leg = legs.GetLeg(i);
-    if (!leg) continue;
-    leg->SetControl(nullptr);
-    for (auto* motor : {leg->GetMotorI(), leg->GetMotorO(), leg->GetMotorZ()})
-      if (motor) motor->GetController()->SendSetCommand(0, CMD_STATE, uint8_t(3));
+    init_control_[i].Capture(*leg);
+    leg->SetControl(&init_control_[i]);
   }
-  startup_wait_ = 1.0f;
-  stage_ = first == 0 ? Stage::WaitingFirstPair : Stage::WaitingSecondPair;
+  for (auto* board : GetController()->GetControllers())
+    board->SendSetCommand(0, CMD_STATE, uint8_t(3));
+  startup_wait_ = 0.1f;
+  initialization_elapsed_ = 0;
+  // Diagonal pairs keep neighboring legs parked during the probe sweep.
+  active_pair_ = 0;
+  stage_ = Stage::Holding;
 }
 
 void WalkBehavior::Tick(float dt) {
-  if (!IsActive()) return;
-  if (stage_ == Stage::WaitingFirstPair || stage_ == Stage::WaitingSecondPair) {
+  if (!IsActive() || stage_ == Stage::Pre || stage_ == Stage::Failed) return;
+  for (int i = 0; i < 4; ++i) if (!init_control_[i].GetFault().empty()) {
+    fault_ = GetController()->GetLegs().GetLeg(i)->GetName() + ": " + init_control_[i].GetFault();
+    stage_ = Stage::Failed;
+    OutputEvent({EventId::kControlEventStop, 0.f});
+    return;
+  }
+  if (stage_ != Stage::Done) {
+    initialization_elapsed_ += dt;
+    if (initialization_elapsed_ >= 26.5f) {
+      fault_ = "initialization exceeded 26.5 seconds after board startup";
+      stage_ = Stage::Failed;
+      OutputEvent({EventId::kControlEventStop, 0.f});
+      return;
+    }
+  }
+  if (stage_ == Stage::Holding) {
     startup_wait_ -= dt;
     if (startup_wait_ > 0) return;
-    int first = stage_ == Stage::WaitingFirstPair ? 0 : 1;
-    for (int i : {first, first + 2}) {
-      auto* leg = GetController()->GetLegs().GetLeg(i);
-      if (!leg) continue;
-      init_control_[i] = InitializationLegControl();
-      init_control_[i].Restart(*leg);
-      leg->SetControl(&init_control_[i]);
+    init_control_[active_pair_].Start();
+    init_control_[active_pair_ + 2].Start();
+    stage_ = Stage::Probing;
+  }
+  if (stage_ == Stage::Probing &&
+      init_control_[active_pair_].GetStage() == InitializationLegControl::InitializationStage::Done &&
+      init_control_[active_pair_ + 2].GetStage() == InitializationLegControl::InitializationStage::Done) {
+    if (++active_pair_ < 2) {
+      init_control_[active_pair_].Start();
+      init_control_[active_pair_ + 2].Start();
+    } else {
+      for (int i = 0; i < 4; ++i)
+        init_control_[i].CommitReference(*GetController()->GetLegs().GetLeg(i));
+      OutputEvent({EventId::kInitializationDone, 0.f});
+      stage_ = Stage::Done;  // Hold the parked legs; standing is a separate action.
     }
-    stage_ = first == 0 ? Stage::FirstPair : Stage::SecondPair;
   }
-  if (stage_ == Stage::FirstPair &&
-      init_control_[0].GetStage() == InitializationLegControl::InitializationStage::Done &&
-      init_control_[2].GetStage() == InitializationLegControl::InitializationStage::Done) {
-    StartPair(1);
-  } else if (stage_ == Stage::SecondPair &&
-      init_control_[1].GetStage() == InitializationLegControl::InitializationStage::Done &&
-      init_control_[3].GetStage() == InitializationLegControl::InitializationStage::Done) {
-    OutputEvent({EventId::kInitializationDone, 0.f});
-    for (auto& control : init_control_) control.SetStandUp();
-    stage_ = Stage::Done;
+}
+
+void WalkBehavior::SetStandingTargets(const std::array<LegConfiguration, 4>& targets) {
+  if (!IsActive() || stage_ != Stage::Done)
+    throw std::logic_error("standing requires completed active initialization");
+  for (int i = 0; i < 4; ++i) {
+    const auto* leg = GetController()->GetLegs().GetLeg(i);
+    if (leg->GetControl() != &init_control_[i])
+      throw std::logic_error("initialization no longer owns the legs");
   }
+  for (int i = 0; i < 4; ++i) init_control_[i].SetStandingTarget(targets[i]);
 }
 
 void WalkBehavior::ProcessInputEvents(const std::deque<ControlEvent>& events) {
   Behavior::ProcessInputEvents(events);
   for (const auto& event : events)
-    if (event.event_id == EventId::kControlEventConfirm) StartPair(0);
+    if (event.event_id == EventId::kControlEventConfirm) StartInitialization();
 }

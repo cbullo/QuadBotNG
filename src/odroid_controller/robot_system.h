@@ -23,7 +23,12 @@ class RobotSystem {
   // Explicit known-pose bring-up: preserves production leg PID/mixing, skips homing.
   void HoldCurrentPose();
   void HoldRotorPose(double p, double d, int voltage_sign, double voltage_limit);
+  // Replay the production Start/Confirm sequence with feedback fault monitoring.
+  void StartInitialization();
+  void SetStandingTargets(const std::array<LegConfiguration, 4>& targets);
+  bool InitializationComplete() const { return walk_->InitializationComplete(); }
   void Stop();
+  void AbortPoseMotion(const std::string& reason) { StopForPoseFault(reason); }
   std::map<std::string, std::unique_ptr<BLDCDriverBoard>> boards;
   std::map<std::string, std::unique_ptr<Motor>> motors;
   std::map<std::string, std::unique_ptr<Leg>> legs;
@@ -33,6 +38,7 @@ class RobotSystem {
   std::unique_ptr<Controller> controller;
  private:
   void StopForPoseFault(const std::string& reason);
+  std::shared_ptr<WalkBehavior> walk_;
   bool pose_control_active_ = false;
   std::string pose_fault_;
 };

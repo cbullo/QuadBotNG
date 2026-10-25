@@ -95,8 +95,12 @@ targets support x86-64 Linux (`//:PC`); they do not use the Odroid sysroot.
 The check uses Gymnasium's packaged HalfCheetah example, not our quadruped.
 The [candidate robot model](docs/physical-model.md) preserves the differential and
 closed linkage. Controller integration uses an explicitly approximate voltage
-motor model. Homing remains disabled until physical stops and absolute encoder
-references are validated. See the [simulated-board guide](docs/simulated-boards.md)
+motor model. `--scenario=init` replays the existing reference-pose sequence from
+a belly-down pose with raised legs. `--scenario=standup` follows successful
+initialization with a staged rise to `stand`. The default headless run finishes
+init at 25.1 s and stands at 38.4 s with the 3,000 gf·cm / 28 V motor approximation.
+Physical stops and absolute encoder
+references remain unvalidated. See the [simulated-board guide](docs/simulated-boards.md)
 for tests, scenarios, trace output and virtual serial ports.
 
 `stand` starts at the controller YAML's extension-side gamma bounds (about
@@ -109,8 +113,7 @@ fault then stops all remaining motors, allowing passive settling. Use
 leg/leg self-collision is enabled with bearing-interface exclusions.
 Dedicated internal linkage proxies allow the configured gamma extrema while
 retaining the outer foot and limb envelopes for external contact.
-Dry joint friction is estimated to hold an unloaded raised leg with a small
-margin; see [the friction parameters and calibration](docs/physical-model.md#joint-friction).
+Dry joint friction is set just below the estimated unloaded-leg gravity load; see [the friction parameters and calibration](docs/physical-model.md#joint-friction).
 
 Direct dependencies live in `sim/deps/requirements.in`; all resolved versions
 and wheel hashes are recorded in `sim/deps/requirements.txt`. After editing

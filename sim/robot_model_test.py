@@ -19,7 +19,7 @@ class RobotModelTest(unittest.TestCase):
 
     def test_structure_inertia_and_generated_asset(self):
         m = self.model
-        self.assertEqual((m.nu, m.neq, m.nv), (12, 4, 26))
+        self.assertEqual((m.nu, m.neq, m.nv), (12, 8, 26))
         np.testing.assert_array_equal(m.dof_frictionloss[:6], 0)  # Free chassis.
         self.assertAlmostEqual(m.body_mass.sum(), 5.049489443143543, places=8)
         self.assertTrue(np.all(m.body_inertia[1:] > 0))
@@ -30,6 +30,30 @@ class RobotModelTest(unittest.TestCase):
         standalone = mujoco.MjModel.from_xml_path(str(xml))
         self.assertEqual(standalone.nu, 12)
         self.assertEqual((SIM_DIR / "mujoco/quadbot_suspended.xml").read_text(), build_xml(fixed_base=True))
+
+    def test_init_pose_rests_on_belly_with_raised_legs(self):
+        model = load_model()
+        data = mujoco.MjData(model)
+        mujoco.mj_resetDataKeyframe(model, data, model.key("init").id)
+        mujoco.mj_forward(model, data)
+        np.testing.assert_array_equal(data.qpos[3:7], [1, 0, 0, 0])
+        self.assertLess(max(closure_errors(model, data).values()), 1e-12)
+        for leg, p in LEGS.items():
+            main = data.body(f"arm_main_{p['cad']}_1").xpos
+            foot = data.geom(f"arm_lower_{p['cad']}_1_collision_1").xpos
+            self.assertGreater(foot[2], main[2] + 0.1, leg)
+        # No fixture or control: the body must remain supported by floor contact.
+        initial = data.qpos.copy()
+        for _ in range(6000):
+            mujoco.mj_step(model, data)
+        self.assertLess(np.max(np.abs(data.qpos[:7] - initial[:7])), 0.02)
+        self.assertGreater(np.max(np.abs(data.qpos[7:] - initial[7:])), 0.1)
+        ground = model.geom("ground").id
+        bodies = {model.body(model.geom_bodyid[int(g)]).name
+                  for contact in data.contact if ground in contact.geom
+                  for g in contact.geom if g != ground}
+        self.assertIn("base_link", bodies)
+        self.assertFalse(np.any(data.warning.number))
 
     def test_hardware_mapping_snapshot(self):
         # Read only the scalar fields we mirror, not the electrical calibration.
@@ -100,10 +124,16 @@ class RobotModelTest(unittest.TestCase):
                         self.assertTrue(pair & {"base_link", "drives_1"}, (leg, gamma_value, z, pair))
                     if z == 0:
                         self.assertEqual(d.ncon, 0, (leg, gamma_value))
-            # Z endpoints are also clear at the nominal gamma=0 bend.
+            # The reversed rear mount sweeps inward at positive controller Z.
+            # Its endpoint can hit the chassis at this knee pose; the scalar
+            # joint limits do not describe a collision-free workspace.
             for z in (limits["min_z"], limits["max_z"]):
                 set_pose(m, d, {leg: (np.pi / 4, np.pi / 4, z / p["z_sign"])})
-                self.assertEqual(d.ncon, 0)
+                for contact in d.contact:
+                    bodies = {m.body(m.geom_bodyid[int(g)]).name for g in contact.geom}
+                    self.assertTrue(bodies & {"base_link", "drives_1"}, (leg, z, bodies))
+                if leg in ("FR", "FL"):
+                    self.assertEqual(d.ncon, 0)
 
     def test_internal_proxies_still_collide_and_outer_envelopes_remain_active(self):
         m = load_model(fixed_base=True)
@@ -231,11 +261,23 @@ class RobotModelTest(unittest.TestCase):
             poses = {name: rng.uniform([0.2, 0.2, -0.35], [1.2, 1.2, 0.35]) for name in LEGS}
             set_pose(m, d, poses)
             self.assertLess(max(closure_errors(m, d).values()), 1e-12)
-            # Each planar ball closure removes two independent coordinates;
-            # its third equation is redundant because the bearing axes align.
+            # Each parallelogram closure removes two independent coordinates.
             equality_rows = d.efc_type == mujoco.mjtConstraint.mjCNSTR_EQUALITY
             rank = np.linalg.matrix_rank(d.efc_J.reshape(d.nefc, m.nv)[equality_rows], tol=1e-8)
             self.assertEqual(m.nv - rank, 12)
+
+    def test_rotated_rear_mount_preserves_motor_load_magnitudes(self):
+        # The rear drive assemblies are reversed, while the knees bend in the
+        # same direction. Equal CAD hinge loads must require equal shaft torque
+        # magnitudes, independent of encoder polarity and motor labels.
+        loads = np.random.default_rng(53).normal(size=(3, 100))
+        reference = np.linalg.solve(motor_matrix("FR").T, loads)
+        for leg in LEGS:
+            mirrored = loads.copy()
+            if leg.endswith("L"):
+                mirrored[2] *= -1  # Mirrored lateral moment, same knee loading.
+            shaft = np.linalg.solve(motor_matrix(leg).T, mirrored)
+            np.testing.assert_allclose(np.abs(shaft), np.abs(reference), atol=1e-12)
 
     def test_encoder_equations_and_virtual_work(self):
         m = self.fixed
@@ -294,7 +336,7 @@ class RobotModelTest(unittest.TestCase):
                     endpoints.append(d.qpos.copy())
                 np.testing.assert_allclose(*endpoints, atol=0.003, rtol=0)
 
-    def test_raised_leg_dry_friction_holds_but_releases_under_extra_load(self):
+    def test_raised_leg_dry_friction_is_below_self_weight(self):
         for leg in LEGS:
             for dt in (0.0005, 0.00025):
                 with self.subTest(leg=leg, timestep=dt):
@@ -317,26 +359,24 @@ class RobotModelTest(unittest.TestCase):
                     gravity = d.qfrc_bias[dofs].copy()
                     gravity[:2] += [-sum(d.qfrc_bias[passive]), sum(d.qfrc_bias[passive])]
                     ratio = m.dof_frictionloss[dofs] / abs(gravity)
-                    self.assertTrue(np.all((ratio > 1.05) & (ratio < 1.15)))
+                    self.assertTrue(np.all((ratio > 0.94) & (ratio < 0.96)))
                     np.testing.assert_array_equal(m.dof_frictionloss[passive], 0)
                     start = d.qpos.copy()
-                    for _ in range(round(5 / dt)):
+                    for _ in range(round(1 / dt)):
                         mujoco.mj_step(m, d)
                         self.assertEqual(d.ncon, 0)  # No chassis/floor support.
-                    self.assertLess(np.max(abs(d.qpos - start)), 0.001)
+                    self.assertGreater(np.max(abs(d.qpos - start)), 0.1)
                     np.testing.assert_array_equal(d.actuator_force, 0)
                     self.assertFalse(np.any(d.warning.number))
 
-                    # Only 25% more gravitational load must overcome friction.
-                    # The model must also fall with dry friction removed.
-                    for gravity_scale, friction_scale in ((1.25, 1), (1, 0)):
-                        m.opt.gravity[2] = 9.81 * gravity_scale
-                        m.dof_frictionloss[:] *= friction_scale
-                        set_pose(m, d)
-                        for _ in range(round(1 / dt)):
-                            mujoco.mj_step(m, d)
-                        self.assertGreater(np.max(abs(d.qpos - start)), 0.1)
-                        self.assertFalse(np.any(d.warning.number))
+                    # Ten percent less gravity is now below breakaway: this
+                    # distinguishes just-below-self-weight from negligible loss.
+                    m.opt.gravity[2] = 9.81 * 0.9
+                    set_pose(m, d)
+                    for _ in range(round(1 / dt)):
+                        mujoco.mj_step(m, d)
+                    self.assertLess(np.max(abs(d.qpos - start)), 0.001)
+                    self.assertFalse(np.any(d.warning.number))
 
     def test_reflected_rotor_inertia(self):
         m = load_model(fixed_base=True, leg="FR")
@@ -370,7 +410,16 @@ class RobotModelTest(unittest.TestCase):
         m = load_model()
         configure_demo_servos(m)
         d = mujoco.MjData(m)
-        set_pose(m, d)
+        # At the reduced shaft ceiling the old bent pose cannot support the
+        # chassis. Test support in the extended stand pose, initially on floor.
+        mujoco.mj_resetDataKeyframe(m, d, m.key("stand").id)
+        mujoco.mj_forward(m, d)
+        for _ in range(600):
+            if d.ncon:
+                break
+            d.qpos[2] -= 0.0005
+            mujoco.mj_forward(m, d)
+        self.assertGreater(d.ncon, 0)
         target = d.actuator_length.copy()
         touched = False
         max_error = 0

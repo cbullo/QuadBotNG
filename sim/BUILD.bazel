@@ -129,7 +129,7 @@ cc_test(
 
 py_test(
     name = "native_runner_test",
-    size = "small",
+    size = "medium",
     srcs = ["native_runner_test.py"],
     data = ["//src/odroid_controller/controller"],
     target_compatible_with = PC_CONSTRAINTS,

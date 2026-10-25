@@ -38,7 +38,7 @@ RobotSystem::RobotSystem(const YAML::Node& config, Factory factory, bool joystic
   for (auto& [name,board] : boards) board_ptrs.push_back(board.get());
   auto stopped = std::make_shared<StoppedBehavior>();
   auto estopped = std::make_shared<EStoppedBehavior>();
-  auto walk = std::make_shared<WalkBehavior>();
+  auto walk = walk_ = std::make_shared<WalkBehavior>();
   controller = std::make_unique<Controller>(mapping,board_ptrs,stopped,estopped);
   stopped->SetController(controller.get()); estopped->SetController(controller.get());
   controller->AttachBehavior(walk);
@@ -103,6 +103,8 @@ void RobotSystem::Update(float dt) {
     }
   }
   controller->Update(dt);
+  if (pose_control_active_ && !walk_->GetInitializationFault().empty())
+    StopForPoseFault(walk_->GetInitializationFault());
 }
 void RobotSystem::HoldCurrentPose() {
   if (!pose_fault_.empty()) throw std::runtime_error("pose fault is latched: " + pose_fault_);
@@ -120,6 +122,15 @@ void RobotSystem::Stop() {
   pose_control_active_ = false;
   input->Send(EventId::kControlEventStop);
 }
+void RobotSystem::StartInitialization() {
+  if (!pose_fault_.empty()) throw std::runtime_error("pose fault is latched: " + pose_fault_);
+  if (!Ready()) throw std::runtime_error("boards not initialized");
+  input->Send(EventId::kControlEventStart);
+  // Confirm must be distributed after WalkBehavior has become active.
+  controller->Update(0);
+  input->Send(EventId::kControlEventConfirm);
+  pose_control_active_ = true;
+}
 void RobotSystem::HoldRotorPose(double p, double d, int voltage_sign, double voltage_limit) {
   if (!pose_fault_.empty()) throw std::runtime_error("pose fault is latched: " + pose_fault_);
   if (!Ready()) throw std::runtime_error("boards not initialized");
@@ -131,4 +142,10 @@ void RobotSystem::HoldRotorPose(double p, double d, int voltage_sign, double vol
   for (int i = 0; i < 4; ++i)
     controller->GetLegs().GetLeg(i)->SetControl(&rotor_hold_controls[i]);
   pose_control_active_ = true;
+}
+
+void RobotSystem::SetStandingTargets(const std::array<LegConfiguration, 4>& targets) {
+  if (!pose_fault_.empty() || !pose_control_active_)
+    throw std::logic_error("standing requires active fault-free homing");
+  walk_->SetStandingTargets(targets);
 }

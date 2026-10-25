@@ -230,9 +230,21 @@ def build_xml(*, fixed_base=False, leg=None, meshdir="../meshes"):
                       pos="0 0 -0.12", size="0.002", group="4")
         ET.SubElement(bodies[f"arm_lower_{cad}_1"], "site", name=f"closure_lower_{name}",
                       pos="0.035 0 0", size="0.002", group="4")
-        ET.SubElement(equality, "connect", name=f"four_bar_{name}",
-                      site1=f"closure_link_{name}", site2=f"closure_lower_{name}",
-                      solref="0.002 1", solimp="0.99 0.9999 0.001")
+        # On the physical parallelogram branch, both passive angles are
+        # crank-main. Point closure alone also admits a crossed assembly and
+        # becomes ill-conditioned near the folded stop: tiny position errors
+        # can let a loaded linkage snap onto that other branch. These two
+        # scalar relations encode the same planar mobility without that toggle.
+        for role in ("main_to_lower", "crank_to_link"):
+            name_constraint = f"four_bar_{name}_{role}"
+            closure = ET.SubElement(tendons, "fixed", name=name_constraint)
+            for joint, coef in ((f"{role}_{cad}", 1),
+                                (f"shoulder_to_crank_{cad}", -1),
+                                (f"shoulder_to_main_{cad}", 1)):
+                ET.SubElement(closure, "joint", joint=joint, coef=str(coef))
+            ET.SubElement(equality, "tendon", name=name_constraint,
+                          tendon1=name_constraint, polycoef="0 0 0 0 0",
+                          solref="0.002 1", solimp="0.9999 0.9999 0.001")
         gamma = ET.SubElement(tendons, "fixed", name=f"gamma_{name}", limited="true",
                               range=numbers([LEG_LIMITS[name]["min_gamma"], LEG_LIMITS[name]["max_gamma"]]),
                               solreflimit="0.002 1", solimplimit="0.99 0.9999 0.001")
@@ -268,6 +280,15 @@ def build_xml(*, fixed_base=False, leg=None, meshdir="../meshes"):
     extended = [] if fixed_base else [0, 0, 0.30, 1, 0, 0, 0]
     extended.extend(angles[joint.get("name")] for joint in world.iter("joint"))
     ET.SubElement(keyframes, "key", name="stand", qpos=numbers(extended))
+    # Upright chassis resting on its belly, with bent legs swung upward.
+    # Rotate both driven links together to preserve the four-bar closure.
+    belly_height = max(shape["size"][2] - shape["pos"][2]
+                       for shape in COLLISION_GEOMETRY["base_link"])
+    initial = [] if fixed_base else [0, 0, belly_height, 1, 0, 0, 0]
+    initial.extend(-3 * math.pi / 4 if joint.get("name").startswith(
+        ("shoulder_to_main_", "shoulder_to_crank_")) else 0
+        for joint in world.iter("joint"))
+    ET.SubElement(keyframes, "key", name="init", qpos=numbers(initial))
     ET.indent(root, space="  ")
     return ET.tostring(root, encoding="unicode") + "\n"
 
@@ -336,7 +357,7 @@ def main():
     model = load_model(fixed_base=args.fixed_base, leg=args.leg)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(xml)
-    print(f"Wrote {output}: {model.nu} motors, {model.neq} closures, "
+    print(f"Wrote {output}: {model.nu} motors, {model.neq} closure constraints, "
           f"mass {model.body_mass.sum():.6f} kg")
 
 

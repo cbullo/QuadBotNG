@@ -23,8 +23,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--connect", action="store_true", help="attach to an existing controller/SSH forward instead of launching simulation")
     parser.add_argument("--controller-port", type=int, default=9876)
-    parser.add_argument("--scenario", choices=("stand", "bob", "idle", "hold", "pulse", "stop"), default="stand")
-    parser.add_argument("--duration", type=float, default=30, help="simulation duration, seconds")
+    parser.add_argument("--scenario", choices=("stand", "bob", "init", "standup", "idle", "hold", "pulse", "stop"), default="stand")
+    parser.add_argument("--duration", type=float, help="simulation duration, seconds (standup: 50; init: 30; others: 30)")
     parser.add_argument("--reference", help="known-pose reference JSON for an existing controller")
     parser.add_argument("--read-only", action="store_true", help="disable motion in the launched simulation; Stop remains available")
     parser.add_argument("--no-viewer", action="store_true", help="omit the separate MuJoCo simulation window")
@@ -36,6 +36,8 @@ def main():
     parser.add_argument("--screenshot-output", help="save the inspector window during the run")
     parser.add_argument("--capture-at", type=float, default=10, help="seconds after UI startup to take screenshot")
     args = parser.parse_args()
+    if args.duration is None:
+        args.duration = 50 if args.scenario == "standup" else 30
     if not 0 < args.controller_port < 65536:
         parser.error("controller port must be in 1..65535")
     if not math.isfinite(args.duration) or args.duration <= 0:

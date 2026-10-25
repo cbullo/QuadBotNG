@@ -1,28 +1,33 @@
-# Bring-up approximation, NOT identified motor constants or calibrated FOC.
-# Torque = clamp(sign * gain * clamp(voltage, +/-voltage_limit)
-#                - gain * back_emf * shaft_speed, +/-model_shaft_torque_limit).
-model: linear_voltage_back_emf
+# Quasi-static sinusoidal FOC approximation; no inductance/current transients.
+# Rphase = Rline/2; Uq = sign * command/2 (active AVR PWM scaling).
+# Iq = (Uq - Ke*rotor_speed)/Rphase; torque = clamp(1.5*Ke*Iq, +/-shaft_limit).
+model: sinusoidal_voltage
 voltage_limit: 28.0
-shaft_torque_per_volt: 0.03
-back_emf_volts_per_rad_s: 0.015
+# User-measured terminal resistance. Equivalent balanced star phase R = 5 ohm.
+line_to_line_resistance_ohm: 10.0
+# Inferred from the user-selected 3000 gf cm shaft stall torque at 28 V,
+# using the measured 10 ohm line-line resistance and AVR command/2 scaling.
+# Ke = 0.2941995 * 5 / (1.5 * 14); Kt = 1.5*Ke. Not a measured Kv.
+phase_back_emf_volts_per_rad_s: 0.0700475
 # Inferred from the sign of the production DriveTo mixing relative to encoder
 # equations; must be checked against measured voltage/encoder response.
 voltage_to_encoder_sign: -1
 # Ideal corrected sensor output: calibration registers are stored but aren't
 # applied a second time to ideal telemetry. No electrical/mechanical zero mixing.
 encoder_zero_counts: 0
-# Unmeasured lumped motor/sensor approximation. Kt = shaft_torque_per_volt * R;
-# heat = (saturated shaft torque / Kt)^2 * R. No separate sensor lag yet.
+# Unmeasured lumped motor/sensor approximation. Copper heat = 1.5*Rphase*Iq^2,
+# with Iq from the saturated applied shaft torque. No separate sensor lag yet.
 thermal:
   ambient_c: 20.0
   initial_c: 20.0
-  effective_resistance_ohm: 0.5
   heat_capacity_j_per_k: 20.0
   thermal_resistance_k_per_w: 8.0
 serial_baud: 115200
 transport_latency_us: 200
 # Host-side rotor position hold for the known-pose standing scenario.
 # Gains act on decoded rotor radians and radians/s, and output volts.
+# Gains are command volts, with the motor model supplying shaft torque.
+# This is the independent stand/bob hold, not the hardware initialization PID.
 stance:
-  p_volts_per_rad: 26.7
-  d_volts_per_rad_s: 0.15
+  p_volts_per_rad: 76.2
+  d_volts_per_rad_s: 0.428

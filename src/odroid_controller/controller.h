@@ -115,24 +115,23 @@ class MotorTestingBehavior : public Behavior {
 };
 
 class WalkBehavior : public Behavior {
-  public:
+ public:
   void Activate() override;
+  void Deactivate() override;
   void ProcessInputEvents(const std::deque<ControlEvent>& events) override;
   void Tick(float dt) override;
+  void SetStandingTargets(const std::array<LegConfiguration, 4>& targets);
+  bool InitializationComplete() const { return stage_ == Stage::Done; }
+  const std::string& GetInitializationFault() const { return fault_; }
 
-  private:
-  enum class Stage {
-    Pre,
-    WaitingFirstPair,
-    FirstPair,
-    WaitingSecondPair,
-    SecondPair,
-    Done
-  };
-
-  void StartPair(int first);
+ private:
+  enum class Stage { Pre, Holding, Probing, Done, Failed };
+  void StartInitialization();
   float startup_wait_ = 0;
+  int active_pair_ = 0;
+  float initialization_elapsed_ = 0;
   Stage stage_ = Stage::Pre;
+  std::string fault_;
   InitializationLegControl init_control_[4];
 };
 

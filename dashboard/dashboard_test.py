@@ -21,14 +21,19 @@ def free_port():
         return sock.getsockname()[1]
 
 
-class IntegrationTest(unittest.IsolatedAsyncioTestCase):
+class ControllerTestCase(unittest.IsolatedAsyncioTestCase):
+    scenario = "stand"
+    duration = 20
+    realtime = True
+
     async def asyncSetUp(self):
         self.root = Path(os.environ["TEST_SRCDIR"]) / "_main"
         self.port = free_port()
         self.log = tempfile.TemporaryFile(mode="w+")
         self.process = subprocess.Popen([
             str(self.root / "src/odroid_controller/controller/controller"),
-            "--backend=sim", "--scenario=stand", "--duration=20", "--realtime",
+            "--backend=sim", f"--scenario={self.scenario}", f"--duration={self.duration}",
+            *(["--realtime"] if self.realtime else []),
             f"--dashboard-port={self.port}", "--dashboard-control"],
             env=dict(os.environ, RUNFILES_DIR=str(self.root.parent)), stdout=self.log, stderr=self.log)
         self.connections = []
@@ -62,6 +67,7 @@ class IntegrationTest(unittest.IsolatedAsyncioTestCase):
             self.fail("controller disconnected")
         return await asyncio.wait_for(read(), timeout)
 
+class IntegrationTest(ControllerTestCase):
     async def test_native_feedback_stop_targets_sequences_and_lease(self):
         reader, writer = await self.tcp()
         ready = await self.until(reader, lambda s: s.get("ready") and s["time"] > 3.2)
@@ -110,6 +116,43 @@ class IntegrationTest(unittest.IsolatedAsyncioTestCase):
         state = await self.until(reader, lambda s: s.get("time", 0) > 3.3)
         self.assertTrue(all(l["mode"] == "stopped" for l in state["legs"].values()))
         self.assertTrue(all(b["state_command"] != 3 for b in state["boards"].values()))
+
+
+class InitIntegrationTest(ControllerTestCase):
+    scenario = "init"
+
+    async def test_init_stage_telemetry_and_stop(self):
+        reader, writer = await self.tcp()
+        state = await self.until(reader, lambda s: s.get("type") == "state" and
+                                 s["legs"]["leg_FR"].get("init_stage") == "seek_gamma_stop")
+        self.assertEqual(state["legs"]["leg_BL"]["mode"], "init")
+        self.assertEqual(state["legs"]["leg_FL"]["init_stage"], "waiting")
+        writer.write(b'{"command":"stop","seq":1}\n')
+        await writer.drain()
+        self.assertTrue((await self.until(reader, lambda s: s.get("type") == "ack"))["accepted"])
+        # Observe past startup delay; no later scripted reactivation.
+        stopped = await self.until(reader, lambda s: s.get("time", 0) > state["time"] + 1.5)
+        self.assertTrue(all(l["mode"] == "stopped" and "init_stage" not in l for l in stopped["legs"].values()))
+        self.assertTrue(all(b["state_command"] == 2 for b in stopped["boards"].values()))
+
+    test_early_stop_cannot_be_undone_by_scripted_startup = IntegrationTest.test_early_stop_cannot_be_undone_by_scripted_startup
+
+
+class StandupIntegrationTest(ControllerTestCase):
+    scenario = "standup"
+    duration = 45
+    realtime = False
+
+    async def test_stop_during_rise_cancels_remaining_waypoints(self):
+        reader, writer = await self.tcp()
+        rising = await self.until(reader, lambda s: s.get("type") == "state" and
+                                  s["legs"]["leg_FR"].get("init_stage") == "stand", timeout=30)
+        writer.write(b'{"command":"stop","seq":1}\n')
+        await writer.drain()
+        self.assertTrue((await self.until(reader, lambda s: s.get("type") == "ack"))["accepted"])
+        stopped = await self.until(reader, lambda s: s.get("time", 0) > rising["time"] + 2)
+        self.assertTrue(all(l["mode"] == "stopped" for l in stopped["legs"].values()))
+        self.assertTrue(all(b["state_command"] == 2 for b in stopped["boards"].values()))
 
 
 class SceneTest(unittest.TestCase):

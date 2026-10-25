@@ -21,6 +21,40 @@ gently crouches and rises every four seconds after startup. The existing motor,
 thermal and fault models remain active; long runs can overheat and stop. The
 thermal model and CAD alignment remain bring-up approximations.
 
+`init` replays the production reference-pose sequence from an upright chassis
+resting on its belly, with all four bent legs pointing up:
+
+```sh
+bazel run --config=pc //sim:inspector -- --scenario=init
+```
+
+It has no startup support fixture and cannot be combined with `--suspended`.
+The status line reports each active leg's initialization stage; the MuJoCo viewer
+shows actual simulated geometry. The encoder-only 3D panel remains unreferenced
+unless supplied an explicit reference. CSV traces add `<leg>_init_stage` (`-1`
+when no initialization control is attached, otherwise the enum in
+`InitializationLegControl`). STOP cancels the sequence, including during startup.
+`standup` runs initialization and then a staged rise toward the existing stand
+keyframe, with a 50-second default:
+
+```sh
+bazel run --config=pc //sim:inspector -- --scenario=standup
+```
+
+It raises the legs, folds them, swings them over the upper arc, and extends.
+Each preparation waypoint must be reached before proceeding. Failed homing,
+STOP, or a stand-up waypoint timeout prevents further movement. There is no
+startup fixture or pose reset. With the 5.05 kg CAD mass and 3,000 gf·cm at 28 V
+motor approximation, the default check finishes init at 25.1 s and stands at
+38.4 s, holding all four feet on the floor through 50 s without inter-leg contact.
+Hardware mass, motor dynamics, and arbitrary starting configurations still need validation.
+
+The init default is 30 seconds. FR/BL probe together, then FL/BR; the inactive
+pair is actively held. Homing retains free theta during the folded gamma/Z
+searches so contact can redirect a leg. Probes back off and repeat; time, travel
+and encoder-phase failures stop the sequence. Completion holds the parked pose
+and does not automatically stand. This remains experimental hardware homing.
+
 ```sh
 # Inspector alone, still running the same native physics/controller:
 bazel run --config=pc //sim:inspector -- --scenario=bob --duration=20 --no-viewer

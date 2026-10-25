@@ -1,9 +1,15 @@
 # Candidate QuadBotNG physical model
 
 The MuJoCo model reuses the expanded `sim/urdf/quadbot.urdf` and STL assets. It
-preserves all five hinges per leg and closes each four-bar linkage with a point
-constraint. Four independent planar closures remove eight of the twenty leg
-coordinates, leaving twelve leg degrees of freedom. A floating chassis adds six.
+preserves all five hinges per leg. Two scalar tendon equalities per leg enforce
+the parallelogram branch: both passive angles equal `crank - main`. These eight
+constraints remove eight of the twenty leg coordinates, leaving twelve leg
+degrees of freedom. A floating chassis adds six. Point closure alone admitted a
+crossed assembly near the folded stop: initialization produced a 0.725 rad
+passive-angle error despite sub-millimetre spatial closure and no solver warning.
+The scalar relations preserve the intended branch without extra actuators.
+Closure sites remain available for independent geometric checks. See
+[MuJoCo tendon equalities](https://mujoco.readthedocs.io/en/stable/XMLreference.html#equality-tendon).
 
 The linkage uses the URDF's 120 mm main/link lengths and 35 mm crank/closure lever.
 The closure points are `[0, 0, -0.12]` in each link and `[0.035, 0, 0]` in its
@@ -72,8 +78,9 @@ hinge bounds. These are compliant simulated stops (2 ms solver time constant),
 not independent main/crank clamps or new hardware control limits. Tests drive
 past both ends of both coordinates and check settling within 0.002 rad of each
 bound. The existing controller uses these values as homing references, without
-general motion clamping. Simulation homing remains disabled because the absolute
-encoder/CAD alignment and physical stops are still not validated.
+general motion clamping. The experimental `init` scenario replays the existing
+sequence with repeated near-stop and floor probes; it does not validate the
+absolute encoder/CAD alignment or physical stops.
 
 The modeled gamma interval corresponds to about 5–150 degrees of leg opening.
 Exact 180-degree extension remains outside it and would place the four-bar at
@@ -94,8 +101,8 @@ relative to the generated MJCF.
 | Rotor inertia | Estimated 1e-6 kg·m² per rotor, applied through the coupled tendon. |
 | Rotor damping | Estimated 2e-5 N·m·s/rad. |
 | Joint damping | Estimated 0.002 N·m·s/rad. |
-| Joint dry friction | Main 0.071, crank 0.029, shoulder 0.073 N·m at the joint outputs; calibrated to unloaded raised-leg self-weight. |
-| Motor torque ceiling | User-selected 3,000 gf·cm = 0.2941995 N·m at each shaft. |
+| Joint dry friction | Main 0.0608, crank 0.0247, shoulder 0.0629 N·m at the joint outputs; calibrated to unloaded raised-leg self-weight. |
+| Motor torque ceiling | User-selected 3,000 gf·cm = 0.2941995 N·m at each shaft, modeled at stall with a 28 V command. |
 | Contacts | Outer CAD envelopes plus smaller internal linkage proxies; intended bearing interfaces excluded. |
 | Limits | YAML gamma/Z bounds mapped into compliant stops; physical alignment and homing remain unvalidated. |
 | Solver | 0.5 ms implicitfast integration, explicit compliant four-bar closures. |
@@ -106,8 +113,8 @@ variants. Collision envelopes and contact material parameters remain approximati
 
 ## Joint friction
 
-The real robot can hold a raised, unloaded leg against gravity with little spare
-holding capacity. The model represents this using MuJoCo joint `frictionloss`,
+The simulator deliberately lets a raised, unloaded leg yield under its own
+weight, so initialization cannot depend on an unpowered leg retaining its pose. The model represents this using MuJoCo joint `frictionloss`,
 which resists motion at rest up to a finite torque and continues opposing sliding.
 Viscous damping alone cannot hold a stationary leg. See
 [MuJoCo friction loss](https://mujoco.readthedocs.io/en/stable/computation/index.html#friction-loss).
@@ -126,19 +133,18 @@ and the motors apply zero torque. The CAD gravitational loads projected onto the
 main, crank and shoulder coordinates have magnitudes 0.06398, 0.02596 and
 0.06622 N·m. Since both passive angles equal `crank - main`, their gravity loads
 subtract from the main coordinate and add to the crank coordinate. The selected
-friction torques are about 10% above these loads, rounded upwards.
+friction torques are about 5% below these loads.
 
-Regression tests check all four legs at 500 us and 250 us: less than 0.001 rad
-drift over five seconds without contacts or actuation, and more than 0.1 rad of
-motion within one second when gravity is increased by 25% or dry friction is
-removed. Motor pulses also verify that the actuators overcome friction through
+Regression tests check all four legs at 500 us and 250 us: more than 0.1 rad
+of motion within one second without contacts or actuation, and less than
+0.001 rad drift when gravity is reduced by 10%. Motor pulses also verify that the actuators overcome friction through
 the differential. Friction uses a 2 ms solver time constant and constant 0.9999
 impedance to limit numerical creep; it does not lock the joints or the chassis.
 The same generated models are used by the demo and the production-controller
 simulation, including when boards are stopped or reset.
 
 These values need refinement with measured release angles or applied torques.
-They do not assert that every pose holds: gravitational leverage changes with
+They do not assert that every pose collapses: gravitational leverage changes with
 pose. Sliding friction currently uses the same threshold as breakaway, without
 a separate Stribeck curve. Friction losses are dissipated mechanically; their heat
 is not added to the motor copper-temperature approximation.
@@ -237,7 +243,9 @@ bazel run --config=pc //sim:robot_demo -- --duration=30
 ```
 
 `quadbot.xml` has a free chassis, a bent `stance` keyframe, and an extended `stand`
-keyframe. The suspended variant
+keyframe. The `init` keyframe rests the upright chassis on its belly with both
+main and crank at -3*pi/4 (legs raised), and zero passive and shoulder angles.
+The suspended variant
 fixes the chassis at 0.4 m. Regenerate both after changing geometry or parameters;
 tests compare checked-in assets to generator output.
 

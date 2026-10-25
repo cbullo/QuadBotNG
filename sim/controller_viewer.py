@@ -76,7 +76,8 @@ def run(args, shutdown):
     model_name = "quadbot_suspended.xml" if args.suspended else "quadbot.xml"
     model = mujoco.MjModel.from_xml_path(assets.Rlocation(f"_main/sim/mujoco/{model_name}"))
     data = mujoco.MjData(model)
-    mujoco.mj_resetDataKeyframe(model, data, model.key("stand" if args.scenario in ("stand", "bob") else "stance").id)
+    pose = "init" if args.scenario in ("init", "standup") else "stand" if args.scenario in ("stand", "bob") else "stance"
+    mujoco.mj_resetDataKeyframe(model, data, model.key(pose).id)
     mujoco.mj_forward(model, data)
     if shutdown.signum:
         return
@@ -152,14 +153,16 @@ def display(viewer, model, data, trace, child, args, shutdown):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--scenario", choices=("idle", "hold", "stand", "bob", "pulse", "stop"), default="stand")
-    parser.add_argument("--duration", type=float, default=8)
+    parser.add_argument("--scenario", choices=("idle", "hold", "stand", "bob", "init", "standup", "pulse", "stop"), default="stand")
+    parser.add_argument("--duration", type=float, help="seconds (standup: 50; init: 30; others: 8)")
     parser.add_argument("--motor-config", help="override simulation motor/thermal/stance parameters")
     parser.add_argument("--attach-trace", help="render an inspector-owned trace without starting a controller")
     parser.add_argument("--suspended", action="store_true")
     parser.add_argument("--show-collisions", action="store_true",
                         help="show collision primitives instead of detailed visual meshes")
     args = parser.parse_args()
+    if args.duration is None:
+        args.duration = 50 if args.scenario == "standup" else 30 if args.scenario == "init" else 8
     with ShutdownSignals() as shutdown:
         run(args, shutdown)
         return 128 + shutdown.signum if shutdown.signum else 0

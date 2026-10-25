@@ -92,9 +92,9 @@ MuJoCo position servo. The controller sends voltage commands through the same
 client and board emulators, with the differential and 3,000 gf·cm shaft ceiling
 unchanged. This is a known-pose initialization fixture, not a homing sequence.
 
-The rotor PD uses 26.7 V/rad and 0.15 V/(rad/s), configured under `stance` in
+The rotor PD uses 76.2 V/rad and 0.428 V/(rad/s), configured under `stance` in
 `sim/motor_model.yaml`, with a 1 ms host control period. This faster cadence is
-specific to `stand` and `bob`; the other scenarios and hardware entry point retain
+used by `stand`, `bob`, `init` and `standup`; the other scenarios and hardware entry point retain
 5 ms updates. The modeled 115200-baud transport and quantized feedback remain
 active. Velocity comes from successive decoded rotor angles, not MuJoCo state.
 The old `ThetaGammaZLegControl` gains and measured hardware calibration are
@@ -104,9 +104,10 @@ An eight-second default preview includes about three seconds of setup and five
 seconds of unsupported ground stance. With the current unmeasured thermal
 constants, the loaded rear motors eventually exceed 55 C and reset their boards,
 ending the stance. Timing depends on mechanical load, including joint friction.
-Longer runs deliberately retain this thermal fault;
-no motor is artificially cooled and startup support is never restored. Pass
-`--duration=40` to observe it, or `--motor-config=PATH` to use measured parameters.
+Longer runs retain this thermal fault; no motor is artificially cooled and startup
+support is never restored. Use `--motor-config=PATH` for measured parameters.
+The regression tests shorten heat capacity in their own motor configuration to
+exercise thermal shutdown without a long run.
 
 Both pose controllers now latch a host fault if any board reports a temperature
 above 55 C, loses fresh encoder feedback for 100 ms, or reports a transport error.
@@ -132,6 +133,8 @@ and exclusions are described in [physical-model.md](physical-model.md).
 | `stand` | Initialize at the YAML extension-side gamma bounds (about 150-degree opening), complete board startup under support, then release into host rotor-PD voltage control. |
 | `bob` | Start as `stand`, settle for one second, then gently crouch and rise on a four-second cycle through the same rotor controllers. |
 | `stop` | Start pose hold, send a production stop event after one second of control, disable leg control and board outputs. |
+| `standup` | Run init, then the staged rise toward stand; abort on homing failure or an unreached waypoint. |
+| `init` | Start belly-down with legs raised, let physics run during startup, then run production Start/Confirm and repeated diagonal-pair reference probing. Experimental, not validated homing. |
 | `homing` | Rejected before execution: mechanical stops and absolute references remain unvalidated. |
 
 The PC binary selects `--backend=serial` or `--backend=sim` at runtime. Serial is
@@ -212,44 +215,55 @@ patches. No firmware was flashed or run.
 
 ## Motor approximation and timing
 
-`sim/motor_model.yaml` is separate from hardware calibration. The initial model
-uses a configurable linear voltage/back-EMF approximation:
+`sim/motor_model.yaml` is separate from hardware calibration. The motor model
+uses the user's measured **10 ohm line-to-line resistance**. Its balanced
+star-equivalent phase resistance is 5 ohm. The active AVR `setPhaseVoltageSin2`
+scales sinusoidal duty from zero to the command magnitude, so the phase-neutral
+voltage amplitude is approximately **half the wire command**. The old independent
+0.03 Nm/V gain ignored this scaling and did not use resistance to calculate torque.
+
+The `sinusoidal_voltage` model uses peak-phase current and voltage conventions:
 
 ```text
-shaft torque = clamp(gain × (sign × clamp(voltage, ±voltage_limit)
-                            − back_emf × rotor_speed), ±shaft_torque_limit)
+Rphase = Rline / 2
+Uq = sign * clamp(command, +/-28 V) / 2
+Iq = (Uq - Ke * rotor_speed) / Rphase
+shaft torque = clamp(1.5 * Ke * Iq, +/-shaft_torque_limit)
 ```
 
-Defaults are 0.03 N·m/V, 0.015 V/(rad/s), a 28 V limit, and a voltage-to-encoder
-sign of -1. These are bring-up assumptions. The sign is inferred from the
-production control mixing and must be checked against measured voltage/encoder
-response. Current dynamics, measured FOC response and drivetrain losses remain
-unidentified. A zero voltage command on an enabled bridge includes modeled
-back-EMF braking; a disabled bridge coasts with the mechanical plant's friction.
-The shared MuJoCo plant includes output-side dry joint friction estimated from
-the observed ability to hold a raised leg under its own weight. The parameters
-and calibration pose are documented in [physical-model.md](physical-model.md#joint-friction).
-This friction acts even with all boards stopped; motor temperature still models
-copper heating rather than bearing/gear frictional heating.
+The phase back-EMF constant `Ke = 0.0700475 V/(rad/s)` is inferred from the
+user-selected **3,000 gf·cm shaft stall torque at a 28 V command** and the measured
+10 ohm line-to-line resistance. It is not a measured Kv. With the AVR half-command
+scaling, `Ke = 0.2941995 * 5 / (1.5 * 14)`. Rotor speed is mechanical rad/s.
+The 1.5 factor follows the balanced sinusoidal peak-phase convention, as described
+in the [PMSM equations](https://www.mathworks.com/help/simscape-electrical/ref/pmsm.html).
+At rest, a 4 V command produces 0.0420285 Nm, 14 V produces 0.14709975 Nm,
+and 28 V produces 0.2941995 Nm. At speed, back EMF reduces current and torque.
+The 9:1 differential transmission is applied exactly once by MuJoCo.
+Hardware calibration is unchanged. Homing voltage gains are reduced for this
+stronger motor approximation; this tuning remains unvalidated on hardware.
 
-Each motor now has a separate lumped thermal state, configured by `thermal` in
-`sim/motor_model.yaml`. It uses the **saturated applied shaft torque**, including
-back-EMF braking, to estimate copper loss:
+A zero command on an enabled bridge includes back-EMF braking; a disabled bridge
+coasts with the mechanical plant's friction. The model omits winding inductance,
+current-loop dynamics, PWM ripple, and identified drivetrain losses. The shaft
+ceiling is an ideal torque/current limit, not a measured saturation curve.
+Output-side dry friction is documented in [physical-model.md](physical-model.md#joint-friction).
+
+The lumped thermal model uses the same electrical model and the saturated torque:
 
 ```text
-Kt = shaft_torque_per_volt × effective_resistance_ohm
-current = shaft_torque / Kt
-loss = current² × effective_resistance_ohm
-C × dT/dt = loss − (T − ambient) / Rthermal
+Iq = applied_shaft_torque / (1.5 * Ke)
+loss = 1.5 * Rphase * Iq^2
+C * dT/dt = loss - (T - ambient) / Rthermal
 ```
 
-The update uses the exact exponential solution for constant loss during each
-physics step. A stopped/disabled bridge has zero modeled copper loss and cools
-toward ambient. Defaults are 20 C ambient and initial temperature, 0.5 ohm
-effective resistance, 20 J/K heat capacity and 8 K/W thermal resistance. These
-are **unmeasured assumptions**, not identified motor or sensor characteristics.
-This single thermal node also represents the sensor; physical sensor placement,
-winding-to-sensor lag, iron losses and driver heating remain unidentified.
+It integrates constant loss exactly over a physics step. Disabled bridges have
+zero modeled copper loss. Ambient/initial temperature (20 C), heat capacity
+(20 J/K), thermal resistance (8 K/W), and sensor lag remain unmeasured assumptions.
+The measured winding resistance affects both torque and heat; there is no
+independent `thermal.effective_resistance_ohm` or `shaft_torque_per_volt` knob.
+Old `linear_voltage_back_emf` configurations are rejected with a migration hint;
+use the current `sim/motor_model.yaml` schema.
 
 The runner quantizes the temperature to whole degrees C, saturates it to the
 firmware conversion's 0–255 range, and supplies all twelve board channels using
@@ -268,11 +282,14 @@ without changing hardware calibration.
 The shaft torque ceiling comes from the MJCF actuators: currently 3,000 gf·cm,
 or 0.2941995 N·m, set in `sim/robot_parameters.json`. MuJoCo applies the differential
 and 9:1 transmission once. The board adapter neither multiplies torque by nine
-again nor substitutes independent leg-joint actuators. All twelve actuator
-names must map uniquely to the six boards in the original YAML.
+again nor substitutes independent leg-joint actuators. The simulated Z encoders
+reproduce each YAML `ref_z` reading at the positive
+Z stop; they still transmit only single-turn counts, not true joint positions
+or known rotor revolutions. I/O absolute reference alignment remains provisional.
+All twelve actuator names must map uniquely to the six boards in the original YAML.
 
 The runner uses integer microseconds, 500 us physics steps and 5 ms controller
-updates (1 ms for `stand`). `--step-us=250` provides a smaller-step comparison;
+updates (1 ms for `stand`, `bob`, `init`, and `standup`). `--step-us=250` provides a smaller-step comparison;
 supported steps must divide the scenario's control period.
 The link models 115200 baud as ten bits per byte rounded upward to
 whole microseconds, 200 us one-way latency, and bounded queues. Baud zero is an
@@ -310,6 +327,54 @@ The original calibration file is never rewritten. The server paces physics in
 real time and accepts commands from the external client; it does not run its own
 production controller concurrently. The serial example verifies setup and stop,
 not a gait. OS scheduling prevents PTY tests from promising deterministic timing.
+
+## Current initialization and stand-up validation
+
+The default `init` start completes at 25.05 s including board startup. FR/BL
+then FL/BR run as diagonal pairs. The controller leaves theta free during the
+folded gamma/Z searches, actively holds waiting legs, backs off and repeats each
+probe, checks the Z encoder phase, and commits references only after all four
+legs finish. A 26.5 s deadline after board startup prevents endless recovery.
+This is not a guarantee from arbitrary configurations: three additional
+collision-free initial pose samples with the earlier weak motor model encountered trapped legs or inconsistent
+contact and stopped. One also contacted another leg; diagonal pairing alone
+does not prove collision-free motion from arbitrary starts.
+
+Homing now uses damped, rate-limited position commands with bounded integrals
+and scales the coupled motor command vector together. A 40 ms velocity filter
+combined with excessive derivative gain produced oscillation; the filter is
+now 4 ms. With the stronger 3,000 gf·cm / 28 V motor model, proportional and
+derivative gains are one quarter of the prior homing gains, while integral gains
+remain unchanged. The per-motor command ceiling remains 24 V. The generalized
+theta floor-probe cap is 2 V (1 V per I/O motor), preserving a light touch; the
+folded-leg unloading command is also reduced. Hardware calibration and contact
+geometry are unchanged.
+
+`standup` runs `init`, then raises and folds the legs, swings them along the
+upper arc into the standing orientation, and extends toward the existing stand
+keyframe. A separate scratch model computes the static floor-to-stand frame
+conversion; running plant positions never feed the controller. The final driven
+hinges differ from the stand keyframe by one full turn, avoiding the lower arc
+through the floor. Encoder feedback gates waypoint progression and timeout.
+There is no startup support fixture or state reset. With the 5.05 kg CAD mass
+and 3,000 gf·cm / 28 V motor approximation, the default headless check finishes
+init at 25.05 s and stands at 38.38 s (25.13 s / 38.45 s with a 250 us step).
+It holds four-foot contact through 50 s at the default 500 us step,
+with no inter-leg contacts or controller faults. Chassis height while holding is
+0.236–0.239 m; during init it remains on its belly at 0.0575 m. This is one default
+starting pose, not a guarantee of recovery from arbitrary configurations.
+Use `--scenario=standup` (default 50 s) to inspect it.
+
+The parallelogram constraints preserve the intended assembly branch; the runner
+rejects branch error above 0.05 rad. Summaries report branch error, floor
+penetration, inter-leg contact count, homing completion time and stand-up result.
+Small point closure error alone cannot establish mechanical correctness.
+
+The historical stand/bob validation below used the stronger motor approximation.
+The existing tight pose/trajectory assertions do not pass with the corrected
+weaker motors; those scenarios require further adjustment. Their independent
+rotor hold gains were rescaled for the changed voltage-to-torque gain, but that
+does not restore the old force capability or validate standing on hardware.
 
 ## Build and checks
 

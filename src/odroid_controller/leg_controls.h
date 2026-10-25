@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "leg.h"
+#include "homing.h"
 #include "leg_control.h"
 #include "pid_utils.h"
 
@@ -130,48 +131,20 @@ class RotorPoseLegControl : public LegControl {
 
 class InitializationLegControl : public LegControl {
  public:
-  enum class InitializationStage {
-    PreInitialization,
-    DriveToMinGamma,
-    DriveToSafeZ,
-    FindMinZ,
-    DriveToNextThetaRev,
-    DriveToInitKnownTheta,
-    DriveToKnownTheta,
-    DriveToInitGamma,
-    DriveToZeros,
-    Done,
-    StandUp
-  };
-
+  using InitializationStage = LegHoming::Stage;
   bool Process(Leg& leg, float dt) override;
-  void Restart(Leg& leg) {
-    stage_ = InitializationStage::DriveToMinGamma;
-    locked_z_ = leg.GetAngleZ();
-    locked_theta_ = leg.GetTheta();
-    locked_gamma_ = leg.GetGamma();
-  }
-
-  InitializationStage GetStage() const { return stage_; }
-
-  void SetStandUp() { stage_ = InitializationStage::StandUp; }
+  void Capture(Leg& leg);
+  void Restart(Leg& leg) { Capture(leg); homing_.Start(); }
+  void Start() { homing_.Start(); }
+  void CommitReference(Leg& leg) const;
+  void SetStandingTarget(const LegConfiguration& q) { homing_.SetStandingTarget({q.theta, q.gamma, q.z}); }
+  InitializationStage GetStage() const { return homing_.GetStage(); }
+  const char* GetStageName() const { return homing_.StageName(); }
+  const std::string& GetFault() const { return homing_.Fault(); }
 
  private:
-  void ChangeStage(InitializationStage new_stage);
-  float reference_theta_angle_ = 0.f;
-  float measured_z_angle_[9] = {0.f};
-  float max_z_angle = 0.f;
-
-  float locked_theta_ = 0.f;
-  float locked_z_ = 0.f;
-  float locked_gamma_ = 0.f;
-
-  int current_theta_rev_ = 0;
-  InitializationStage stage_ = InitializationStage::PreInitialization;
-
-  LegState state_;
-  float delay_ = -0.01f;
-  float elapsed_ = 0.0f;
+  static LegHoming::Pose RawPose(const Leg& leg);
+  LegHoming homing_;
 };
 
 template <class T, class G, class Z>

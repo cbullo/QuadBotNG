@@ -291,6 +291,10 @@ class InspectorWindow(QtWidgets.QMainWindow):
             self.status.setText(f"{state['backend']}  •  {state['time']:.2f} s  •  " +
                                 (f"FAULT: {state['pose_fault']}" if state['pose_fault'] else
                                  state['dashboard_reason'] or ("Ready" if state['ready'] else "Initializing boards")))
+            stages = [f"{name.removeprefix('leg_')}: {leg['init_stage']}"
+                      for name, leg in state["legs"].items() if "init_stage" in leg]
+            if stages:
+                self.status.setText(self.status.text() + "  •  " + " | ".join(stages))
             for i, name in enumerate(MOTORS):
                 m = state["motors"][name]
                 for j, text in enumerate((str(m['encoder_count']), f"{m['rotor_rad']:.4f}", f"{m['voltage_command_v']:.3f}",

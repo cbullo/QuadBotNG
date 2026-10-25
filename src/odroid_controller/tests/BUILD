@@ -21,3 +21,13 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "homing_tests",
+    size = "small",
+    srcs = ["homing_tests.cc"],
+    deps = [
+        "//src/odroid_controller:controller_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

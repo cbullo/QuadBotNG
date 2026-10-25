@@ -429,6 +429,7 @@ bool Drive(Steering::PositiveLightT dir, float current, PIDState& state,
 
 bool Drive(float target, float current, PIDState& state,
            const PIDParams& params, float dt, float& tau_theta, bool debug) {
+  const float final_target = target;
   auto step = 0.2f * dt * M_PI;
 
   float prev_target = (state.last_target_set ? state.last_target : current);
@@ -445,280 +446,51 @@ bool Drive(float target, float current, PIDState& state,
 
   tau_theta = UpdatePIDControl(state, params, dt, target, current, debug);
   if (state.time_since_value_stable > 0.5f &&
-      fabsf(target - state.approx_running_mean) < 0.1f) {
+      fabsf(final_target - state.approx_running_mean) < 0.1f) {
     return true;
   }
   return false;
 }
 
-// bool InitializationLegControl::DriveTheta(Leg& leg, float value, float dt,
-//                                           float& i, float& o) {
-//   // leg.GetMotorI()->GetController()->SendSetCommand(
-//   //     leg.GetMotorI()->GetIndex(), CMD_MOTOR_VOLTAGE, kDriveVoltage);
-//   // leg.GetMotorO()->GetController()->SendSetCommand(
-//   //     leg.GetMotorI()->GetIndex(), CMD_MOTOR_VOLTAGE, kDriveVoltage);
-
-//   float theta = leg.GetTheta();
-//   float tau_theta = UpdatePIDControl(state_.theta_pid_state,
-//                                      leg.theta_pd_config, dt, value, theta);
-
-//   i += tau_theta;
-//   o += tau_theta;
-// }
-
-void InitializationLegControl::ChangeStage(InitializationStage new_stage) {
-  std::cout << "New stage: " << static_cast<int>(new_stage) << std::endl;
-  stage_ = new_stage;
-  state_.Reset();
+LegHoming::Pose InitializationLegControl::RawPose(const Leg& leg) {
+  const float z = leg.GetMotorZ()->GetAccumulatedAngle() * leg.GetMotorZ()->GetGearRatio();
+  const float i = leg.GetAngleI(), o = leg.GetAngleO();
+  return {-0.5f * (i + o), o - i - leg.GetZGammaDir() * (4.f / 3.f) * z, z};
 }
 
-bool IsClose(int16_t angle, int16_t reference) {
-  return abs(angle - reference) <= 4096 / 18;
+void InitializationLegControl::Capture(Leg& leg) {
+  LegHoming::Config config;
+  config.gamma_direction = leg.GetGammaDir();
+  config.theta_direction = leg.GetThetaDir();
+  config.z_gamma_direction = leg.GetZGammaDir();
+  config.gamma_stop = leg.GetGammaDir() > 0 ? leg.GetMinGamma() : leg.GetMaxGamma();
+  // Search outward in the physical leg frame, with theta free. The reversed
+  // rear drive mount changes the Z encoder direction relative to the knee;
+  // a positive encoder sweep on every leg would send the rear links downward.
+  config.z_direction = -leg.GetZGammaDir() * leg.GetGammaDir();
+  config.z_stop = config.z_direction > 0 ? leg.GetMaxZ() : leg.GetMinZ();
+  config.z_reference = leg.GetRefZ();
+  config.z_reference_position = leg.GetMaxZ();
+  config.floor_theta = leg.GetRefTheta();
+  config.pid = {leg.GetThetaPIDConfig(), leg.GetGammaPIDConfig(), leg.GetZPIDConfig()};
+  homing_.Capture(config, RawPose(leg));
+}
+
+void InitializationLegControl::CommitReference(Leg& leg) const {
+  if (GetStage() != InitializationStage::Done)
+    throw std::logic_error("cannot commit incomplete homing");
+  const auto& c = homing_.Correction();
+  leg.SetThetaOffset(-c[0]);
+  leg.SetZOffset(-c[2]);
+  // Leg::GetGamma already subtracts the calibrated Z contribution.
+  leg.SetGammaOffset(-c[1] - leg.GetZGammaDir() * (4.f / 3.f) * c[2]);
 }
 
 bool InitializationLegControl::Process(Leg& leg, float dt) {
-  LegSteering steering;
-
-  const double kUpdateDelta = 0.005;
-
-  elapsed_ += dt;
-
-  delay_ -= dt;
-  // if (delay_ <= 0.f) {
-  // switch (stage_) {
-  //   case InitializationStage::PreInitialization:
-  //     std::cout << "PreInitialization ";
-  //     break;
-  //   case InitializationStage::DriveToMinGamma:
-  //     std::cout << "DriveToMinGamma ";
-  //     break;
-  //   case InitializationStage::DriveToMinZ:
-  //     std::cout << "DriveToMinZ ";
-  //     break;
-  //   case InitializationStage::DriveToNextThetaRev:
-  //     std::cout << "DriveToNextThetaRev ";
-  //     break;
-  //   case InitializationStage::DriveToSafeZ:
-  //     std::cout << "DriveToSafeZ ";
-  //     break;
-  //   case InitializationStage::FindMinZ:
-  //     std::cout << "FindMinZ ";
-  //     break;
-  // };
-
-  // std::cout << std::endl;
-
-  // std::cout << "LG " << locked_gamma_ << std::endl;
-  // std::cout << "LT " << locked_theta_ << std::endl;
-  // std::cout << "LZ " << locked_z_ << std::endl;
-
-  // std::cout << leg.GetMotorZ()->GetRawAngle() * Motor::kAS5600ToRadians *
-  //                  leg.GetMotorZ()->GetGearRatio()
-  //           << std::endl;
-  // return true;
-
-  // stage_ = InitializationStage::Done;
-
-  switch (stage_) {
-    case InitializationStage::PreInitialization: {
-      // sleep(1);
-      // leg.UpdateZOffset(leg.GetMaxZ());
-
-      locked_z_ = leg.GetAngleZ();
-      locked_theta_ = leg.GetTheta();
-      locked_gamma_ = leg.GetGamma();
-
-    } break;
-
-    case InitializationStage::DriveToMinGamma: {
-      bool done = false;
-      if (leg.GetGammaDir() > 0.f) {
-        done =
-            DriveTo(leg, state_, Steering::Disabled, Steering::Negative,
-                    locked_z_, leg.GetState(), dt, steering, false, true, false);
-      } else {
-        done =
-            DriveTo(leg, state_, Steering::Disabled, Steering::Positive,
-                    locked_z_, leg.GetState(), dt, steering, false, true, false);
-      }
-
-      if (done) {
-        // if (!VerifyPosition<Gamma>(leg)) {
-        //   return false;
-        // }
-        locked_theta_ = leg.GetTheta();
-        locked_z_ = leg.GetAngleZ();
-        // locked_gamma_ = leg.GetGamma();
-
-        locked_gamma_ = leg.GetGamma() + leg.GetGammaDir() * 0.1f;
-
-        std::cout << "Min gamma: " << locked_gamma_ << std::endl;
-        ChangeStage(InitializationStage::FindMinZ);
-      }
-    } break;
-
-    case InitializationStage::FindMinZ: {
-      if (DriveTo(leg, state_, Steering::Disabled, locked_gamma_,
-                  Steering::Positive, leg.GetState(), dt, steering, false,
-                  false, true)) {
-        //        if (IsClose(leg.GetMotorZ()->GetRawAngle(), leg.GetRefZ())) {
-        leg.UpdateZAngle();
-        leg.UpdateGammaOffset();
-        locked_gamma_ = leg.GetGamma();
-        locked_theta_ = leg.GetTheta();
-        ChangeStage(InitializationStage::DriveToSafeZ);
-        // } else {
-        //   ChangeStage(InitializationStage::Done);
-        // }
-
-        // std::cout << "Z: " << current_z << " Gamma:" << leg.GetGamma()
-        //           << std::endl;
-
-        // if (IsClose(current_z, leg.GetMaxZ())) {
-        //   // leg.UpdateZOffset(leg.GetAngleZ());
-        //   locked_theta_ = leg.GetTheta();
-        //   locked_z_ = leg.GetAngleZ();
-        //   locked_gamma_ = leg.GetGamma();
-
-        //   leg.UpdateGammaOffset();
-
-        //   std::cout << "Acquired Z: " << leg.GetAngleZ()
-        //             << " Gamma:" << leg.GetGamma() << std::endl;
-
-        //   locked_gamma_ = -0.3f;
-        //   locked_z_ = leg.GetAngleZ();
-
-        //   ChangeStage(InitializationStage::DriveToInitKnownTheta);
-        // } else {
-        //   // locked_theta_ = leg.GetTheta();
-        //   locked_z_ = leg.GetAngleZ() - 0.1;
-        //   locked_gamma_ = leg.GetGamma();
-        //   ChangeStage(InitializationStage::DriveToSafeZ);
-        // }
-
-        // // ChangeStage(InitializationStage::Done);
-
-        // // if (!VerifyPosition<Z>(leg)) {
-
-        // //   DriveTo(locked_theta_, leg.GetMinGamma(), Direction::Negative) {
-
-        // //   }
-        // // }
-      }
-    } break;
-
-      // case InitializationStage::DriveToKnownTheta: {
-      //   if (DriveTo(leg, state_, Steering::Negative, locked_gamma_, 0.f,
-      //               leg.GetState(), dt, steering, true, false, false)) {
-
-      //     ChangeStage(InitializationStage::PreInitialization);
-      //   }
-      // }
-
-    case InitializationStage::DriveToSafeZ: {
-      if (DriveTo(leg, state_, locked_theta_, locked_gamma_, 0.0,
-                  leg.GetState(), dt, steering, false, false, true)) {
-        // ++current_theta_rev_;
-        // if (current_theta_rev_ < 4) {
-        //   ChangeStage(InitializationStage::DriveToNextThetaRev);
-        // } else {
-        //   ChangeStage(InitializationStage::PreInitialization);
-        // };
-
-        ChangeStage(InitializationStage::DriveToInitGamma);
-        // ChangeStage(InitializationStage::Done);
-      }
-    } break;
-    case InitializationStage::DriveToInitGamma: {
-      if (DriveTo(leg, state_, locked_theta_, 0.0, 0.0, leg.GetState(), dt,
-                  steering, true, false, false)) {
-        ChangeStage(InitializationStage::DriveToKnownTheta);
-        // ChangeStage(InitializationStage::Done);
-      }
-    } break;
-
-    case InitializationStage::DriveToInitKnownTheta: {
-      if (DriveTo(leg, state_, locked_theta_, 0.0f, locked_z_ + 0.2f,
-                  leg.GetState(), dt, steering, true, true, false)) {
-        ChangeStage(InitializationStage::DriveToKnownTheta);
-      }
-    } break;
-
-    case InitializationStage::DriveToKnownTheta: {
-      bool done = false;
-
-      if (leg.GetThetaDir() > 0.f) {
-        done = DriveTo(leg, state_, Steering::NegativeLight, 0.0f, 0.0f,
-                  leg.GetState(), dt, steering, true, false, false); 
-      } else {
-        done = DriveTo(leg, state_, Steering::PositiveLight, 0.0f, 0.0f,
-                  leg.GetState(), dt, steering, true, false, false); 
-      }
-
-      if (done) {
-        leg.UpdateThetaOffset();
-
-        std::cout << "Final values Theta: " << leg.GetTheta()
-                  << " Gamma: " << leg.GetGamma() << " Z: " << leg.GetAngleZ()
-                  << std::endl;
-
-        ChangeStage(InitializationStage::DriveToZeros);
-      }
-      // steering.steering_z = -steering.steering_z;
-    } break;
-    case InitializationStage::DriveToZeros:
-    case InitializationStage::Done: {
-      if (DriveTo(leg, state_, 0.0f, 0.0f, 0.0f, leg.GetState(), dt, steering,
-                  true, true, true)) {
-        ChangeStage(InitializationStage::Done);
-      }
-      // steering.steering_z = -steering.steering_z;
-    } break;
-    case InitializationStage::StandUp: {
-      DriveTo(leg, state_, -2.0f * leg.GetThetaDir(), -0.4f * leg.GetGammaDir(), 0.0f, leg.GetState(), dt, steering,
-                  true, true, true);
-    } break;
-    default:
-      std::cout << "Theta: " << leg.GetTheta() << " Gamma: " << leg.GetGamma()
-                << " Z: " << leg.GetAngleZ() << std::endl;
-
-      // DriveTo(leg, state_, -0.7f, 0.6f, 0.0f,
-      //              leg.GetState(), dt, steering, false, false, false);
-
-      leg.GetMotorI()->GetController()->SendSetCommand(
-          leg.GetMotorI()->GetIndex(), CMD_MOTOR_VOLTAGE,
-          static_cast<int16_t>(0));
-      leg.GetMotorO()->GetController()->SendSetCommand(
-          leg.GetMotorO()->GetIndex(), CMD_MOTOR_VOLTAGE,
-          static_cast<int16_t>(0));
-      leg.GetMotorZ()->GetController()->SendSetCommand(
-          leg.GetMotorZ()->GetIndex(), CMD_MOTOR_VOLTAGE,
-          static_cast<int16_t>(0));
-      return true;
-  }
-
-  steering.steering_i = std::clamp(steering.steering_i, -24.f, 24.f);
-  steering.steering_o = std::clamp(steering.steering_o, -24.f, 24.f);
-  steering.steering_z = std::clamp(steering.steering_z, -24.f, 24.f);
-
-  leg.GetMotorI()->GetController()->SendSetCommand(
-      leg.GetMotorI()->GetIndex(), CMD_MOTOR_VOLTAGE,
-      static_cast<int16_t>(leg.GetMotorI()->GetDirection() * 512.0 *
-                           steering.steering_i));
-  leg.GetMotorO()->GetController()->SendSetCommand(
-      leg.GetMotorO()->GetIndex(), CMD_MOTOR_VOLTAGE,
-      static_cast<int16_t>(leg.GetMotorO()->GetDirection() * 512.0 *
-                           steering.steering_o));
-  leg.GetMotorZ()->GetController()->SendSetCommand(
-      leg.GetMotorZ()->GetIndex(), CMD_MOTOR_VOLTAGE,
-      static_cast<int16_t>(leg.GetMotorZ()->GetDirection() * 512.0 *
-                           steering.steering_z));
-  delay_ = kUpdateDelta;
-
-  // usleep(100000);
-
-  // std::cout << steering.steering_i << " " << steering.steering_o << " "
-  //           << steering.steering_z << std::endl;
-  //}
-  return true;
+  const auto volts = homing_.Step(RawPose(leg), dt);
+  std::array<Motor*, 3> motors{leg.GetMotorI(), leg.GetMotorO(), leg.GetMotorZ()};
+  for (int i = 0; i < 3; ++i)
+    motors[i]->GetController()->SendSetCommand(motors[i]->GetIndex(), CMD_MOTOR_VOLTAGE,
+        static_cast<int16_t>(motors[i]->GetDirection() * 512.f * volts[i]));
+  return GetStage() != InitializationStage::Failed;
 }

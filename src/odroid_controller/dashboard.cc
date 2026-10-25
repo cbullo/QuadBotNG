@@ -146,6 +146,7 @@ std::string Dashboard::Snapshot(const RobotSystem& robot, double time) const {
   Object out, motors, legs, boards;
   out.String("type", "state"); out.String("backend", backend_);
   out.Number("time", time); out.Bool("ready", robot.Ready());
+  out.Bool("homing_complete", robot.InitializationComplete());
   out.Bool("motion_enabled", allow_control_); out.Bool("remote_hold", remote_hold_);
   out.String("pose_fault", robot.GetPoseFault()); out.String("dashboard_reason", reason_);
   for (const auto& [name, motor] : robot.motors) {
@@ -164,6 +165,10 @@ std::string Dashboard::Snapshot(const RobotSystem& robot, double time) const {
     Object l;
     l.Number("theta", leg->GetTheta()); l.Number("gamma", leg->GetGamma()); l.Number("z", leg->GetAngleZ());
     std::string mode = leg->GetControl() ? "other" : "stopped";
+    if (const auto* init = dynamic_cast<const InitializationLegControl*>(leg->GetControl())) {
+      mode = "init";
+      l.String("init_stage", init->GetStageName());
+    }
     for (const auto& control : robot.hold_controls) if (leg->GetControl() == &control) {
       mode = "leg_hold";
       const auto t = control.GetTarget();

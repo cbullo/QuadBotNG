@@ -101,6 +101,7 @@ class Leg {
   float GetMaxZ() const { return max_z_; }
   float GetMinGamma() const { return min_gamma_; }
   float GetMaxGamma() const { return max_gamma_; }
+  float GetRefZ() const { return ref_z_; }
   float GetRefTheta() const { return ref_theta_; }
 
   // float GetZeroThetaOffset() const { return zero_theta_offset_; }

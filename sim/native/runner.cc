@@ -25,20 +25,25 @@ int RunSimulation(const RuntimeOptions& options) {
   if (options.scenario == "homing")
     throw std::invalid_argument("homing unavailable: mechanical stops and absolute encoder references are not validated");
   const bool bobbing = options.scenario == "bob";
+  const bool standing_up = options.scenario == "standup";
+  const bool initializing = options.scenario == "init" || standing_up;
+  if (initializing && options.suspended)
+    throw std::invalid_argument("init requires a floating robot resting on its belly; omit --suspended");
   const bool standing = options.scenario == "stand" || bobbing;
-  const int control_period_us = standing ? 1000 : 5000;
+  const int control_period_us = standing || initializing ? 1000 : 5000;
   if (control_period_us % options.step_us != 0)
     throw std::invalid_argument("physics step must divide the scenario's control period");
-  if (!standing && options.scenario != "idle" && options.scenario != "hold" && options.scenario != "pulse" && options.scenario != "stop")
+  if (!standing && !initializing && options.scenario != "idle" && options.scenario != "hold" && options.scenario != "pulse" && options.scenario != "stop")
     throw std::invalid_argument("unknown simulation scenario");
   if (options.pty_server && options.scenario != "idle") throw std::invalid_argument("PTY server is controlled by external client");
   auto config = YAML::LoadFile(ResolveAsset(options.config,"src/odroid_controller/controller/config/robot_config.yaml"));
   auto settings = YAML::LoadFile(ResolveAsset(options.motor_config,"sim/motor_model.yaml"));
   simulation::MotorParameters motor;
-  if (settings["model"].as<std::string>() != "linear_voltage_back_emf") throw std::invalid_argument("unknown motor model");
+  if (settings["model"].as<std::string>() != "sinusoidal_voltage")
+    throw std::invalid_argument("motor model must be sinusoidal_voltage; migrate old torque-gain settings using sim/motor_model.yaml");
   motor.voltage_limit = settings["voltage_limit"].as<double>();
-  motor.torque_per_volt = settings["shaft_torque_per_volt"].as<double>();
-  motor.back_emf = settings["back_emf_volts_per_rad_s"].as<double>();
+  motor.resistance_line_to_line = settings["line_to_line_resistance_ohm"].as<double>();
+  motor.phase_back_emf = settings["phase_back_emf_volts_per_rad_s"].as<double>();
   motor.voltage_sign = settings["voltage_to_encoder_sign"].as<int>();
   motor.zero_counts = settings["encoder_zero_counts"].as<int>();
   motor.Validate();
@@ -48,7 +53,6 @@ int RunSimulation(const RuntimeOptions& options) {
   auto thermal_settings = settings["thermal"];
   thermal.ambient_c = thermal_settings["ambient_c"].as<double>();
   thermal.initial_c = thermal_settings["initial_c"].as<double>();
-  thermal.resistance_ohm = thermal_settings["effective_resistance_ohm"].as<double>();
   thermal.heat_capacity_j_per_k = thermal_settings["heat_capacity_j_per_k"].as<double>();
   thermal.thermal_resistance_k_per_w = thermal_settings["thermal_resistance_k_per_w"].as<double>();
   thermal.Validate();
@@ -58,11 +62,13 @@ int RunSimulation(const RuntimeOptions& options) {
   if (!model) throw std::runtime_error(error);
   model->opt.timestep = options.step_us * 1e-6;
   std::unique_ptr<mjData,decltype(&mj_deleteData)> data(mj_makeData(model.get()),mj_deleteData);
-  const char* pose_name = standing ? "stand" : "stance";
+  const char* pose_name = initializing ? "init" : standing ? "stand" : "stance";
   int stance = mj_name2id(model.get(),mjOBJ_KEY,pose_name);
   if (stance < 0) throw std::runtime_error(std::string("model missing keyframe: ") + pose_name);
   mj_resetDataKeyframe(model.get(),data.get(),stance);
   mj_forward(model.get(),data.get());
+  if (initializing && (model->njnt == 0 || model->jnt_type[0] != mjJNT_FREE))
+    throw std::runtime_error("init requires a floating chassis");
   if (standing && !options.suspended) {
     // Place the known stance on the floor before boot, rather than dropping
     // the unpowered robot from the demo's airborne keyframe.
@@ -76,7 +82,7 @@ int RunSimulation(const RuntimeOptions& options) {
     data->qpos[2] += 0.0005;
     mj_forward(model.get(),data.get());
   }
-  if (model->nu != 12 || model->neq != 4) throw std::runtime_error("expected twelve motor actuators and four closures");
+  if (model->nu != 12 || model->neq != 8) throw std::runtime_error("expected twelve motor actuators and eight parallelogram constraints");
   std::map<std::string,double> bob_offsets;
   if (bobbing) {
     // A small symmetric knee bend: main +0.09, crank -0.09 rad.
@@ -135,9 +141,20 @@ int RunSimulation(const RuntimeOptions& options) {
   struct Binding {
     int actuator, channel;
     boards::EmulatedBoard* board;
-    double limit;
+    double limit, encoder_offset;
     simulation::MotorTemperature temperature;
   };
+  std::map<std::string,double> encoder_offsets;
+  // ref_z is the reduced single-turn encoder reading at the positive Z stop,
+  // not an electrical zero. Match that reading in the candidate CAD model so
+  // UpdateZAngle can use the same reference as hardware, without giving the
+  // controller the missing rotor revolutions or the true joint coordinates.
+  for (const auto& entry : config["legs"]) {
+    const auto c = entry.second;
+    const auto name = c["motor_Z"].as<std::string>();
+    encoder_offsets[name] = (c["ref_z"].as<double>() - c["max_z"].as<double>()) /
+                           robot->motors.at(name)->GetGearRatio();
+  }
   std::vector<Binding> bindings;
   std::set<int> seen;
   for (const auto& [name,instance] : robot->motors) {
@@ -148,7 +165,79 @@ int RunSimulation(const RuntimeOptions& options) {
       throw std::runtime_error("expected plain torque-driven motor actuator");
     auto c = config["motors"][name];
     bindings.push_back({id,instance->GetIndex(),emulators.at(c["controller"].as<std::string>()).get(),
-                        model->actuator_ctrlrange[2*id+1],simulation::MotorTemperature(thermal)});
+                        model->actuator_ctrlrange[2*id+1],encoder_offsets[name],simulation::MotorTemperature(thermal)});
+  }
+  std::array<LegConfiguration, 4> standing_pose{}, raised_pose{}, folded_pose{}, tucked_pose{};
+  if (standing_up) {
+    // Build reference geometry in scratch data, never using the evolving plant
+    // as feedback. Homing identifies the raw encoder frame at floor contact;
+    // this static CAD calibration expresses the stand keyframe in that frame.
+    std::unique_ptr<mjData,decltype(&mj_deleteData)> reference(mj_makeData(model.get()),mj_deleteData);
+    const int stand_key = mj_name2id(model.get(), mjOBJ_KEY, "stand");
+    const int ground = mj_name2id(model.get(), mjOBJ_GEOM, "ground");
+    if (stand_key < 0 || ground < 0) throw std::runtime_error("standup requires stand keyframe and ground");
+    const std::array<std::string,4> cad{"RF", "LF", "LB", "RB"};
+    for (int i = 0; i < 4; ++i) {
+      const auto* leg = robot->controller->GetLegs().GetLeg(i);
+      const std::array<const Motor*,3> motors{leg->GetMotorI(), leg->GetMotorO(), leg->GetMotorZ()};
+      auto coordinates = [&]() {
+        std::array<double,3> a{};
+        for (int j = 0; j < 3; ++j) {
+          const int id = mj_name2id(model.get(), mjOBJ_ACTUATOR, motors[j]->GetName().c_str());
+          a[j] = reference->actuator_length[id] * motors[j]->GetGearRatio();
+        }
+        return LegConfiguration{float(-0.5 * (a[0] + a[1])),
+            float(a[1] - a[0] - leg->GetZGammaDir() * (4.0/3.0) * a[2]), float(a[2])};
+      };
+      auto floor_contact = [&](double angle) {
+        mj_resetDataKeyframe(model.get(), reference.get(), stance);
+        for (const char* role : {"base_to_shoulder_", "shoulder_to_main_", "shoulder_to_crank_",
+                                 "main_to_lower_", "crank_to_link_"}) {
+          const int joint = mj_name2id(model.get(), mjOBJ_JOINT, (std::string(role) + cad[i]).c_str());
+          if (joint < 0) throw std::runtime_error("missing standup reference joint");
+          const bool driven = std::string(role).find("shoulder_to_") == 0;
+          reference->qpos[model->jnt_qposadr[joint]] = driven ? angle : 0;
+        }
+        mj_forward(model.get(), reference.get());
+        for (int c = 0; c < reference->ncon; ++c) {
+          const auto& contact = reference->contact[c];
+          if (contact.geom[0] != ground && contact.geom[1] != ground) continue;
+          const int other = contact.geom[contact.geom[0] == ground ? 1 : 0];
+          const char* name = mj_id2name(model.get(), mjOBJ_GEOM, other);
+          if (name && std::string(name).find("_" + cad[i] + "_") != std::string::npos && contact.dist <= 0)
+            return true;
+        }
+        return false;
+      };
+      double clear = -3 * std::acos(-1.0) / 4, touching = 0;
+      if (floor_contact(clear) || !floor_contact(touching))
+        throw std::runtime_error("standup floor reference is not bracketed by the CAD sweep");
+      for (int n = 0; n < 30; ++n) {
+        const double middle = (clear + touching) / 2;
+        if (floor_contact(middle)) touching = middle; else clear = middle;
+      }
+      floor_contact(touching);
+      const auto floor_pose = coordinates();
+      const float theta_offset = leg->GetRefTheta() - floor_pose.theta;
+      floor_contact(-2.5);
+      raised_pose[i] = coordinates();
+      raised_pose[i].theta += theta_offset;
+      folded_pose[i] = raised_pose[i];
+      folded_pose[i].gamma = (leg->GetGammaDir() > 0 ? leg->GetMinGamma() : leg->GetMaxGamma()) +
+                            0.1f * leg->GetGammaDir();
+      mj_resetDataKeyframe(model.get(), reference.get(), stand_key);
+      // Take the upper, collision-free arc. The final physical pose is the
+      // stand keyframe, with the two driven hinges one full turn lower.
+      for (const char* role : {"shoulder_to_main_", "shoulder_to_crank_"}) {
+        const int joint = mj_name2id(model.get(), mjOBJ_JOINT, (std::string(role) + cad[i]).c_str());
+        reference->qpos[model->jnt_qposadr[joint]] -= 2 * std::acos(-1.0);
+      }
+      mj_forward(model.get(), reference.get());
+      standing_pose[i] = coordinates();
+      standing_pose[i].theta += theta_offset;
+      tucked_pose[i] = standing_pose[i];
+      tucked_pose[i].gamma = folded_pose[i].gamma;
+    }
   }
   std::ofstream trace;
   if (!options.trace.empty() && !options.pty_server) {
@@ -161,26 +250,55 @@ int RunSimulation(const RuntimeOptions& options) {
     for (const auto& [name,instance] : robot->motors) trace << "," << name << "_temperature_c";
     for (const auto& b : bindings) trace << "," << mj_id2name(model.get(),mjOBJ_ACTUATOR,b.actuator) << "_plant_temperature_c";
     trace << ",startup_support,pose_fault";
+    if (initializing)
+      for (const auto& [name,leg] : robot->legs) trace << ',' << name << "_init_stage";
     trace << '\n' << std::setprecision(17);
   }
   auto start = std::chrono::steady_clock::now();
   bool started = false, stopped = false;
   bool support_released = !standing;
   double support_release_time = -1;
+  double homing_complete_time = -1;
+  double rise_start = -1, stand_complete_time = -1, stand_settled = 0;
+  double rise_phase_start = 0, waypoint_settled = 0;
+  int rise_phase = 0;
+  const std::array<const char*,4> rise_phases{"raise_legs", "fold_legs", "position_legs", "extend"};
+  std::array<LegConfiguration,4> rise_origin{}, previous_pose{};
   boards::Time run_start = 0;
   std::array<std::array<double,3>,4> stand_targets{};
-  double peak_torque = 0, max_closure = 0;
+  uint64_t interleg_contacts = 0;
+  std::vector<int> geom_leg(model->ngeom, -1);
+  const std::array<std::string, 4> cad_legs{"_RF_", "_LF_", "_RB_", "_LB_"};
+  for (int g = 0; g < model->ngeom; ++g) {
+    const char* name = mj_id2name(model.get(), mjOBJ_GEOM, g);
+    if (name) for (int leg = 0; leg < 4; ++leg)
+      if (std::string(name).find(cad_legs[leg]) != std::string::npos) geom_leg[g] = leg;
+  }
+  double peak_torque = 0, max_closure = 0, max_branch_error = 0, max_ground_penetration = 0;
+  const int ground_geom = mj_name2id(model.get(),mjOBJ_GEOM,"ground");
+  std::vector<std::array<int,4>> linkage_coordinates;
+  for (const char* cad : {"RF", "LF", "RB", "LB"}) {
+    std::array<int,4> coordinates{};
+    int i = 0;
+    for (const char* role : {"shoulder_to_main_", "shoulder_to_crank_", "main_to_lower_", "crank_to_link_"}) {
+      const int joint = mj_name2id(model.get(),mjOBJ_JOINT,(std::string(role)+cad).c_str());
+      if (joint < 0) throw std::runtime_error("missing parallelogram joint");
+      coordinates[i++] = model->jnt_qposadr[joint];
+    }
+    linkage_coordinates.push_back(coordinates);
+  }
   const auto end_time = static_cast<boards::Time>(options.duration * 1000000);
   // No direct pose feedback to the C++ controller: all samples cross the byte codec.
   for (clock->now = 0; clock->now < end_time; clock->now += options.step_us) {
     for (const auto& b : bindings)
-      b.board->SetSensors(b.channel,motor.Encoder(data->actuator_length[b.actuator]),b.temperature.Sensor());
+      b.board->SetSensors(b.channel,motor.Encoder(data->actuator_length[b.actuator] + b.encoder_offset),b.temperature.Sensor());
     if (!options.pty_server) robot->Pump();
     for (auto& [name,board] : emulators) board->Pump();
     if (!options.pty_server) {
       robot->Pump();
       if (!started && robot->Ready() && !robot->boards.begin()->second->AreCommandsScheduled()) {
         started = true; run_start = clock->now;
+        if (initializing && !dashboard.Overridden()) robot->StartInitialization();
         if (standing && !dashboard.Overridden()) robot->HoldRotorPose(settings["stance"]["p_volts_per_rad"].as<double>(),
             settings["stance"]["d_volts_per_rad_s"].as<double>(),motor.voltage_sign,motor.voltage_limit);
         if (bobbing)
@@ -190,6 +308,53 @@ int RunSimulation(const RuntimeOptions& options) {
           for (auto& [name,board] : robot->boards) board->SendSetCommand(0,CMD_STATE,uint8_t(3));
       }
       if (clock->now % control_period_us == 0) {
+        if (standing_up && robot->InitializationComplete() &&
+            !dashboard.Overridden() && robot->GetPoseFault().empty()) {
+          if (rise_start < 0) {
+            rise_phase_start = rise_start = clock->now * 1e-6;
+            for (int i = 0; i < 4; ++i)
+              previous_pose[i] = rise_origin[i] = robot->controller->GetLegs().GetLeg(i)->GetState();
+          }
+          const double elapsed = clock->now * 1e-6 - rise_phase_start;
+          const std::array<double,4> durations{1.5, 2.0, 4.0, 4.0};
+          const std::array<const std::array<LegConfiguration,4>*,5> waypoints{
+              &rise_origin, &raised_pose, &folded_pose, &tucked_pose, &standing_pose};
+          const int phase = rise_phase;
+          const double t = std::clamp(elapsed / durations[phase], 0.0, 1.0);
+          const double blend = t*t*t*(10 + t*(-15 + 6*t));
+          std::array<LegConfiguration,4> targets{};
+          bool settled = phase == 3 && t == 1;
+          bool waypoint_reached = t == 1;
+          for (int i = 0; i < 4; ++i) {
+            auto lerp = [blend](float a, float b) { return float(a + blend * (b-a)); };
+            const auto& from = (*waypoints[phase])[i];
+            const auto& to = (*waypoints[phase+1])[i];
+            targets[i] = {lerp(from.theta, to.theta), lerp(from.gamma, to.gamma), lerp(from.z, to.z)};
+            const auto q = robot->controller->GetLegs().GetLeg(i)->GetState();
+            for (auto pair : {std::pair<float,float>{q.theta, targets[i].theta},
+                              {q.gamma, targets[i].gamma}, {q.z, targets[i].z}})
+            {
+              settled &= std::abs(pair.first - pair.second) < 0.1f;
+              waypoint_reached &= std::abs(pair.first - pair.second) < 0.04f;
+            }
+            for (auto pair : {std::pair<float,float>{q.theta, previous_pose[i].theta},
+                              {q.gamma, previous_pose[i].gamma}, {q.z, previous_pose[i].z}})
+              settled &= std::abs(pair.first - pair.second) < 0.0005f;
+            previous_pose[i] = q;
+          }
+          robot->SetStandingTargets(targets);
+          stand_settled = settled ? stand_settled + control_period_us * 1e-6 : 0;
+          if (stand_settled >= 0.5 && stand_complete_time < 0) stand_complete_time = clock->now * 1e-6;
+          waypoint_settled = waypoint_reached ? waypoint_settled + control_period_us * 1e-6 : 0;
+          if (phase < 3 && waypoint_settled >= 0.12) {
+            ++rise_phase;
+            rise_phase_start = clock->now * 1e-6;
+            waypoint_settled = 0;
+          } else if (elapsed > durations[phase] + 5.0 && stand_complete_time < 0) {
+            robot->AbortPoseMotion(std::string("standup: ") + rise_phases[phase] +
+                                  " did not reach target within effort limits");
+          }
+        }
         if (bobbing && started && support_released && !dashboard.Overridden() && robot->GetPoseFault().empty()) {
           // Settle for one second, then smoothly crouch and rise every four
           // seconds. Never extend beyond the original stand target.
@@ -223,7 +388,7 @@ int RunSimulation(const RuntimeOptions& options) {
       bool enabled = b.board->state() == boards::State::Running && (channel.availability & 1) && channel.motion_type == 0;
       data->ctrl[b.actuator] = motor.Torque(b.board->Voltage(b.channel),data->actuator_velocity[b.actuator],b.limit,enabled);
       peak_torque = std::max(peak_torque,std::abs(data->ctrl[b.actuator]));
-      b.temperature.Step(data->ctrl[b.actuator],motor.torque_per_volt,model->opt.timestep);
+      b.temperature.Step(motor.CopperLoss(data->ctrl[b.actuator]),model->opt.timestep);
     }
     if (standing && started && !support_released) {
       support_released = std::all_of(emulators.begin(),emulators.end(),[](const auto& entry) {
@@ -241,6 +406,21 @@ int RunSimulation(const RuntimeOptions& options) {
     if (support_released) mj_step(model.get(),data.get());
     else data->time += model->opt.timestep;
     mj_forward(model.get(),data.get());
+    for (const auto& q : linkage_coordinates) {
+      const double delta = data->qpos[q[1]] - data->qpos[q[0]];
+      for (int i : {2, 3}) {
+        const double error = std::abs(data->qpos[q[i]] - delta);
+        max_branch_error = std::max(max_branch_error,error);
+        if (error > 0.05) throw std::runtime_error("parallelogram left intended branch (angle error > 0.05 rad)");
+      }
+    }
+    for (int i = 0; i < data->ncon; ++i) {
+      const auto& contact = data->contact[i];
+      if (contact.geom[0] == ground_geom || contact.geom[1] == ground_geom)
+        max_ground_penetration = std::max(max_ground_penetration, -contact.dist);
+      const int a = geom_leg[contact.geom[0]], b = geom_leg[contact.geom[1]];
+      if (a >= 0 && b >= 0 && a != b && contact.dist < 0) ++interleg_contacts;
+    }
     for (const char* name : {"FR","FL","BR","BL"}) {
       auto a = mj_name2id(model.get(),mjOBJ_SITE,(std::string("closure_link_")+name).c_str());
       auto b = mj_name2id(model.get(),mjOBJ_SITE,(std::string("closure_lower_")+name).c_str());
@@ -252,6 +432,8 @@ int RunSimulation(const RuntimeOptions& options) {
     for (int i = 0; i < mjNWARNING; ++i)
       if (data->warning[i].number) throw std::runtime_error("MuJoCo warning " + std::to_string(i));
     for (int i = 0; i < model->nq; ++i) if (!std::isfinite(data->qpos[i])) throw std::runtime_error("non-finite physics state");
+    if (initializing && homing_complete_time < 0 && robot->InitializationComplete())
+      homing_complete_time = data->time;
     if (trace && clock->now % 5000 == 0) {
       trace << data->time;
       for (int i = 0; i < model->nq; ++i) trace << ',' << data->qpos[i];
@@ -261,6 +443,12 @@ int RunSimulation(const RuntimeOptions& options) {
       for (const auto& b : bindings) trace << ',' << b.temperature.Celsius();
       trace << ',' << !support_released;
       trace << ',' << !robot->GetPoseFault().empty();
+      if (initializing) {
+        for (const auto& [name,leg] : robot->legs) {
+          const auto* control = dynamic_cast<const InitializationLegControl*>(leg->GetControl());
+          trace << ',' << (control ? static_cast<int>(control->GetStage()) : -1);
+        }
+      }
       trace << '\n';
       if (options.realtime) trace.flush();
     }
@@ -276,9 +464,16 @@ int RunSimulation(const RuntimeOptions& options) {
   std::cout << std::setprecision(9) << "scenario=" << options.scenario << " time=" << data->time
             << " initialized=" << started << " commands=" << commands << " peak_shaft_torque=" << peak_torque
             << " max_closure_m=" << max_closure << " contacts=" << data->ncon
+            << " max_branch_error_rad=" << max_branch_error << " max_ground_penetration_m=" << max_ground_penetration
             << " watchdog_resets=" << watchdog_resets << " thermal_resets=" << thermal_resets
             << " pose_fault=" << !robot->GetPoseFault().empty() << '\n';
-  if (standing) {
+  if (initializing)
+    std::cout << "homing_complete=" << (homing_complete_time >= 0)
+              << " interleg_contacts=" << interleg_contacts
+              << " homing_complete_at=" << homing_complete_time << '\n';
+  if (standing_up)
+    std::cout << "standup_started_at=" << rise_start << " standup_phase=" << rise_phases[rise_phase] << " stand_complete_at=" << stand_complete_time << '\n';
+  if (standing || standing_up) {
     const int ground = mj_name2id(model.get(),mjOBJ_GEOM,"ground");
     std::set<int> touching;
     for (int i = 0; i < data->ncon; ++i) {
