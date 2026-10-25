@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <thread>
 #include "src/odroid_controller/robot_system.h"
+#include "src/odroid_controller/dashboard.h"
 #include "src/odroid_controller/runtime_options.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
@@ -32,6 +33,8 @@ int main(int argc, char** argv) {
       else if (is("--scenario")) options.scenario = value("--scenario");
       else if (is("--duration")) options.duration = std::stod(value("--duration"));
       else if (is("--step-us")) options.step_us = std::stoi(value("--step-us"));
+      else if (is("--dashboard-port")) options.dashboard_port = std::stoi(value("--dashboard-port"));
+      else if (arg == "--dashboard-control") options.dashboard_control = true;
       else if (arg == "--joystick") options.joystick = true;
       else if (arg == "--no-joystick") options.no_joystick = true;
       else if (arg == "--realtime") options.realtime = true;
@@ -40,14 +43,23 @@ int main(int argc, char** argv) {
       else if (arg == "--headless") {}  // native runner is headless
       else if (arg == "--help") {
         std::cout << "--backend=serial|sim --config=PATH --duration=SECONDS --joystick\n"
-                     "Simulation: --scenario=idle|hold|stand|pulse|stop --suspended --realtime\n"
-                     "            --trace=CSV --step-us=500 --motor-config=PATH --pty-server\n";
+                     "Simulation: --scenario=idle|hold|stand|bob|pulse|stop --suspended --realtime\n"
+                     "            --trace=CSV --step-us=500 --motor-config=PATH --pty-server\n"
+                     "Dashboard: --dashboard-port=9876 [--dashboard-control] (loopback only)\n";
         return 0;
       } else throw std::invalid_argument("unknown option " + arg);
     }
     if (!std::isfinite(options.duration) || options.duration < 0 || options.step_us <= 0 ||
         5000 % options.step_us != 0) throw std::invalid_argument("duration must be nonnegative; step-us must divide 5000");
+    if (options.dashboard_port < 0 || options.dashboard_port > 65535 ||
+        (options.dashboard_control && !options.dashboard_port))
+      throw std::invalid_argument("dashboard requires a port in 1..65535");
+    if (options.dashboard_control && options.backend == "serial" && !options.no_joystick)
+      throw std::invalid_argument("dashboard motion requires --no-joystick for exclusive control");
+    if (options.dashboard_port && options.pty_server)
+      throw std::invalid_argument("attach dashboard to the serial client, not the PTY server");
     if (options.backend == "sim") {
+      if (options.dashboard_port) options.realtime = true;
       if (options.duration == 0) options.duration = 10;
 #ifdef QUADBOT_NATIVE_SIM
       return RunSimulation(options);
@@ -60,11 +72,13 @@ int main(int argc, char** argv) {
       throw std::invalid_argument("scripted scenarios/PTY/suspension require --backend=sim");
     auto config = YAML::LoadFile(ResolveAsset(options.config,"src/odroid_controller/controller/config/robot_config.yaml"));
     RobotSystem robot(config, [](const auto&,const auto&) { return std::make_unique<BLDCDriverBoard>(); }, !options.no_joystick);
+    Dashboard dashboard(options.dashboard_port, options.dashboard_control, "serial");
     robot.Connect();
     auto start = std::chrono::steady_clock::now(), previous = start;
     while (options.duration == 0 || std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count() < options.duration) {
       robot.Pump();
       auto now = std::chrono::steady_clock::now();
+      dashboard.Pump(robot, std::chrono::duration<double>(now-start).count());
       float dt = std::chrono::duration<float>(now-previous).count();
       if (dt >= 0.005f) { robot.Update(dt); previous = now; }
       std::this_thread::sleep_for(std::chrono::microseconds(500));

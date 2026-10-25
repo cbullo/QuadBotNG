@@ -32,8 +32,11 @@ validated physical model or working simulator.
   x86-64 Linux. Firmware wrappers must continue to force the AVR platform.
 - The user says calibration/encoder/init_foc/open_loop firmware is likely
   deprecated: do not revive it as part of build or simulation work.
-- The web server is incomplete and disabled pending rework. Keep its startup
-  and link dependency out of the active controller until rework is requested.
+- The legacy web server/assets/libwebsockets dependency have been removed.
+  `//sim:inspector` launches the simulation, production controller and free local
+  PySide6/PyQtGraph inspector. See `docs/inspector.md`. Keep the native UI on the PC;
+  the optional controller endpoint is loopback-only and preserves single-thread
+  board ownership. Do not add paid or cloud-dependent UI components.
 - Odroid toolchain restoration is deferred in `TODO.md`. Its target libc must
   remain compatible with the Odroid, independently of the PC's libraries;
   preserve the crosstool-NG approach until that work resumes.

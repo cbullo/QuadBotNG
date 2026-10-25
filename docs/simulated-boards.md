@@ -13,6 +13,15 @@ geometry/load demonstration.
 
 ## Launch
 
+For controllers, simulation, plots and sensed 3D inspection in one command:
+
+```sh
+bazel run --config=pc //sim:inspector
+```
+
+The free native inspector opens a Qt window and supports acknowledged commands over TCP.
+See [the inspector guide](inspector.md).
+
 ```sh
 # Ground stance matching the direct demo's bent-leg pose (desktop viewer):
 bazel run --config=pc //sim:controller_viewer -- --scenario=stand --duration=8
@@ -63,6 +72,15 @@ with Z=0. Gamma and Z also have compliant stops in the physical model. Dedicated
 internal collision proxies allow both configured gamma endpoints while keeping
 outer foot, chassis and other-leg contact envelopes. See the coordinate and
 clearance assumptions in [physical-model.md](physical-model.md).
+The `bob` scenario starts from the same extended keyframe. After startup and a
+one-second settling interval, it cycles through a gentle crouch and rise every
+four seconds. A cosine trajectory moves the CAD main/crank targets by up to
++0.09/-0.09 rad respectively, keeping shoulder and mean leg angle constant.
+The existing model differential converts these target offsets into rotor angles;
+the controller still uses only decoded encoder feedback. No physical pose is
+reset during the movement. Inspector commands override the script, and pose and
+thermal faults retain their normal stop behavior. Run it with
+`bazel run --config=pc //sim:inspector -- --scenario=bob --duration=20`.
 The demo and other scenarios retain the bent `stance` keyframe.
 
 The runner places the extended pose just above the ground and holds all
@@ -76,7 +94,7 @@ unchanged. This is a known-pose initialization fixture, not a homing sequence.
 
 The rotor PD uses 26.7 V/rad and 0.15 V/(rad/s), configured under `stance` in
 `sim/motor_model.yaml`, with a 1 ms host control period. This faster cadence is
-specific to `stand`; the existing scenarios and hardware entry point retain
+specific to `stand` and `bob`; the other scenarios and hardware entry point retain
 5 ms updates. The modeled 115200-baud transport and quantized feedback remain
 active. Velocity comes from successive decoded rotor angles, not MuJoCo state.
 The old `ThetaGammaZLegControl` gains and measured hardware calibration are
@@ -112,6 +130,7 @@ and exclusions are described in [physical-model.md](physical-model.md).
 | `pulse` | RUNNING, apply a 0.1 V pulse to each mapped channel for 200 ms, then command zero voltage. This tests wiring/protocol; it is not a gait. |
 | `hold` | RUNNING, attach existing `ThetaGammaZLegControl` to each leg using its current sensed pose as target. |
 | `stand` | Initialize at the YAML extension-side gamma bounds (about 150-degree opening), complete board startup under support, then release into host rotor-PD voltage control. |
+| `bob` | Start as `stand`, settle for one second, then gently crouch and rise on a four-second cycle through the same rotor controllers. |
 | `stop` | Start pose hold, send a production stop event after one second of control, disable leg control and board outputs. |
 | `homing` | Rejected before execution: mechanical stops and absolute references remain unvalidated. |
 

@@ -1,6 +1,5 @@
 load("@com_grail_bazel_compdb//:defs.bzl", "compilation_database")
 load("@com_grail_bazel_output_base_util//:defs.bzl", "OUTPUT_BASE")
-load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
 compilation_database(
     name = "example_compdb",
@@ -39,20 +38,4 @@ platform(
         "@platforms//cpu:aarch64",
         "@platforms//os:linux",
     ],
-)
-
-cmake(
-    name = "libwebsockets",
-    copts = [
-        "-fPIC",
-    ],
-    generate_args = [
-        "-G Ninja",
-        "-DLWS_WITH_SSL=OFF",
-        "-DLWS_WITH_STRUCT_JSON=ON",
-    ],
-    lib_source = "@libwebsockets//:all_srcs",
-    # Only used by the disabled web server.
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
 )

@@ -17,13 +17,15 @@
 #include "motor_plant.h"
 #include "src/odroid_controller/boards/emulated_board.h"
 #include "src/odroid_controller/robot_system.h"
+#include "src/odroid_controller/dashboard.h"
 #include "src/odroid_controller/runtime_options.h"
 
 int RunSimulation(const RuntimeOptions& options) {
   if (options.joystick) throw std::invalid_argument("simulation uses scripted events; joystick not enabled");
   if (options.scenario == "homing")
     throw std::invalid_argument("homing unavailable: mechanical stops and absolute encoder references are not validated");
-  const bool standing = options.scenario == "stand";
+  const bool bobbing = options.scenario == "bob";
+  const bool standing = options.scenario == "stand" || bobbing;
   const int control_period_us = standing ? 1000 : 5000;
   if (control_period_us % options.step_us != 0)
     throw std::invalid_argument("physics step must divide the scenario's control period");
@@ -75,6 +77,26 @@ int RunSimulation(const RuntimeOptions& options) {
     mj_forward(model.get(),data.get());
   }
   if (model->nu != 12 || model->neq != 4) throw std::runtime_error("expected twelve motor actuators and four closures");
+  std::map<std::string,double> bob_offsets;
+  if (bobbing) {
+    // A small symmetric knee bend: main +0.09, crank -0.09 rad.
+    // Convert this prescribed CAD pose to rotor excursions with the model's
+    // existing three-motor differential, including each leg's signs/gearing.
+    // This scratch data defines targets only; feedback still comes from boards.
+    std::unique_ptr<mjData,decltype(&mj_deleteData)> target(mj_makeData(model.get()),mj_deleteData);
+    mj_resetDataKeyframe(model.get(),target.get(),stance);
+    for (const char* cad : {"RF","LF","RB","LB"}) {
+      for (const auto& [prefix, offset] : std::map<std::string,double>{
+               {"shoulder_to_main_", 0.09}, {"shoulder_to_crank_", -0.09}}) {
+        const int joint = mj_name2id(model.get(),mjOBJ_JOINT,(prefix+cad).c_str());
+        if (joint < 0) throw std::runtime_error("missing bob trajectory joint");
+        target->qpos[model->jnt_qposadr[joint]] += offset;
+      }
+    }
+    mj_forward(model.get(),target.get());
+    for (int i = 0; i < model->nu; ++i)
+      bob_offsets[mj_id2name(model.get(),mjOBJ_ACTUATOR,i)] = target->actuator_length[i]-data->actuator_length[i];
+  }
   auto clock = std::make_shared<boards::ManualClock>();
   std::map<std::string,std::unique_ptr<boards::EmulatedBoard>> emulators;
   std::map<std::string,std::shared_ptr<boards::MemoryLink>> links;
@@ -89,6 +111,7 @@ int RunSimulation(const RuntimeOptions& options) {
     return std::make_unique<BLDCDriverBoard>(std::make_unique<boards::MemoryTransport>(link,0,clock),clock);
   };
   auto robot = std::make_unique<RobotSystem>(config,factory);
+  Dashboard dashboard(options.dashboard_port, options.dashboard_control, "sim");
   if (robot->boards.size() != 6 || robot->motors.size() != 12) throw std::runtime_error("expected six two-channel boards");
   if (options.pty_server) {
     emulators.clear();
@@ -145,6 +168,7 @@ int RunSimulation(const RuntimeOptions& options) {
   bool support_released = !standing;
   double support_release_time = -1;
   boards::Time run_start = 0;
+  std::array<std::array<double,3>,4> stand_targets{};
   double peak_torque = 0, max_closure = 0;
   const auto end_time = static_cast<boards::Time>(options.duration * 1000000);
   // No direct pose feedback to the C++ controller: all samples cross the byte codec.
@@ -157,23 +181,39 @@ int RunSimulation(const RuntimeOptions& options) {
       robot->Pump();
       if (!started && robot->Ready() && !robot->boards.begin()->second->AreCommandsScheduled()) {
         started = true; run_start = clock->now;
-        if (standing) robot->HoldRotorPose(settings["stance"]["p_volts_per_rad"].as<double>(),
+        if (standing && !dashboard.Overridden()) robot->HoldRotorPose(settings["stance"]["p_volts_per_rad"].as<double>(),
             settings["stance"]["d_volts_per_rad_s"].as<double>(),motor.voltage_sign,motor.voltage_limit);
-        if (options.scenario == "hold" || options.scenario == "stop") robot->HoldCurrentPose();
-        if (options.scenario == "pulse")
+        if (bobbing)
+          for (int i = 0; i < 4; ++i) stand_targets[i] = robot->rotor_hold_controls[i].GetTarget();
+        if (!dashboard.Overridden() && (options.scenario == "hold" || options.scenario == "stop")) robot->HoldCurrentPose();
+        if (!dashboard.Overridden() && options.scenario == "pulse")
           for (auto& [name,board] : robot->boards) board->SendSetCommand(0,CMD_STATE,uint8_t(3));
       }
       if (clock->now % control_period_us == 0) {
-        if (started && options.scenario == "pulse") {
+        if (bobbing && started && support_released && !dashboard.Overridden() && robot->GetPoseFault().empty()) {
+          // Settle for one second, then smoothly crouch and rise every four
+          // seconds. Never extend beyond the original stand target.
+          const double elapsed = std::max(0.0, clock->now*1e-6-support_release_time-1.0);
+          const double blend = 0.5*(1.0-std::cos(2.0*std::acos(-1.0)*elapsed/4.0));
+          for (int i = 0; i < 4; ++i) {
+            auto* leg = robot->controller->GetLegs().GetLeg(i);
+            std::array<Motor*,3> motors{leg->GetMotorI(),leg->GetMotorO(),leg->GetMotorZ()};
+            auto target = stand_targets[i];
+            for (int j = 0; j < 3; ++j) target[j] += blend*bob_offsets.at(motors[j]->GetName());
+            robot->rotor_hold_controls[i].SetTarget(target);
+          }
+        }
+        if (started && !dashboard.Overridden() && options.scenario == "pulse") {
           for (auto& [name,instance] : robot->motors) {
             // Exercise all mapped channels with small, finite voltage pulses.
             const double voltage = clock->now-run_start < 200000 ? 0.1 : 0;
             instance->GetController()->SendSetCommand(instance->GetIndex(),CMD_MOTOR_VOLTAGE,int16_t(voltage*512));
           }
         }
-        if (started && !stopped && options.scenario == "stop" && clock->now-run_start >= 1000000) {
+        if (started && !stopped && !dashboard.Overridden() && options.scenario == "stop" && clock->now-run_start >= 1000000) {
           robot->Stop(); stopped = true;
         }
+        dashboard.Pump(*robot, clock->now * 1e-6);
         robot->Update(control_period_us * 1e-6f);
       }
       if (!started && clock->now > 6000000) throw std::runtime_error("board startup did not finish");
@@ -190,6 +230,11 @@ int RunSimulation(const RuntimeOptions& options) {
         return entry.second->state() == boards::State::Running;
       });
       if (support_released) support_release_time = data->time;
+    }
+    // A dashboard STOP before startup must also release the explicit fixture;
+    // it must not cause a later scripted RUNNING command or freeze the robot.
+    if (dashboard.Overridden() && !support_released) {
+      support_released = true; support_release_time = data->time;
     }
     // An explicit startup fixture holds the keyframe while the real protocol
     // boots. Once released, physics is never reset or supported by the runner.

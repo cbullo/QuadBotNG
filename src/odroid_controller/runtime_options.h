@@ -9,6 +9,8 @@ struct RuntimeOptions {
   std::string scenario = "idle";
   double duration = 0;
   int step_us = 500;
+  int dashboard_port = 0;
+  bool dashboard_control = false;
   bool joystick = false;
   bool no_joystick = false;
   bool realtime = false;

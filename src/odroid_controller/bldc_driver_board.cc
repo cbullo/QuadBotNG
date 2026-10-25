@@ -16,6 +16,10 @@ void BLDCDriverBoard::Clear() {
   initialized_ = false;
   sensor_received_.fill(false);
   encoder_received_at_.fill(0);
+  temperature_received_.fill(false);
+  temperature_received_at_.fill(0);
+  voltage_command_.fill(0);
+  state_command_ = -1;
   for (auto* motor : motors_) if (motor) motor->ResetFeedback();
 }
 bool BLDCDriverBoard::HasFreshEncoderFeedback(boards::Time maximum_age) const {
@@ -110,7 +114,11 @@ void BLDCDriverBoard::Receive(const boards::Bytes& frame) {
         sensor_received_[i] = true;
         encoder_received_at_[i] = clock_->Now();
       }
-      else m->SetTemperature(value);
+      else {
+        m->SetTemperature(value);
+        temperature_received_[i] = true;
+        temperature_received_at_[i] = clock_->Now();
+      }
     }
   } else if ((h & MESSAGE_TYPE_MASK) == MESSAGE_TYPE_GET_REPLY) {
     if (replies_.empty() || replies_.front().command != GetCommand(h))
@@ -164,6 +172,11 @@ void BLDCDriverBoard::Pump() {
       if (!n) break;
       command.offset += n;
       if (command.offset == command.bytes.size()) {
+        if (!IsGetMessage(command.bytes[0])) {
+          if (GetCommand(command.bytes[0]) == CMD_MOTOR_VOLTAGE)
+            voltage_command_[(command.bytes[0] & MOTOR_INDEX_BIT) ? 1 : 0] = boards::I16(command.bytes.data()+1);
+          if (GetCommand(command.bytes[0]) == CMD_STATE) state_command_ = command.bytes[1];
+        }
         if (IsGetMessage(command.bytes[0]))
           replies_.push_back({GetCommand(command.bytes[0]), std::move(command.callback),
                               clock_->Now()+1000000});

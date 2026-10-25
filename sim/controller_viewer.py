@@ -76,9 +76,14 @@ def run(args, shutdown):
     model_name = "quadbot_suspended.xml" if args.suspended else "quadbot.xml"
     model = mujoco.MjModel.from_xml_path(assets.Rlocation(f"_main/sim/mujoco/{model_name}"))
     data = mujoco.MjData(model)
-    mujoco.mj_resetDataKeyframe(model, data, model.key("stand" if args.scenario == "stand" else "stance").id)
+    mujoco.mj_resetDataKeyframe(model, data, model.key("stand" if args.scenario in ("stand", "bob") else "stance").id)
     mujoco.mj_forward(model, data)
     if shutdown.signum:
+        return
+    if getattr(args, "attach_trace", None):
+        # The inspector owns the controller; only render its snapshots here.
+        with joined_passive_viewer(model, data) as viewer:
+            display(viewer, model, data, Path(args.attach_trace), None, args, shutdown)
         return
     with tempfile.TemporaryDirectory(prefix="quadbot-controller-") as tmp:
         trace = Path(tmp) / "state.csv"
@@ -135,7 +140,7 @@ def display(viewer, model, data, trace, child, args, shutdown):
                         mujoco.mj_forward(model, data)
                     break
             viewer.sync()
-            if child.poll() is not None:
+            if child is not None and child.poll() is not None:
                 if child.returncode and not shutdown.signum:
                     raise RuntimeError(f"native controller exited with {child.returncode}")
                 break
@@ -147,9 +152,10 @@ def display(viewer, model, data, trace, child, args, shutdown):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--scenario", choices=("idle", "hold", "stand", "pulse", "stop"), default="stand")
+    parser.add_argument("--scenario", choices=("idle", "hold", "stand", "bob", "pulse", "stop"), default="stand")
     parser.add_argument("--duration", type=float, default=8)
     parser.add_argument("--motor-config", help="override simulation motor/thermal/stance parameters")
+    parser.add_argument("--attach-trace", help="render an inspector-owned trace without starting a controller")
     parser.add_argument("--suspended", action="store_true")
     parser.add_argument("--show-collisions", action="store_true",
                         help="show collision primitives instead of detailed visual meshes")

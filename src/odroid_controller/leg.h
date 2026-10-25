@@ -80,6 +80,7 @@ class Leg {
   }
 
   void SetControl(LegControl* control) { active_control_ = control; }
+  const LegControl* GetControl() const { return active_control_; }
 
   // void SetMinZ(float z) { z_min_ = z; };
   // void ZeroIORevs() {

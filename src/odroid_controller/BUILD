@@ -44,6 +44,8 @@ cc_library(
         "boards/transport.h",
         "controller.cc",
         "controller.h",
+        "dashboard.cc",
+        "dashboard.h",
         "event_factory.h",
         "event_ids.h",
         "joystick_input.h",

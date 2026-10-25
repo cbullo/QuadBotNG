@@ -4,3 +4,7 @@ gymnasium[mujoco]==1.4.0
 mujoco==3.17.0
 numpy
 pyyaml
+# Native inspector: community Qt (LGPL/GPL), MIT plotting, BSD OpenGL bindings.
+PySide6-Essentials==6.12.0
+pyqtgraph==0.14.0
+PyOpenGL==3.1.10

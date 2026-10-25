@@ -8,6 +8,9 @@ import sys
 import threading
 import time
 import unittest
+import tempfile
+from contextlib import nullcontext
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from sim import controller_viewer as app
@@ -70,6 +73,23 @@ def interrupt_worker():
 
 
 class ViewerLifecycleTest(unittest.TestCase):
+    def test_attached_view_reads_existing_trace_without_a_child(self):
+        import numpy as np
+        with tempfile.TemporaryDirectory() as directory:
+            trace = Path(directory) / "state.csv"
+            trace.write_text("time,q0,q1\n1.25,0.1,-0.2\n")
+            viewer = SimpleNamespace(cam=SimpleNamespace(lookat=np.zeros(3)), lock=nullcontext,
+                                     sync=lambda: None)
+            with patch.object(app.mujoco, "mj_forward") as forward:
+                from unittest.mock import Mock
+                viewer.is_running = Mock(side_effect=[True, False])
+                data = SimpleNamespace(qpos=np.zeros(2), time=0)
+                app.display(viewer, SimpleNamespace(nq=2), data, trace, None,
+                            SimpleNamespace(suspended=False, show_collisions=False), SimpleNamespace(signum=0))
+                np.testing.assert_array_equal(data.qpos, [0.1, -0.2])
+                self.assertEqual(data.time, 1.25)
+                forward.assert_called_once()
+
     def test_waits_for_renderer_on_completion_window_close_and_error(self):
         for reason in ("completion", "window", "error"):
             with self.subTest(reason=reason):

@@ -6,6 +6,25 @@ load("@sim_deps//:requirements.bzl", "requirement")
 
 package(default_visibility = ["//visibility:public"])
 
+alias(
+    name = "inspector",
+    actual = "//dashboard:inspector",
+)
+
+alias(
+    name = "native_inspector",
+    actual = "//dashboard:native",
+)
+
+py_library(
+    name = "controller_viewer_lib",
+    srcs = ["controller_viewer.py"],
+    deps = [
+        ":robot_model",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 # Python wheels are for the development PC, not AVR or the Odroid sysroot.
 PC_CONSTRAINTS = [
     "@platforms//cpu:x86_64",

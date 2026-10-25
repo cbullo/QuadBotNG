@@ -19,6 +19,11 @@ void RotorPoseLegControl::Capture(Leg& leg, double p, double d, int voltage_sign
   for (size_t i = 0; i < motors.size(); ++i)
     previous_[i] = target_[i] = motors[i]->GetAccumulatedAngle();
 }
+void RotorPoseLegControl::SetTarget(const std::array<double,3>& target) {
+  for (double angle : target)
+    if (!std::isfinite(angle)) throw std::invalid_argument("non-finite rotor target");
+  target_ = target;
+}
 bool RotorPoseLegControl::Process(Leg& leg, float dt) {
   if (!(dt > 0)) return true;
   std::array<Motor*,3> motors{leg.GetMotorI(),leg.GetMotorO(),leg.GetMotorZ()};

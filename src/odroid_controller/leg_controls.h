@@ -103,6 +103,9 @@ class ThetaGammaZLegControl : public LegControl {
   void SetThetaSetpoint(float theta) { state_.theta_setpoint = theta; }
   void SetGammaSetpoint(float gamma) { state_.gamma_setpoint = gamma; }
   void SetZSetpoint(float z) { state_.z_setpoint = z; }
+  LegConfiguration GetTarget() const {
+    return {state_.theta_setpoint, state_.gamma_setpoint, state_.z_setpoint};
+  }
 
  private:
   LegState state_;
@@ -117,6 +120,8 @@ class RotorPoseLegControl : public LegControl {
  public:
   void Capture(Leg& leg, double p, double d, int voltage_sign, double voltage_limit);
   bool Process(Leg& leg, float dt) override;
+  const std::array<double,3>& GetTarget() const { return target_; }
+  void SetTarget(const std::array<double,3>& target);
  private:
   std::array<double,3> target_{}, previous_{};
   double p_ = 0, d_ = 0, voltage_limit_ = 0;

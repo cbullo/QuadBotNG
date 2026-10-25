@@ -1,0 +1,67 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@sim_deps//:requirements.bzl", "requirement")
+
+py_library(
+    name = "lib",
+    srcs = [
+        "scene.py",
+        "telemetry.py",
+    ],
+    deps = ["//sim:robot_model"],
+)
+
+py_library(
+    name = "native_lib",
+    srcs = [
+        "native_client.py",
+        "native_view.py",
+    ],
+    deps = [
+        ":lib",
+        requirement("pyside6_essentials"),
+        requirement("pyqtgraph"),
+        requirement("pyopengl"),
+    ],
+)
+
+py_binary(
+    name = "native",
+    srcs = ["native.py"],
+    data = [
+        "//sim:controller_viewer",
+        "//src/odroid_controller/controller",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":native_lib",
+        "//sim:controller_viewer_lib",
+    ],
+)
+
+alias(
+    name = "inspector",
+    actual = ":native",
+    visibility = ["//visibility:public"],
+)
+
+py_test(
+    name = "native_test",
+    size = "medium",
+    srcs = ["native_test.py"],
+    data = [
+        ":native",
+        "//src/odroid_controller/controller",
+    ],
+    env = {"QT_QPA_PLATFORM": "offscreen"},
+    deps = [":native_lib"],
+)
+
+py_test(
+    name = "dashboard_test",
+    size = "medium",
+    srcs = ["dashboard_test.py"],
+    data = ["//src/odroid_controller/controller"],
+    deps = [":lib"],
+)

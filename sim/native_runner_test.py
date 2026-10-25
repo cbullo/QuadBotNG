@@ -172,6 +172,28 @@ class NativeRunnerTest(unittest.TestCase):
         self.assertGreater(int(resets.group(1)), 0)
         self.assertTrue(all(row["startup_support"] == "0" for row in rows if float(row["time"]) > 3.2))
 
+    def test_bobbing_stance_moves_without_support_or_pose_fault(self):
+        _, rows = self.run_scenario("bob", suspended=False, duration=13)
+        self.assertIn("feet_on_ground=4", self.last_stdout)
+        self.assertIn("watchdog_resets=0 thermal_resets=0 pose_fault=0", self.last_stdout)
+        moving = [r for r in rows if float(r["time"]) > 5]
+        self.assertTrue(all(r["startup_support"] == "0" for r in moving))
+        heights = np.array([float(r["q2"]) for r in moving])
+        self.assertGreater(np.ptp(heights), 0.004)
+        self.assertLess(np.ptp(heights), 0.025)
+        self.assertGreater(heights.min(), 0.21)
+        self.assertTrue(all(abs(float(r["q3"])) > 0.995 for r in moving))
+        # Two complete cycles should agree in height; all legs must bend and
+        # return, rather than merely drift or collapse after startup.
+        cycle = lambda start: np.array([float(r["q2"]) for r in rows
+                                       if start <= float(r["time"]) < start+4])
+        np.testing.assert_allclose(cycle(5), cycle(9), atol=0.002, rtol=0)
+        for offset in range(7, 27, 5):
+            main = np.array([float(r[f"q{offset+1}"]) for r in moving])
+            crank = np.array([float(r[f"q{offset+3}"]) for r in moving])
+            self.assertGreater(np.ptp(main), 0.05)
+            self.assertGreater(np.ptp(crank), 0.05)
+
     def test_thermal_collapse_stops_all_motors_and_settles(self):
         # Continue beyond the old 10 s board timeout after the rear MCU reset.
         # Healthy motors must stop fighting the floor. Self-collision can leave

@@ -51,9 +51,21 @@ it does not open physical devices. Hardware runs still use the configured serial
 devices and joystick. The unfinished Gazebo backend is not selected by the old
 simulator build flag; backend selection is now a runtime option.
 
-**The web server is disabled pending rework:** the controller does not link or
-start it, and deployment bundles omit its browser assets. Its source and manual
-build targets remain available.
+The legacy HTTP/SSE web server and assets have been removed. The free local
+**inspector** uses native PySide6/PyQtGraph for telemetry, plots, sensed 3D pose and commands:
+
+```sh
+bazel run --config=pc //sim:inspector
+
+# Gently crouch and rise to see live telemetry changes:
+bazel run --config=pc //sim:inspector -- --scenario=bob --duration=20
+```
+
+This starts the production controller with simulated boards and MuJoCo, the
+MuJoCo viewer and native inspector. It uses direct TCP with the same endpoint as
+the real robot; no browser or WebSocket bridge is needed. Ctrl+C
+stops the launched processes. No account, subscription or cloud service is
+required. See [inspector setup, commands and hardware connection](docs/inspector.md).
 
 ## Simulator tooling (PC)
 

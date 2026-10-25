@@ -53,7 +53,7 @@ rules_foreign_cc, fmt, yaml-cpp and GoogleTest. Non-module archives use
 `use_repo_rule(http_archive)` with fixed revisions and SHA-256 hashes. Existing
 repository names are preserved. The former moving SimpleFOC fork is pinned to
 `23cc4d23faf0b56e907b6365da610e69246c3d9a`; yaml-cpp is pinned to 0.8.0.
-Arduino AVR core stays at 1.8.5, fmt at 8.1.1 and libwebsockets at 4.3.2.
+Arduino AVR core stays at 1.8.5 and fmt at 8.1.1. The later inspector integration removes libwebsockets and its rules_foreign_cc dependency.
 The generated module lockfile records the resolved dependency graph.
 
 `toolchain/extensions.bzl` calls the existing AVR repository generator without
@@ -108,8 +108,7 @@ These are outside the active build baseline; avoid blanket `//...` builds.
 The user also confirmed that the web server is incomplete and needs rework.
 Its include, global instance and startup call have been removed from the host
 entry point, along with its controller link dependency and deployment assets.
-The server library and libwebsockets target are manual targets retained for
-future work. Default controller builds do not compile or link them.
+The later [inspector integration](inspector.md) removes the legacy server, browser assets, libwebsockets archive and manual build targets. The replacement uses a loopback controller endpoint and a native PySide6/PyQtGraph UI on the PC, connected directly over TCP.
 
 ## Validation
 

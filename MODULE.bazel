@@ -7,7 +7,6 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "rules_shell", version = "0.3.0")
-bazel_dep(name = "rules_foreign_cc", version = "0.15.1")
 bazel_dep(name = "rules_python", version = "1.2.0")
 bazel_dep(name = "fmt", version = "8.1.1")
 bazel_dep(name = "yaml-cpp", version = "0.8.0")
@@ -66,21 +65,6 @@ http_archive(
     strip_prefix = "Arduino-FOC-23cc4d23faf0b56e907b6365da610e69246c3d9a/src",
     type = "zip",
     urls = ["https://codeload.github.com/cbullo/Arduino-FOC/zip/23cc4d23faf0b56e907b6365da610e69246c3d9a"],
-)
-
-http_archive(
-    name = "libwebsockets",
-    build_file_content = """
-filegroup(
-    name = "all_srcs",
-    srcs = glob(["**"]),
-    visibility = ["//visibility:public"],
-)
-""",
-    sha256 = "fe628cee633f89606eb220a2be5243b719b6920b5d27716fc4d53835fa3044eb",
-    strip_prefix = "libwebsockets-4.3.2",
-    type = "zip",
-    urls = ["https://codeload.github.com/warmcat/libwebsockets/zip/refs/tags/v4.3.2"],
 )
 
 http_archive(

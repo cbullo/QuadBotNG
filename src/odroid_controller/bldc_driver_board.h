@@ -34,6 +34,16 @@ class BLDCDriverBoard {
   }
   const std::string& GetError() const { return error_; }
   bool HasFreshEncoderFeedback(boards::Time maximum_age) const;
+  boards::Time EncoderAge(int i) const {
+    return sensor_received_.at(i) ? clock_->Now() - encoder_received_at_.at(i) : -1;
+  }
+  boards::Time TemperatureAge(int i) const {
+    return temperature_received_.at(i) ? clock_->Now() - temperature_received_at_.at(i) : -1;
+  }
+  // Last commands fully written to the transport, not measured applied voltage/state.
+  double LastVoltageCommand(int i) const { return voltage_command_.at(i) / 512.0; }
+  int LastStateCommand() const { return state_command_; }
+  size_t PendingCommands() const { return outgoing_.size(); }
   void Tick();
   void Pump();
   void ResetBoard();
@@ -70,6 +80,10 @@ class BLDCDriverBoard {
   std::array<Motor*, 2> motors_{};
   std::array<bool, 2> sensor_received_{};
   std::array<boards::Time, 2> encoder_received_at_{};
+  std::array<bool, 2> temperature_received_{};
+  std::array<boards::Time, 2> temperature_received_at_{};
+  std::array<int16_t, 2> voltage_command_{};
+  int state_command_ = -1;
   std::string name_, address_, error_;
   Phase phase_ = Phase::Disconnected;
   bool error_state_ = false;
