@@ -53,6 +53,12 @@ class NativeRunnerTest(unittest.TestCase):
         self.assertLessEqual(np.max(np.abs(torques)), 0.2941995)
         self.assertTrue(np.all((encoders >= 0) & (encoders < 4096)))
         self.assertTrue(np.all(np.ptp(encoders, axis=0) > 0))
+        # Suspended chassis is stationary even while its motors move.
+        self.assertTrue(all(row["imu_valid"] == "1" for row in rows))
+        imu = np.array([[float(row[f"imu_{kind}_{axis}_{unit}"])
+                         for kind, unit in (("gyro", "rad_s"), ("accel", "m_s2"))
+                         for axis in "xyz"] for row in rows])
+        np.testing.assert_allclose(imu, np.tile([0, 0, 0, 0, 0, 9.81], (len(rows), 1)), atol=1e-10)
 
     def test_production_leg_control_and_stop(self):
         _, rows = self.run_scenario("stop")
@@ -66,6 +72,8 @@ class NativeRunnerTest(unittest.TestCase):
         # A loaded stance provides meaningful copper heating; suspended limbs
         # can now rest against the chassis and require almost no holding torque.
         first, rows = self.run_scenario("stand", suspended=False, duration=8)
+        self.assertTrue(any(row["imu_valid"] == "0" for row in rows))
+        self.assertTrue(all(row["imu_valid"] == str(1 - int(row["startup_support"])) for row in rows))
         repeated, _ = self.run_scenario("stand", suspended=False, duration=8)
         self.assertEqual(first, repeated)
         names = [key.removesuffix("_plant_temperature_c") for key in rows[0]

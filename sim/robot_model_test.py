@@ -31,6 +31,37 @@ class RobotModelTest(unittest.TestCase):
         self.assertEqual(standalone.nu, 12)
         self.assertEqual((SIM_DIR / "mujoco/quadbot_suspended.xml").read_text(), build_xml(fixed_base=True))
 
+    def test_rubber_sock_friction_reaches_foot_floor_contacts(self):
+        model = load_model()
+        data = mujoco.MjData(model)
+        mujoco.mj_resetDataKeyframe(model, data, model.key("stand").id)
+        mujoco.mj_forward(model, data)
+        ground = model.geom("ground").id
+        feet = {model.geom(f"arm_lower_{p['cad']}_1_collision_1").id for p in LEGS.values()}
+        lowest = min(data.geom_xpos[g, 2] - model.geom_size[g, 0] for g in feet)
+        data.qpos[2] -= lowest + .0001
+        mujoco.mj_forward(model, data)
+        touched = set()
+        for contact in data.contact:
+            if ground not in contact.geom:
+                continue
+            foot = next(int(g) for g in contact.geom if g != ground)
+            self.assertIn(foot, feet)
+            touched.add(foot)
+            self.assertEqual(contact.dim, 6)
+            np.testing.assert_allclose(contact.friction, [1.2, 1.2, .01, .001, .001])
+            np.testing.assert_allclose(contact.solref, [.006, 1])
+        self.assertEqual(touched, feet)
+        # Falling onto the belly must not turn the entire robot into rubber.
+        mujoco.mj_resetDataKeyframe(model, data, model.key("init").id)
+        data.qpos[2] -= .0001
+        mujoco.mj_forward(model, data)
+        belly = model.geom("base_link_collision_0").id
+        contacts = [c for c in data.contact if set(c.geom) == {ground, belly}]
+        self.assertTrue(contacts)
+        for contact in contacts:
+            np.testing.assert_allclose(contact.friction, [.8, .8, .005, .0001, .0001])
+
     def test_init_pose_rests_on_belly_with_raised_legs(self):
         model = load_model()
         data = mujoco.MjData(model)

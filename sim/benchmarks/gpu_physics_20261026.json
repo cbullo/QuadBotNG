@@ -1,0 +1,506 @@
+{
+  "date": "2026-10-26",
+  "hardware": {
+    "cpu": "AMD Ryzen 7 5800H",
+    "gpu": "NVIDIA RTX 3050 Laptop GPU",
+    "vram_mib": 4096,
+    "driver": "580.178.04"
+  },
+  "notes": "Physics/plant only, not full training. Desktop and VSCode indexing remained active. No concurrent training.",
+  "results": [
+    {
+      "backend": "native_cpu",
+      "workers": 1,
+      "timed_steps_per_repeat": 200,
+      "timing_s": [
+        0.7266045289998146,
+        0.7336808669997481,
+        0.7444259019994206
+      ],
+      "transitions_per_second": 272.59808589238935,
+      "scope": "40 substeps + native NumPy voltage/thermal/energy plant + forward; no PPO/reward/reset/step IPC",
+      "versions": {
+        "mujoco": "3.17.0",
+        "numpy": "2.5.4",
+        "gymnasium": "1.4.0"
+      },
+      "worker_results": [
+        [
+          {
+            "elapsed_s": 0.7264264510004068,
+            "max_temperature_c": 40.43246718476554
+          }
+        ],
+        [
+          {
+            "elapsed_s": 0.7335169549996863,
+            "max_temperature_c": 40.79750594284694
+          }
+        ],
+        [
+          {
+            "elapsed_s": 0.7442714179996983,
+            "max_temperature_c": 41.15443000534401
+          }
+        ]
+      ]
+    },
+    {
+      "backend": "native_cpu",
+      "workers": 4,
+      "timed_steps_per_repeat": 200,
+      "timing_s": [
+        0.8204192559996955,
+        0.7739542690005692,
+        0.7961867710000661
+      ],
+      "transitions_per_second": 1004.7893649314774,
+      "scope": "40 substeps + native NumPy voltage/thermal/energy plant + forward; no PPO/reward/reset/step IPC",
+      "versions": {
+        "mujoco": "3.17.0",
+        "numpy": "2.5.4",
+        "gymnasium": "1.4.0"
+      },
+      "worker_results": [
+        [
+          {
+            "elapsed_s": 0.7936849930001699,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.788869244000125,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.8202209690007294,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.8103826390006361,
+            "max_temperature_c": 40.43246718476554
+          }
+        ],
+        [
+          {
+            "elapsed_s": 0.7698708640000405,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.7726421429997572,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.7663513799998327,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.7737530169997626,
+            "max_temperature_c": 40.79750594284694
+          }
+        ],
+        [
+          {
+            "elapsed_s": 0.7600254789995233,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.7629656210001485,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.772396856999876,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.7959820320002109,
+            "max_temperature_c": 41.15443000534401
+          }
+        ]
+      ]
+    },
+    {
+      "backend": "native_cpu",
+      "workers": 8,
+      "timed_steps_per_repeat": 200,
+      "timing_s": [
+        0.8880472020000525,
+        0.8857279710000512,
+        0.829758617999687
+      ],
+      "transitions_per_second": 1806.4237016174209,
+      "scope": "40 substeps + native NumPy voltage/thermal/energy plant + forward; no PPO/reward/reset/step IPC",
+      "versions": {
+        "mujoco": "3.17.0",
+        "numpy": "2.5.4",
+        "gymnasium": "1.4.0"
+      },
+      "worker_results": [
+        [
+          {
+            "elapsed_s": 0.8604547160002767,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.83253448799951,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.8413930540000365,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.8239231200004724,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.7987167319997752,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.8234784939995734,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.8878066740007853,
+            "max_temperature_c": 40.43246718476554
+          },
+          {
+            "elapsed_s": 0.8191313470006207,
+            "max_temperature_c": 40.43246718476554
+          }
+        ],
+        [
+          {
+            "elapsed_s": 0.808231748000253,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.8323693330003152,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.8157060129997262,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.8227409020000778,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.8009145829992121,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.8126237610003955,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.86247689099946,
+            "max_temperature_c": 40.79750594284694
+          },
+          {
+            "elapsed_s": 0.8854867209993245,
+            "max_temperature_c": 40.79750594284694
+          }
+        ],
+        [
+          {
+            "elapsed_s": 0.8118825410001591,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.8066223169998921,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.8103340259995093,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.8294375770001352,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.8092573479998464,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.8022150150000016,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.8250270799999271,
+            "max_temperature_c": 41.15443000534401
+          },
+          {
+            "elapsed_s": 0.815981556999759,
+            "max_temperature_c": 41.15443000534401
+          }
+        ]
+      ]
+    },
+    {
+      "versions": {
+        "mujoco": "3.17.0",
+        "mujoco-warp": "3.17.0",
+        "warp-lang": "1.18.0",
+        "numpy": "2.5.4",
+        "gymnasium": "1.4.0"
+      },
+      "model_sha256": "1fa056849caee91c2ce5df21bd55fa45b055b417b5372647c26a6e13296ec031",
+      "motor_sha256": "b308973619271bc82eed943c2af5efb7ae77c747c64b1eb33c88423fee1f0516",
+      "scope": "40 physics substeps + voltage PD + torque + float64 heat/energy + forward; no PPO/reward/reset",
+      "worlds": 1,
+      "nconmax": 128,
+      "njmax": 256,
+      "initial_contacts": 4,
+      "initial_constraints": 44,
+      "compile_upload_warmup_s": 1.347944725999696,
+      "capture_s": 0.3949756259999049,
+      "cpu_solver_tolerance": 1e-10,
+      "gpu_solver_tolerance": 9.999999974752427e-07,
+      "gpu_memory_used_mib": 130.125,
+      "verification": {
+        "steps": 50,
+        "rotor_target_amplitude_rad": 0.05,
+        "cpu_seconds": 0.19089500600239262,
+        "gpu_seconds": 1.234258815998146,
+        "max_qpos_abs_error": 1.1781242749142606e-06,
+        "max_qvel_abs_error": 6.982828854516093e-05,
+        "max_temperature_error_c": 8.814784067112669e-06,
+        "max_copper_relative_error": 4.999886318044505e-05,
+        "max_gpu_closure_m": 1.5014865218401736e-07,
+        "max_base_position_error_m": 1.457724706666528e-07,
+        "max_foot_position_error_m": 2.0425812918864357e-07
+      },
+      "timing_s": [
+        2.1949281520001023,
+        2.1648664009999266,
+        2.1635225549998722
+      ],
+      "transitions_per_second": 46.1922268985334,
+      "single_cpu_advance_per_second": 261.92408616165324,
+      "final_state": {
+        "max_temperature_c": 41.12911410217299,
+        "min_base_height_m": 0.20888814330101013,
+        "overflow_bits": 0
+      },
+      "timed_steps_per_repeat": 100,
+      "physics_substeps_per_transition": 40
+    },
+    {
+      "versions": {
+        "mujoco": "3.17.0",
+        "mujoco-warp": "3.17.0",
+        "warp-lang": "1.18.0",
+        "numpy": "2.5.4",
+        "gymnasium": "1.4.0"
+      },
+      "model_sha256": "1fa056849caee91c2ce5df21bd55fa45b055b417b5372647c26a6e13296ec031",
+      "motor_sha256": "b308973619271bc82eed943c2af5efb7ae77c747c64b1eb33c88423fee1f0516",
+      "scope": "40 physics substeps + voltage PD + torque + float64 heat/energy + forward; no PPO/reward/reset",
+      "worlds": 32,
+      "nconmax": 128,
+      "njmax": 256,
+      "initial_contacts": 4,
+      "initial_constraints": 44,
+      "compile_upload_warmup_s": 1.4424018549998436,
+      "capture_s": 0.4612848529995972,
+      "cpu_solver_tolerance": 1e-10,
+      "gpu_solver_tolerance": 9.999999974752427e-07,
+      "gpu_memory_used_mib": 130.125,
+      "verification": {
+        "steps": 50,
+        "rotor_target_amplitude_rad": 0.05,
+        "cpu_seconds": 0.204257758001404,
+        "gpu_seconds": 1.3668691809980373,
+        "max_qpos_abs_error": 1.3833564426191103e-06,
+        "max_qvel_abs_error": 6.585892752324421e-05,
+        "max_temperature_error_c": 1.0431634194674189e-05,
+        "max_copper_relative_error": 6.210472469297238e-05,
+        "max_gpu_closure_m": 1.5064133715904866e-07,
+        "max_base_position_error_m": 1.4485306670371204e-07,
+        "max_foot_position_error_m": 1.8227812911991967e-07
+      },
+      "timing_s": [
+        2.450986445000126,
+        2.4330595620003805,
+        2.4356707070000994
+      ],
+      "transitions_per_second": 1313.8064972425148,
+      "single_cpu_advance_per_second": 244.78874383638498,
+      "final_state": {
+        "max_temperature_c": 41.12915174871687,
+        "min_base_height_m": 0.20888814330101013,
+        "overflow_bits": 0
+      },
+      "timed_steps_per_repeat": 100,
+      "physics_substeps_per_transition": 40
+    },
+    {
+      "versions": {
+        "mujoco": "3.17.0",
+        "mujoco-warp": "3.17.0",
+        "warp-lang": "1.18.0",
+        "numpy": "2.5.4",
+        "gymnasium": "1.4.0"
+      },
+      "model_sha256": "1fa056849caee91c2ce5df21bd55fa45b055b417b5372647c26a6e13296ec031",
+      "motor_sha256": "b308973619271bc82eed943c2af5efb7ae77c747c64b1eb33c88423fee1f0516",
+      "scope": "40 physics substeps + voltage PD + torque + float64 heat/energy + forward; no PPO/reward/reset",
+      "worlds": 128,
+      "nconmax": 128,
+      "njmax": 256,
+      "initial_drop_height_m": 0.0,
+      "diverse_worlds": false,
+      "initial_contacts": 4,
+      "initial_constraints": 44,
+      "compile_upload_warmup_s": 1.4619905429999562,
+      "capture_s": 0.3884016789997986,
+      "cpu_solver_tolerance": 1e-10,
+      "gpu_solver_tolerance": 9.999999974752427e-07,
+      "pre_graph_memory_used_mib": 130.125,
+      "verification": {
+        "steps": 50,
+        "rotor_target_amplitude_rad": 0.05,
+        "cpu_seconds": 0.19511286199303868,
+        "gpu_seconds": 1.677972008999859,
+        "max_qpos_abs_error": 1.2343448306806337e-06,
+        "max_qvel_abs_error": 6.743851481869761e-05,
+        "max_temperature_error_c": 9.491153072360703e-06,
+        "max_copper_relative_error": 5.7902969686871085e-05,
+        "max_gpu_closure_m": 1.5014865214491253e-07,
+        "max_base_position_error_m": 1.9239461895135634e-07,
+        "max_foot_position_error_m": 2.1581855992273456e-07
+      },
+      "gpu_memory_used_mib": 302.125,
+      "gpu_pool_peak_mib": 116.39804744720459,
+      "gpu_pool_used_mib": 13.960295677185059,
+      "timing_s": [
+        3.033621342000515,
+        2.9970200629995816,
+        2.998941726999874
+      ],
+      "transitions_per_second": 4268.172297167326,
+      "single_cpu_advance_per_second": 256.26193726676985,
+      "final_state": {
+        "max_temperature_c": 41.12915836663009,
+        "min_base_height_m": 0.20888812839984894,
+        "max_closure_error_m": 1.8189184913808276e-07,
+        "overflow_bits": 0
+      },
+      "timed_steps_per_repeat": 100,
+      "physics_substeps_per_transition": 40
+    },
+    {
+      "versions": {
+        "mujoco": "3.17.0",
+        "mujoco-warp": "3.17.0",
+        "warp-lang": "1.18.0",
+        "numpy": "2.5.4",
+        "gymnasium": "1.4.0"
+      },
+      "model_sha256": "1fa056849caee91c2ce5df21bd55fa45b055b417b5372647c26a6e13296ec031",
+      "motor_sha256": "b308973619271bc82eed943c2af5efb7ae77c747c64b1eb33c88423fee1f0516",
+      "scope": "40 physics substeps + voltage PD + torque + float64 heat/energy + forward; no PPO/reward/reset",
+      "worlds": 256,
+      "nconmax": 128,
+      "njmax": 256,
+      "initial_drop_height_m": 0.0,
+      "diverse_worlds": false,
+      "initial_contacts": 4,
+      "initial_constraints": 44,
+      "compile_upload_warmup_s": 1.674862686999404,
+      "capture_s": 0.39990539999962493,
+      "cpu_solver_tolerance": 1e-10,
+      "gpu_solver_tolerance": 9.999999974752427e-07,
+      "pre_graph_memory_used_mib": 162.125,
+      "verification": {
+        "steps": 50,
+        "rotor_target_amplitude_rad": 0.05,
+        "cpu_seconds": 0.1965716250033438,
+        "gpu_seconds": 2.2493482979953114,
+        "max_qpos_abs_error": 1.2146250262246028e-06,
+        "max_qvel_abs_error": 7.691736313531622e-05,
+        "max_temperature_error_c": 7.335710726863454e-06,
+        "max_copper_relative_error": 4.787788209898406e-05,
+        "max_gpu_closure_m": 1.5064133716198535e-07,
+        "max_base_position_error_m": 1.894641825410701e-07,
+        "max_foot_position_error_m": 2.4250477032394283e-07
+      },
+      "gpu_memory_used_mib": 430.125,
+      "gpu_pool_peak_mib": 231.1045904159546,
+      "gpu_pool_used_mib": 26.22933864593506,
+      "timing_s": [
+        4.267691686999569,
+        4.176880545999666,
+        4.174713002999852
+      ],
+      "transitions_per_second": 6128.975851252905,
+      "single_cpu_advance_per_second": 254.36021093659613,
+      "final_state": {
+        "max_temperature_c": 41.12916625537155,
+        "min_base_height_m": 0.20888814330101013,
+        "max_closure_error_m": 1.8204438845259574e-07,
+        "overflow_bits": 0
+      },
+      "timed_steps_per_repeat": 100,
+      "physics_substeps_per_transition": 40
+    },
+    {
+      "versions": {
+        "mujoco": "3.17.0",
+        "mujoco-warp": "3.17.0",
+        "warp-lang": "1.18.0",
+        "numpy": "2.5.4",
+        "gymnasium": "1.4.0"
+      },
+      "model_sha256": "1fa056849caee91c2ce5df21bd55fa45b055b417b5372647c26a6e13296ec031",
+      "motor_sha256": "b308973619271bc82eed943c2af5efb7ae77c747c64b1eb33c88423fee1f0516",
+      "scope": "40 physics substeps + voltage PD + torque + float64 heat/energy + forward; no PPO/reward/reset",
+      "worlds": 128,
+      "nconmax": 128,
+      "njmax": 256,
+      "initial_drop_height_m": 0.05,
+      "diverse_worlds": true,
+      "initial_contacts": 0,
+      "initial_constraints": 20,
+      "compile_upload_warmup_s": 1.4721924179993948,
+      "capture_s": 0.4044781579996197,
+      "cpu_solver_tolerance": 1e-10,
+      "gpu_solver_tolerance": 9.999999974752427e-07,
+      "pre_graph_memory_used_mib": 130.125,
+      "verification": {
+        "steps": 100,
+        "rotor_target_amplitude_rad": 0.5,
+        "cpu_seconds": 0.4312810540013743,
+        "gpu_seconds": 4.55435708099867,
+        "max_qpos_abs_error": 9.493029789475749e-06,
+        "max_qvel_abs_error": 0.00035974053910581283,
+        "max_temperature_error_c": 2.119377742104689e-05,
+        "max_copper_relative_error": 0.0001356606234306395,
+        "max_gpu_closure_m": 5.994120335959493e-06,
+        "max_base_position_error_m": 8.269040612490307e-07,
+        "max_foot_position_error_m": 9.3287733474628e-07
+      },
+      "gpu_memory_used_mib": 302.125,
+      "gpu_pool_peak_mib": 116.39804744720459,
+      "gpu_pool_used_mib": 13.960295677185059,
+      "timing_s": [
+        3.3879290609993404,
+        3.2089796809996187,
+        3.1014779319993977
+      ],
+      "transitions_per_second": 3988.8068085282216,
+      "single_cpu_advance_per_second": 231.8673613696032,
+      "final_state": {
+        "max_temperature_c": 42.5936083513848,
+        "min_base_height_m": 0.20890772342681885,
+        "max_closure_error_m": 1.777240754563536e-07,
+        "overflow_bits": 0
+      },
+      "timed_steps_per_repeat": 100,
+      "physics_substeps_per_transition": 40
+    }
+  ]
+}

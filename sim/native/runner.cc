@@ -240,6 +240,32 @@ int RunSimulation(const RuntimeOptions& options) {
     }
   }
   std::ofstream trace;
+  std::array<int, 2> imu_addresses{};
+  for (int i = 0; i < 2; ++i) {
+    const char* name = i == 0 ? "imu_gyro" : "imu_accelerometer";
+    const int id = mj_name2id(model.get(), mjOBJ_SENSOR, name);
+    if (id < 0 || model->sensor_dim[id] != 3 ||
+        model->sensor_type[id] != (i == 0 ? mjSENS_GYRO : mjSENS_ACCELEROMETER))
+      throw std::runtime_error(std::string("missing or invalid IMU sensor: ") + name);
+    imu_addresses[i] = model->sensor_adr[id];
+  }
+  const int imu_site = mj_name2id(model.get(), mjOBJ_SITE, "imu");
+  if (imu_site < 0) throw std::runtime_error("missing IMU site");
+  const auto sample_imu = [&](bool valid) {
+    RobotSystem::ImuSample imu;
+    imu.time = data->time; imu.valid = valid;
+    for (int i = 0; i < 3; ++i) {
+      imu.angular_velocity_rad_s[i] = data->sensordata[imu_addresses[0] + i];
+      imu.specific_force_m_s2[i] = data->sensordata[imu_addresses[1] + i];
+    }
+    if (model->body_weldid[model->site_bodyid[imu_site]] == 0) {
+      // MuJoCo reports zero acceleration on a world-welded body. A physical
+      // accelerometer on the suspended chassis senses the support against g.
+      mju_mulMatTVec3(imu.specific_force_m_s2.data(), data->site_xmat + 9*imu_site, model->opt.gravity);
+      for (auto& value : imu.specific_force_m_s2) value = -value;
+    }
+    return imu;
+  };
   if (!options.trace.empty() && !options.pty_server) {
     trace.open(options.trace);
     if (!trace) throw std::runtime_error("cannot write trace");
@@ -250,6 +276,8 @@ int RunSimulation(const RuntimeOptions& options) {
     for (const auto& [name,instance] : robot->motors) trace << "," << name << "_temperature_c";
     for (const auto& b : bindings) trace << "," << mj_id2name(model.get(),mjOBJ_ACTUATOR,b.actuator) << "_plant_temperature_c";
     trace << ",startup_support,pose_fault";
+    trace << ",imu_valid,imu_gyro_x_rad_s,imu_gyro_y_rad_s,imu_gyro_z_rad_s"
+             ",imu_accel_x_m_s2,imu_accel_y_m_s2,imu_accel_z_m_s2";
     if (initializing)
       for (const auto& [name,leg] : robot->legs) trace << ',' << name << "_init_stage";
     trace << '\n' << std::setprecision(17);
@@ -288,8 +316,11 @@ int RunSimulation(const RuntimeOptions& options) {
     linkage_coordinates.push_back(coordinates);
   }
   const auto end_time = static_cast<boards::Time>(options.duration * 1000000);
-  // No direct pose feedback to the C++ controller: all samples cross the byte codec.
+  // Motor feedback crosses the board codec; the chassis IMU is a separate sensor.
   for (clock->now = 0; clock->now < end_time; clock->now += options.step_us) {
+    // The startup fixture freezes coordinates without physical support forces;
+    // accelerations from its unconstrained dynamics are not sensor samples.
+    robot->imu = sample_imu(support_released);
     for (const auto& b : bindings)
       b.board->SetSensors(b.channel,motor.Encoder(data->actuator_length[b.actuator] + b.encoder_offset),b.temperature.Sensor());
     if (!options.pty_server) robot->Pump();
@@ -443,6 +474,10 @@ int RunSimulation(const RuntimeOptions& options) {
       for (const auto& b : bindings) trace << ',' << b.temperature.Celsius();
       trace << ',' << !support_released;
       trace << ',' << !robot->GetPoseFault().empty();
+      const auto imu = sample_imu(support_released);
+      trace << ',' << imu.valid;
+      for (double value : imu.angular_velocity_rad_s) trace << ',' << value;
+      for (double value : imu.specific_force_m_s2) trace << ',' << value;
       if (initializing) {
         for (const auto& [name,leg] : robot->legs) {
           const auto* control = dynamic_cast<const InitializationLegControl*>(leg->GetControl());

@@ -1,0 +1,16 @@
+absl-py==2.5.1
+cloudpickle==3.1.2
+etils==1.14.0
+Farama-Notifications==0.0.6
+fsspec==2026.9.0
+glfw==2.11.0
+gymnasium==1.4.0
+mujoco==3.17.0
+mujoco-warp==3.17.0
+numpy==2.5.4
+PyOpenGL==3.1.10
+PyYAML==6.0.3
+typing_extensions==4.16.0
+warp-lang==1.18.0
+websockets==17.3
+zipp==4.1.2

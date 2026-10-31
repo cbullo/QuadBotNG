@@ -1,0 +1,974 @@
+{
+  "checkpoint": {
+    "file": "policy-000016384-000002.zip",
+    "steps": 16384,
+    "updates": 2
+  },
+  "source_run": "runs/walk-20261026-201827-457588",
+  "seconds_per_case": 10,
+  "wall_seconds": {
+    "cpu": 64.33067162400039,
+    "gpu": 28.02457699399929
+  },
+  "max_absolute_errors": {
+    "duration_s": 8.544276397515205e-13,
+    "peak_temperature_c": 0.01078893837439665,
+    "mean_copper_power_w": 0.16705365747139922,
+    "velocity_error_m_s": 6.7465609911027125e-06,
+    "yaw_error_rad_s": 5.1695728812768246e-06,
+    "episode_return": 0.04342952392611754
+  },
+  "decision_mismatches": [],
+  "reports": {
+    "cpu": {
+      "steps": 16384,
+      "command_scale": 0.5,
+      "physics_device": "cpu",
+      "success_pct": 0.0,
+      "survival_pct": 100.0,
+      "mean_copper_power_w": 50.31192488945554,
+      "peak_temperature_c": 45.44482607373676,
+      "max_copper_power_w": 20.0,
+      "max_temperature_c": 50.0,
+      "goals": [
+        {
+          "goal": "stand",
+          "command": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 11.265495815315237,
+            "velocity_error_m_s": 9.814792171246252e-07,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 22.2386010156851,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 9.544863163045678,
+            "velocity_error_m_s": 7.857327486095453e-06,
+            "yaw_error_rad_s": 2.7097244792536886e-05,
+            "mean_copper_power_w": 41.65970113586424,
+            "copper_energy_j": 416.5970113586728,
+            "mean_positive_mechanical_power_w": 0.001431253976799223,
+            "peak_temperature_c": 23.44740807130808,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "forward",
+          "command": [
+            0.1,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 3.761634469376326,
+            "velocity_error_m_s": 0.10000098147920129,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 22.2386010156851,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 1.9906015348454968,
+            "velocity_error_m_s": 0.10000240436746521,
+            "yaw_error_rad_s": 2.7968259810648158e-05,
+            "mean_copper_power_w": 41.83941638006357,
+            "copper_energy_j": 418.3941638006662,
+            "mean_positive_mechanical_power_w": 0.0013989934719115464,
+            "peak_temperature_c": 23.478950747161548,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "backward",
+          "command": [
+            -0.06,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 7.953511976856244,
+            "velocity_error_m_s": 0.059999018520798746,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 22.2386010156851,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 6.2534031025260814,
+            "velocity_error_m_s": 0.05999704300860118,
+            "yaw_error_rad_s": 2.6962777448666792e-05,
+            "mean_copper_power_w": 41.62560603297022,
+            "copper_energy_j": 416.2560603297326,
+            "mean_positive_mechanical_power_w": 0.001445298314571169,
+            "peak_temperature_c": 23.451460921842315,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "left",
+          "command": [
+            0.0,
+            0.05,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 8.8807900412461,
+            "velocity_error_m_s": 0.05000000018609946,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 22.2386010156851,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 7.221626918964603,
+            "velocity_error_m_s": 0.04999909655226481,
+            "yaw_error_rad_s": 2.705538992846646e-05,
+            "mean_copper_power_w": 41.44365388321814,
+            "copper_energy_j": 414.4365388322116,
+            "mean_positive_mechanical_power_w": 0.0011778336005573244,
+            "peak_temperature_c": 23.406196028521087,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "right",
+          "command": [
+            0.0,
+            -0.05,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 8.880784672673538,
+            "velocity_error_m_s": 0.04999999983317333,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 22.2386010156851,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 7.049272819646297,
+            "velocity_error_m_s": 0.05000059178124025,
+            "yaw_error_rad_s": 2.7767592349756024e-05,
+            "mean_copper_power_w": 42.095878388137805,
+            "copper_energy_j": 420.9587838814088,
+            "mean_positive_mechanical_power_w": 0.0016420149050962519,
+            "peak_temperature_c": 23.481334030620076,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "turn_left",
+          "command": [
+            0.0,
+            0.0,
+            0.2
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 10.165435197113103,
+            "velocity_error_m_s": 9.814792171246252e-07,
+            "yaw_error_rad_s": 0.20000000156640652,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 22.2386010156851,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 8.453349768275126,
+            "velocity_error_m_s": 8.115433660227277e-06,
+            "yaw_error_rad_s": 0.1999843634957934,
+            "mean_copper_power_w": 41.638566254469346,
+            "copper_energy_j": 416.38566254472386,
+            "mean_positive_mechanical_power_w": 0.0014393223427365944,
+            "peak_temperature_c": 23.41452085125402,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "forward_turn",
+          "command": [
+            0.075,
+            0.0,
+            -0.2
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 5.314867909601497,
+            "velocity_error_m_s": 0.07500098147920127,
+            "yaw_error_rad_s": 0.1999999984335935,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 22.2386010156851,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 3.4555031625426227,
+            "velocity_error_m_s": 0.07500233777942582,
+            "yaw_error_rad_s": 0.20001560736707558,
+            "mean_copper_power_w": 42.19812015951195,
+            "copper_energy_j": 421.9812015951503,
+            "mean_positive_mechanical_power_w": 0.0013666164726904653,
+            "peak_temperature_c": 23.624277685681555,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "stand",
+          "command": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 8.707084691287633,
+            "velocity_error_m_s": 9.814792171246252e-07,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 40.96824059959839,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 2.3845285196346793,
+            "velocity_error_m_s": 3.954652383570597e-06,
+            "yaw_error_rad_s": 1.6202995410987007e-05,
+            "mean_copper_power_w": 58.795382646297426,
+            "copper_energy_j": 587.9538264630172,
+            "mean_positive_mechanical_power_w": 0.004429262797875963,
+            "peak_temperature_c": 45.30830346259695,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "forward",
+          "command": [
+            0.1,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 1.2032233453487222,
+            "velocity_error_m_s": 0.10000098147920129,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 40.96824059959839,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": -5.312301974595174,
+            "velocity_error_m_s": 0.09999872857648112,
+            "yaw_error_rad_s": 1.642391966822157e-05,
+            "mean_copper_power_w": 59.500176374338295,
+            "copper_energy_j": 595.0017637434264,
+            "mean_positive_mechanical_power_w": 0.004351558847116091,
+            "peak_temperature_c": 45.37327563166006,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "backward",
+          "command": [
+            -0.06,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 5.395100852828634,
+            "velocity_error_m_s": 0.059999018520798746,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 40.96824059959839,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": -0.7666298200331486,
+            "velocity_error_m_s": 0.06000111154193161,
+            "yaw_error_rad_s": 1.5951889365993994e-05,
+            "mean_copper_power_w": 58.27192720163973,
+            "copper_energy_j": 582.7192720164398,
+            "mean_positive_mechanical_power_w": 0.004455854055958534,
+            "peak_temperature_c": 45.25245502783608,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "left",
+          "command": [
+            0.0,
+            0.05,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 6.3223789172185025,
+            "velocity_error_m_s": 0.05000000018609946,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 40.96824059959839,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 0.24825543953807555,
+            "velocity_error_m_s": 0.049997785601219924,
+            "yaw_error_rad_s": 1.856707271728057e-05,
+            "mean_copper_power_w": 57.89719153122041,
+            "copper_energy_j": 578.9719153122463,
+            "mean_positive_mechanical_power_w": 0.004118292904448403,
+            "peak_temperature_c": 45.31775381289904,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "right",
+          "command": [
+            0.0,
+            -0.05,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 6.32237354864593,
+            "velocity_error_m_s": 0.04999999983317333,
+            "yaw_error_rad_s": 1.5664065639522778e-09,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 40.96824059959839,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": -0.15806867232788388,
+            "velocity_error_m_s": 0.05000172625365955,
+            "yaw_error_rad_s": 1.531297330874462e-05,
+            "mean_copper_power_w": 59.39949216865518,
+            "copper_energy_j": 593.9949216865951,
+            "mean_positive_mechanical_power_w": 0.004659769124775541,
+            "peak_temperature_c": 45.259723702566895,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "turn_left",
+          "command": [
+            0.0,
+            0.0,
+            0.2
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 7.607024073085504,
+            "velocity_error_m_s": 9.814792171246252e-07,
+            "yaw_error_rad_s": 0.20000000156640652,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 40.96824059959839,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 1.336098594561398,
+            "velocity_error_m_s": 3.8253083429009665e-06,
+            "yaw_error_rad_s": 0.19999949526567753,
+            "mean_copper_power_w": 58.62465376101764,
+            "copper_energy_j": 586.2465376102192,
+            "mean_positive_mechanical_power_w": 0.00441780138538882,
+            "peak_temperature_c": 45.21715341829969,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "forward_turn",
+          "command": [
+            0.075,
+            0.0,
+            -0.2
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 10.00000000000073,
+            "episode_return": 2.756456785573886,
+            "velocity_error_m_s": 0.07500098147920127,
+            "yaw_error_rad_s": 0.1999999984335935,
+            "mean_copper_power_w": 34.81555781273694,
+            "copper_energy_j": 348.15557812739485,
+            "mean_positive_mechanical_power_w": 1.1956135976131602e-05,
+            "peak_temperature_c": 40.96824059959839,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 10.00000000000073,
+            "episode_return": -3.725825559555469,
+            "velocity_error_m_s": 0.07499882076320173,
+            "yaw_error_rad_s": 0.20000359103732518,
+            "mean_copper_power_w": 59.37718253497364,
+            "copper_energy_j": 593.7718253497798,
+            "mean_positive_mechanical_power_w": 0.004340408548242012,
+            "peak_temperature_c": 45.44482607373676,
+            "termination_reason": "",
+            "success": false
+          }
+        }
+      ]
+    },
+    "gpu": {
+      "steps": 16384,
+      "command_scale": 0.5,
+      "physics_device": "gpu",
+      "success_pct": 0.0,
+      "survival_pct": 100.0,
+      "mean_copper_power_w": 50.25111375503372,
+      "peak_temperature_c": 45.45423783150055,
+      "max_copper_power_w": 20.0,
+      "max_temperature_c": 50.0,
+      "goals": [
+        {
+          "goal": "stand",
+          "command": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 11.307350942865014,
+            "velocity_error_m_s": 4.815474721501812e-06,
+            "yaw_error_rad_s": 2.062139503777871e-06,
+            "mean_copper_power_w": 34.64872480033814,
+            "copper_energy_j": 346.4872480033771,
+            "mean_positive_mechanical_power_w": 2.0625619286645697e-05,
+            "peak_temperature_c": 22.23747141943602,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 9.563444593921304,
+            "velocity_error_m_s": 8.936668569712506e-06,
+            "yaw_error_rad_s": 3.169966591485718e-05,
+            "mean_copper_power_w": 41.585636055375474,
+            "copper_energy_j": 415.8563605537496,
+            "mean_positive_mechanical_power_w": 0.0014464258033127402,
+            "peak_temperature_c": 23.436648555728084,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "forward",
+          "command": [
+            0.1,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 3.8040416659787297,
+            "velocity_error_m_s": 0.09999423491821019,
+            "yaw_error_rad_s": 1.419632402033244e-06,
+            "mean_copper_power_w": 34.648588989614574,
+            "copper_energy_j": 346.48588989614143,
+            "mean_positive_mechanical_power_w": 2.0633136330634265e-05,
+            "peak_temperature_c": 22.23745346462334,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 2.0081292882096022,
+            "velocity_error_m_s": 0.10000178981631205,
+            "yaw_error_rad_s": 3.173222495206574e-05,
+            "mean_copper_power_w": 41.76981962199755,
+            "copper_energy_j": 417.69819621997027,
+            "mean_positive_mechanical_power_w": 0.0014102330070357816,
+            "peak_temperature_c": 23.469518670850043,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "backward",
+          "command": [
+            -0.06,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 7.994830211624503,
+            "velocity_error_m_s": 0.06000545423123266,
+            "yaw_error_rad_s": 1.5996393153727698e-06,
+            "mean_copper_power_w": 34.64873336725399,
+            "copper_energy_j": 346.48733367253556,
+            "mean_positive_mechanical_power_w": 2.05944942588895e-05,
+            "peak_temperature_c": 22.237480869608547,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 6.272796291857958,
+            "velocity_error_m_s": 0.05999752377324254,
+            "yaw_error_rad_s": 3.1352606883388033e-05,
+            "mean_copper_power_w": 41.54796934721214,
+            "copper_energy_j": 415.4796934721162,
+            "mean_positive_mechanical_power_w": 0.0014600282792662429,
+            "peak_temperature_c": 23.441316007310988,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "left",
+          "command": [
+            0.0,
+            0.05,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 8.922629861161113,
+            "velocity_error_m_s": 0.05000004973658252,
+            "yaw_error_rad_s": 1.2432053300859284e-06,
+            "mean_copper_power_w": 34.64867079740443,
+            "copper_energy_j": 346.48670797404,
+            "mean_positive_mechanical_power_w": 2.0528181371767242e-05,
+            "peak_temperature_c": 22.237471221573465,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 7.239781651645899,
+            "velocity_error_m_s": 0.049998921754997434,
+            "yaw_error_rad_s": 3.072807427997759e-05,
+            "mean_copper_power_w": 41.371292027940925,
+            "copper_energy_j": 413.7129202794041,
+            "mean_positive_mechanical_power_w": 0.001189434107611634,
+            "peak_temperature_c": 23.39544613323532,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "right",
+          "command": [
+            0.0,
+            -0.05,
+            0.0
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 8.922640807926655,
+            "velocity_error_m_s": 0.05000003266149269,
+            "yaw_error_rad_s": 1.708094087931045e-06,
+            "mean_copper_power_w": 34.6486099773178,
+            "copper_energy_j": 346.4860997731737,
+            "mean_positive_mechanical_power_w": 2.0632122858796912e-05,
+            "peak_temperature_c": 22.237470929843564,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 7.066882544197142,
+            "velocity_error_m_s": 0.050000483473509716,
+            "yaw_error_rad_s": 3.293716523103285e-05,
+            "mean_copper_power_w": 42.02565040945074,
+            "copper_energy_j": 420.2565040945022,
+            "mean_positive_mechanical_power_w": 0.0016570321901719133,
+            "peak_temperature_c": 23.47101559169121,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "turn_left",
+          "command": [
+            0.0,
+            0.0,
+            0.2
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 10.207260048016906,
+            "velocity_error_m_s": 3.894786227469197e-06,
+            "yaw_error_rad_s": 0.19999968829326062,
+            "mean_copper_power_w": 34.64874024890153,
+            "copper_energy_j": 346.487402489011,
+            "mean_positive_mechanical_power_w": 2.067745374544115e-05,
+            "peak_temperature_c": 22.237477201695565,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 8.471212610602379,
+            "velocity_error_m_s": 9.001798140117691e-06,
+            "yaw_error_rad_s": 0.19998442298559208,
+            "mean_copper_power_w": 41.5673248436375,
+            "copper_energy_j": 415.6732484363698,
+            "mean_positive_mechanical_power_w": 0.0014540459948626662,
+            "peak_temperature_c": 23.40527040947168,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "forward_turn",
+          "command": [
+            0.075,
+            0.0,
+            -0.2
+          ],
+          "initial_temperature_c": 20.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 5.357271115295589,
+            "velocity_error_m_s": 0.07499506116891758,
+            "yaw_error_rad_s": 0.2000002279018281,
+            "mean_copper_power_w": 34.64858235209086,
+            "copper_energy_j": 346.4858235209043,
+            "mean_positive_mechanical_power_w": 2.0748250678654103e-05,
+            "peak_temperature_c": 22.23748167022005,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 3.4725300977006555,
+            "velocity_error_m_s": 0.07500178999428268,
+            "yaw_error_rad_s": 0.2000157043416345,
+            "mean_copper_power_w": 42.13052577674939,
+            "copper_energy_j": 421.3052577674886,
+            "mean_positive_mechanical_power_w": 0.0013751202819521676,
+            "peak_temperature_c": 23.616985974604233,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "stand",
+          "command": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 8.749977376312017,
+            "velocity_error_m_s": 4.808126980140702e-06,
+            "yaw_error_rad_s": 2.061422800920809e-06,
+            "mean_copper_power_w": 34.64861799243773,
+            "copper_energy_j": 346.486179924373,
+            "mean_positive_mechanical_power_w": 2.0572004619729335e-05,
+            "peak_temperature_c": 40.96708062090948,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 2.3972049263538793,
+            "velocity_error_m_s": 4.134415269051996e-06,
+            "yaw_error_rad_s": 1.8217039846035734e-05,
+            "mean_copper_power_w": 58.74612366111924,
+            "copper_energy_j": 587.4612366111851,
+            "mean_positive_mechanical_power_w": 0.004446264090581316,
+            "peak_temperature_c": 45.31607770480648,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "forward",
+          "command": [
+            0.1,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 1.2466528692748398,
+            "velocity_error_m_s": 0.0999951467949029,
+            "yaw_error_rad_s": 1.3543344569555416e-06,
+            "mean_copper_power_w": 34.64861766667171,
+            "copper_energy_j": 346.4861766667128,
+            "mean_positive_mechanical_power_w": 2.0361881698271655e-05,
+            "peak_temperature_c": 40.96701964622089,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": -5.29801276314538,
+            "velocity_error_m_s": 0.09999773140036376,
+            "yaw_error_rad_s": 1.7581001766302507e-05,
+            "mean_copper_power_w": 59.4450609200829,
+            "copper_energy_j": 594.4506092008216,
+            "mean_positive_mechanical_power_w": 0.004368772835480061,
+            "peak_temperature_c": 45.37958476932493,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "backward",
+          "command": [
+            -0.06,
+            0.0,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 5.437465758062899,
+            "velocity_error_m_s": 0.060004778741890225,
+            "yaw_error_rad_s": 1.2788091277116111e-06,
+            "mean_copper_power_w": 34.64859675255793,
+            "copper_energy_j": 346.485967525575,
+            "mean_positive_mechanical_power_w": 2.042672606107357e-05,
+            "peak_temperature_c": 40.96714393137106,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": -0.7550067455740646,
+            "velocity_error_m_s": 0.060002180395545786,
+            "yaw_error_rad_s": 1.8618887254291393e-05,
+            "mean_copper_power_w": 58.22626202967242,
+            "copper_energy_j": 582.2626202967169,
+            "mean_positive_mechanical_power_w": 0.004472455308562775,
+            "peak_temperature_c": 45.26121623853688,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "left",
+          "command": [
+            0.0,
+            0.05,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 6.365237598307431,
+            "velocity_error_m_s": 0.0500000118372866,
+            "yaw_error_rad_s": 1.6998632396791893e-06,
+            "mean_copper_power_w": 34.64863613331918,
+            "copper_energy_j": 346.48636133318746,
+            "mean_positive_mechanical_power_w": 2.056595046403986e-05,
+            "peak_temperature_c": 40.96711041457266,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 0.2589267690422332,
+            "velocity_error_m_s": 0.04999783565705261,
+            "yaw_error_rad_s": 1.964318101045137e-05,
+            "mean_copper_power_w": 57.85517412391147,
+            "copper_energy_j": 578.5517412391075,
+            "mean_positive_mechanical_power_w": 0.004138746349438247,
+            "peak_temperature_c": 45.32854275127344,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "right",
+          "command": [
+            0.0,
+            -0.05,
+            0.0
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 6.36526789329946,
+            "velocity_error_m_s": 0.049999996143809435,
+            "yaw_error_rad_s": 2.015664441756826e-06,
+            "mean_copper_power_w": 34.64850415526554,
+            "copper_energy_j": 346.4850415526511,
+            "mean_positive_mechanical_power_w": 2.0172589969480217e-05,
+            "peak_temperature_c": 40.96712419260601,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": -0.14224465910274375,
+            "velocity_error_m_s": 0.05000106780685312,
+            "yaw_error_rad_s": 1.791453129499132e-05,
+            "mean_copper_power_w": 59.33818339755887,
+            "copper_energy_j": 593.3818339755813,
+            "mean_positive_mechanical_power_w": 0.004676983669180359,
+            "peak_temperature_c": 45.26210332146445,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "turn_left",
+          "command": [
+            0.0,
+            0.0,
+            0.2
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 7.649897019378841,
+            "velocity_error_m_s": 4.942689775480404e-06,
+            "yaw_error_rad_s": 0.20000128869787237,
+            "mean_copper_power_w": 34.64858153456748,
+            "copper_energy_j": 346.48581534567046,
+            "mean_positive_mechanical_power_w": 2.0574845125551646e-05,
+            "peak_temperature_c": 40.96709809766049,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 1.3485657455275941,
+            "velocity_error_m_s": 4.400186811209293e-06,
+            "yaw_error_rad_s": 0.20000000850714333,
+            "mean_copper_power_w": 58.576100248618665,
+            "copper_energy_j": 585.7610024861793,
+            "mean_positive_mechanical_power_w": 0.00443508837706824,
+            "peak_temperature_c": 45.22287187308014,
+            "termination_reason": "",
+            "success": false
+          }
+        },
+        {
+          "goal": "forward_turn",
+          "command": [
+            0.075,
+            0.0,
+            -0.2
+          ],
+          "initial_temperature_c": 40.0,
+          "hold": {
+            "duration_s": 9.999999999999876,
+            "episode_return": 2.7998787476681173,
+            "velocity_error_m_s": 0.07499514523047686,
+            "yaw_error_rad_s": 0.20000072869012417,
+            "mean_copper_power_w": 34.64868513850553,
+            "copper_energy_j": 346.48685138505095,
+            "mean_positive_mechanical_power_w": 2.070918781067884e-05,
+            "peak_temperature_c": 40.967070050120185,
+            "termination_reason": "",
+            "success": false
+          },
+          "policy": {
+            "duration_s": 9.999999999999876,
+            "episode_return": -3.7137502307305112,
+            "velocity_error_m_s": 0.07499814921407656,
+            "yaw_error_rad_s": 0.2000037410609951,
+            "mean_copper_power_w": 59.33047010714484,
+            "copper_energy_j": 593.3047010714411,
+            "mean_positive_mechanical_power_w": 0.004357905743188958,
+            "peak_temperature_c": 45.45423783150055,
+            "termination_reason": "",
+            "success": false
+          }
+        }
+      ]
+    }
+  }
+}

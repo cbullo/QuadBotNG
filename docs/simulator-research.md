@@ -211,3 +211,262 @@ a concrete advantage. None of those possibilities blocks starting with MuJoCo.
 Odroid libc-compatible cross-toolchain restoration is recorded in
 [TODO.md](../TODO.md). It is independent of PC simulator development and should
 not be resumed implicitly while implementing the simulator.
+
+
+## GPU port investigation — 2026-10-26
+
+**Initial source audit (superseded by the measured implementation below):**
+a batched MuJoCo Warp implementation is a promising candidate
+for this RTX 3050 Laptop GPU, but a speedup over the current parallel CPU trainer
+has not been measured. This investigation used source inspection and small
+standard-library calculations only: no Bazel calls, package installation, GPU
+allocation, physics benchmark or changes to the training physics/dependencies.
+The user's training could continue throughout.
+
+Earlier device uncertainty was resolved during the CPU parallelization work:
+the machine has a Ryzen 7 5800H (8 cores / 16 threads), RTX 3050 Laptop GPU with
+4,096 MiB VRAM, driver 580.178.04, and working NVIDIA EGL rendering. That verifies
+graphics access, not a tested Warp/CUDA installation. Warp's documented driver
+minimum is 525 for CUDA 12 builds and 580 for CUDA 13 builds; the observed driver
+meets those version minima. Pin and test a compatible package set separately.
+[Warp installation requirements](https://nvidia.github.io/warp/v1.17/user_guide/installation.html)
+
+### Compatibility with the actual current robot
+
+This audit reads `sim/robot_model.py`, generated `sim/mujoco/quadbot.xml`,
+`gym_env.py`, `gym_motor.py`, `walk_env.py`, and the installed SB3 collector.
+The current linkage representation is **eight scalar tendon equalities**, not
+four point-connect constraints; preserve that parallelogram branch selection.
+The generated model has 20 hinges plus a floating base (`nq=27`, `nv=26`),
+24 fixed tendons, 12 actuators, 110 geoms (84 primitive collision geoms including
+the floor), and gyro/accelerometer/actuator-position/velocity sensors.
+
+| Model feature | Source-level GPU assessment |
+| --- | --- |
+| Three-motor differential, 9:1 reduction, per-leg signs | Preserve the same fixed-tendon coefficients and actuator ordering. Tendon transmissions/equalities are supported by MJWarp. |
+| Passive linkage, joint/tendon limits, friction loss | Covered by the documented feature categories; physical trace agreement still requires testing. |
+| Twelve tendon armatures and tendon damping | Explicit implementations exist in Warp's smooth/passive dynamics. Do not replace coupled rotor inertia with independent hinge armatures. |
+| `implicitfast`, Newton, dense Jacobian, elliptic friction | Supported categories; the model does not request the unsupported implicitfast midpoint feature. |
+| Plane, box, cylinder, capsule and sphere collisions | Supported by Warp. Pure MJX-JAX has collision-pair restrictions involving cylinders, which need separate auditing for this model. |
+| IMU and actuator sensors | Supported sensor categories; preserve the final forward pass and chassis-site frame conventions. |
+
+Sources: [feature table](https://mujoco.readthedocs.io/en/stable/mjx.html#feature-parity),
+[Warp compatibility exceptions](https://github.com/google-deepmind/mujoco_warp#mujoco-api-compatibility),
+[tendon armature implementation](https://github.com/google-deepmind/mujoco_warp/blob/main/mujoco_warp/_src/smooth.py),
+[tendon damping implementation](https://github.com/google-deepmind/mujoco_warp/blob/main/mujoco_warp/_src/passive.py).
+These are rolling upstream sources inspected on the date above, not an installed
+or validated release. Resolve a compatible release/commit before implementation.
+
+### What must be ported
+
+A policy transition currently executes 40 physics substeps at 0.5 ms each.
+Within those substeps, rotor PD updates voltage every second substep (1 kHz);
+back-EMF, torque saturation, copper heat, positive work and temperature update
+every substep (2 kHz). Policy observations/actions run at 50 Hz.
+
+Port that entire numerical loop to batched Warp kernels around `step1`/`step2`,
+then capture it in a CUDA graph. Upstream provides the same two-phase stepping
+structure with implicitfast integration. Keep controller state, held voltage,
+per-motor temperatures and energy accumulators on the GPU between calls.
+[Warp split-step implementation](https://github.com/google-deepmind/mujoco_warp/blob/main/mujoco_warp/_src/forward.py)
+
+Also port action filtering/rate limits, observations/frame stacks, rewards,
+contacts/slip/air-time, command sampling, domain randomization and reset masks.
+Reset currently includes 1,000 physical settling substeps; handling different
+worlds' resets without advancing unaffected worlds or returning each reset to
+Python needs explicit design. Preserve early thermal termination within a
+policy transition and use actual elapsed time in the reward. Cache IDs and
+static configuration on CPU; do not call named MuJoCo accessors inside kernels.
+
+The installed SB3 collector stores NumPy rollout arrays and converts action,
+value and log-probability tensors back to CPU. Merely selecting `device="cuda"`
+is therefore not a fully GPU-resident training pipeline. A staged prototype can
+retain CPU PPO and exchange one observation/action batch per policy transition,
+then measure whether transfers matter. The intended final arrangement is Warp
+physics plus CUDA PyTorch inference/rollout storage/PPO, with shared tensor views;
+CPU handles UI, logging, checkpoint files and occasional preview snapshots.
+The currently pinned Torch wheel is CPU-only, so that final arrangement also
+requires a separate dependency profile. [Warp/PyTorch sharing and stream rules](https://nvidia.github.io/warp/latest/user_guide/interoperability/pytorch.html)
+
+### Numerical and memory gates
+
+Warp's model loader clamps solver tolerance to at least `1e-6` for its default
+float32 computation, whereas this model requests `1e-10`. This is a convergence
+criterion, not a bound of one micrometre on linkage error. Test closure, foot
+contacts, rotor forces and stability under load rather than assuming identical
+trajectories or silently weakening the CPU reference.
+[Conversion code](https://github.com/google-deepmind/mujoco_warp/blob/main/mujoco_warp/_src/io.py)
+
+The thermal time constant here is `20 J/K * 8 K/W = 160 s`. Its exact update
+fraction at 0.5 ms is `-expm1(-0.0005/160) = 3.124995e-6`. A standard-library
+float32 rounding check shows that an update from 40 °C toward 40.1 °C becomes
+40.0000003125 in float64 but rounds back to 40.0 in float32. Computing
+`1-exp(-dt/tau)` naively in float32 also changes the fraction by about -0.82%.
+Preserve stable exponential evaluation and use float64 thermal accumulation,
+or validate compensated accumulation, without requiring all physics to use
+float64. Compare heating/cooling and energy over long warm trajectories; this
+matters directly to the user's low-temperature objective.
+
+Four GiB is a batch-size constraint, not proof of infeasibility. Contacts and
+constraint workspaces, shared assets, CUDA graph allocations, PPO buffers and
+the desktop/preview must all fit. Start with 16/32/64/128 worlds, trying 256
+only after measuring memory headroom. These are proposed test sizes, not proven
+capacities. Measure worst-case falling/self-contact states and detect buffer
+overflow; do not truncate contacts to obtain higher speed. Keep visuals out of
+the batched render path since this policy uses no image observations.
+
+### Evidence required to claim a speedup on this laptop
+
+The existing [CPU benchmark](../sim/benchmarks/cpu_training_20261026.json) measured
+walking at 601 transitions/s with four workers and 766 with eight. At eight,
+99.03% of measured time was rollout collection, including physics, resets,
+Python/IPC and inference. It was not an isolated native-solver profile.
+Eliminating PPO update time alone would improve that case by less than 1%.
+GPU work should target the environment loop first.
+
+1. In an isolated dependency environment, load the unchanged robot and compare
+   single-world controlled short traces: free motion, stand, individual motor
+   excitation, limits, contacts, warm motors and thermal termination. Then use
+   longer statistical/evaluation comparisons; chaotic contact trajectories
+   need not remain numerically identical.
+2. Measure warmed batched physics plus the real plant at each proposed batch
+   size, retaining timestep, rates and solver settings as far as supported.
+   Report compilation/capture cost, VRAM and overflow separately. Warp recommends
+   graph capture and explicit contact/constraint buffer sizing.
+3. Measure complete policy transitions including resets, observations, transfer
+   costs, PPO and the user's live preview. Compare equal simulated work with
+   both CPU baselines; raw physics FPS is not training throughput. The eight-CPU
+   result represents at least 30,654 world-substeps/s before counting settling
+   and final forward passes.
+4. As an engineering acceptance target, seek at least 2× the eight-worker CPU
+   throughput (about 1,530 walking transitions/s) with adequate VRAM headroom
+   and unchanged qualification results. This is a proposed threshold, not a
+   prediction. Larger environment batches require revisiting PPO rollout length:
+   keeping 512 total transitions with 128 worlds gives only four steps per world.
+   Benchmark throughput separately from learning quality and time to qualification.
+
+The recommended first candidate is direct **MuJoCo Warp + PyTorch**, preserving
+the present model and avoiding an additional JAX layer. MJX-Warp/Playground is
+an alternative if adopting its JAX training stack is intentional. Warp targets
+batched throughput, whereas native MuJoCo remains appropriate for a single
+interactive preview. [Backend tradeoffs and tuning](https://mujoco.readthedocs.io/en/stable/mjwarp/index.html)
+
+The source audit alone did not establish a speedup. The following implementation
+and benchmarks were performed subsequently with no user trainer running.
+
+## GPU implementation and measurements
+
+The optional `--physics-device=gpu` walking backend now uses direct MuJoCo Warp
+3.17.0 / Warp 1.18.0 on the RTX 3050 Laptop GPU. Its CUDA graph advances 40
+physics substeps per policy action, including the coupled rotor voltage/torque
+plant and double-precision temperature/energy integration. Each world's
+over-temperature state is frozen at the first violating substep. Overflows and
+nonfinite batches abort training. Actions still pass through the same filter
+and rotor-rate limit. Hardware calibration and model parameters are unchanged.
+
+The first integration keeps the existing CPU Gym reward, observation, settling,
+randomization and termination code. A CPU forward solve at each policy boundary
+provides its contacts/IMU interface; small state batches cross the PCIe bus once
+per policy step. PPO remains CPU-based. Reset worlds retain independent seeds,
+friction, gains and temperatures; other worlds keep their GPU integration state.
+The Qt preview and cold/warm qualification continue using native CPU MuJoCo.
+This uses CPU and GPU for different stages; it does not add CPU rollout workers
+to the GPU batch or overlap PPO updates with collection of another rollout.
+
+The isolated motor/physics benchmark (three repeats, median throughput) measured:
+
+| Backend | Parallel worlds/workers | Transitions/s |
+| --- | ---: | ---: |
+| Native CPU | 1 | 273 |
+| Native CPU | 4 | 1,005 |
+| Native CPU | 8 | 1,806 |
+| GPU | 1 | 46 |
+| GPU | 32 | 1,314 |
+| GPU | 128 | 4,268 |
+| GPU | 256 | 6,129 |
+
+These figures exclude PPO, rewards, observations, resets and per-step worker IPC.
+The nominal hold used about 302 MiB total device memory with 128 worlds and
+430 MiB with 256. A separate 128-world trace used differing rotor targets,
+20–40 °C starting temperatures and a 5 cm drop/landing. Against CPU, the first
+world's maximum foot-position error over two simulated seconds was below
+1 micrometre and temperature error below 0.000022 °C, with no buffer overflow.
+This checks numerical agreement over short traces, not physical robot validity.
+
+Complete PPO timing gave much smaller gains:
+
+| Backend | Worlds/workers | Timed transitions | Transitions/s |
+| --- | ---: | ---: | ---: |
+| CPU, initial comparison | 8 | 32,768 | 962 |
+| CPU, after shared contact optimization | 8 | 32,768 | 811 |
+| GPU, initial integration | 128 | 32,768 | 929 |
+| GPU, optimized, short run | 128 | 32,768 | 1,095 |
+| GPU, optimized, short run | 256 | 65,536 | 1,198 |
+| GPU, optimized, full episode resets | 128 | 131,072 | 971 |
+
+The longer GPU run completed 128 episodes and includes their physical resets;
+the short GPU runs do not span a full 20-second episode. CPU comparisons use
+8,192-transition batches, so their much longer per-world trajectories include
+resets. Desktop/editor load remained active, and the CPU measurements varied
+enough that these are observed rates, not a precise speedup estimate. Cached
+startup plus one warm-up rollout took about 30 seconds for 128 GPU worlds and
+50 seconds for 256. Cold kernel compilation takes longer.
+
+**Decision:** keep CPU as the default and expose GPU explicitly. GPU physics
+works, but sustained complete training is currently around 970 transitions/s,
+versus the observed 810–960 CPU range. CPU reward/observation work and physical
+resets limit the gain. The 256-world short result is not evidence of a sustained
+large speedup. No simultaneous CPU-physics/GPU-physics worker pool is enabled.
+The GPU default of 128 worlds avoids doubling CPU mirror/state allocation for
+the relatively small observed 256-world gain.
+
+Raw measurements are retained in
+[physics results](../sim/benchmarks/gpu_physics_20261026.json) and
+[PPO results](../sim/benchmarks/gpu_training_20261026.json). The isolated
+physics script remains in `sim/experiments/gpu_physics_benchmark.py`;
+`sim/benchmark_training.py` measures the integrated trainer.
+
+The full integration tests additionally compare normalized observations, rewards,
+energy, individual resets, per-world randomization, thermal interruption and
+terminal observations against CPU. Checkpoint resume and CPU playback are tested.
+Run the explicit GPU suite on a CUDA machine with:
+
+```sh
+bazel test --config=pc //sim:gpu_walk_test --test_output=errors
+```
+
+Reproduce complete rollout/PPO timing (includes resets when episodes end, excludes
+initialization/warm-up, GUI, qualification and checkpoint writes):
+
+```sh
+bazel run --config=pc //sim:benchmark_training -- --task=walk --physics-device=gpu --workers=128 --rollout-steps=8192 --updates=4
+bazel run --config=pc //sim:benchmark_training -- --task=walk --workers=8 --rollout-steps=8192 --updates=4
+```
+
+The GPU default has a larger PPO batch than the original CPU default. Its faster
+transition rate does not establish faster learning or shorter time to qualify:
+per-world horizon, state diversity and update frequency differ. The current CPU
+reward/reset interface limits GPU gains; single-world preview belongs on CPU.
+
+### Batched GPU qualification follow-up
+
+GPU training now uses 28 parallel qualification worlds: seven commands, two
+starting temperatures, and baseline/policy pairs. Every case retains seed 12345,
+the same 10-second duration and scoring. Completed cases freeze instead of
+autoresetting; the evaluator and CUDA graph are reused between qualifications.
+CPU training retains serial CPU qualification. `walk_evaluate --physics-device=cpu`
+provides an explicit reference comparison regardless of the saved backend.
+
+On the saved 16,384-step checkpoint from `walk-20261026-201827-457588`, full
+qualification took **64.33 seconds on CPU and 28.02 seconds on GPU**, including
+GPU evaluator construction with cached kernels (about 2.3× faster). All 28
+pass/fail decisions and termination reasons agreed. Maximum differences were
+0.0108 °C peak temperature, 0.1671 W mean copper power, 0.00000675 m/s tracking
+error, and 0.00000517 rad/s yaw error. This is one checkpoint comparison;
+small numerical differences can affect cases near a qualification threshold.
+[Full comparison](../sim/benchmarks/gpu_qualification_20261026.json).
+
+Progress now reports the GPU batch, completed cases, simulated time and elapsed
+time. Cancellation discards incomplete qualification and preserves the training
+checkpoint. Existing trainer processes must stop/save and resume once to load
+the new evaluator.

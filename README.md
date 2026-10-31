@@ -95,7 +95,9 @@ targets support x86-64 Linux (`//:PC`); they do not use the Odroid sysroot.
 The check uses Gymnasium's packaged HalfCheetah example, not our quadruped.
 The [candidate robot model](docs/physical-model.md) preserves the differential and
 closed linkage. Controller integration uses an explicitly approximate voltage
-motor model. `--scenario=init` replays the existing reference-pose sequence from
+motor model. An [ideal simulated chassis IMU](docs/physical-model.md#simulated-imu)
+provides gyro and accelerometer readings in the inspector, TCP telemetry and traces.
+`--scenario=init` replays the existing reference-pose sequence from
 a belly-down pose with raised legs. `--scenario=standup` follows successful
 initialization with a staged rise to `stand`. The default headless run finishes
 init at 25.1 s and stands at 38.4 s with the 3,000 gf·cm / 28 V motor approximation.
@@ -126,6 +128,44 @@ bazel run --config=pc //sim/deps:requirements.update
 The updater needs network access. Ordinary builds use the committed lock and
 download dependencies on first use. To refresh transitive versions too, append
 `-- --upgrade` to the updater command.
+
+## Reinforcement-learning environment
+
+`QuadBot-BodyPose-v0` follows a commanded body translation and roll/pitch/yaw
+offset while keeping all four feet planted. It uses the robot's MuJoCo model,
+coupled motor transmissions, voltage/thermal approximation and simulated IMU.
+The environment provides seeded resets, sensor observations, rewards and
+separate failure/time-limit endings. A CPU PPO trainer opens a native window
+with learning curves and a real-time policy preview in 30-second loops. Each
+loop checks for a newer checkpoint while training continues at full speed.
+The preview cycles body-pose goals; live exploratory training is also selectable.
+
+```sh
+bazel test --config=pc //sim:imu_test //sim:gym_env_test
+# Watch actual learning and checkpoint evaluation:
+bazel run --config=pc //sim:train
+# Continue a saved run (the initial command prints its directory):
+bazel run --config=pc //sim:train -- --resume=runs/YOUR_RUN
+```
+
+Closing the training window saves and stops its trainer. See
+[training, Gym commands, observations and limitations](docs/gym.md).
+The default new-run recipe adapts established quadruped PPO methods to
+planted-foot pose control; see [research, policy, goals and evaluation](docs/rl-body-pose.md).
+Use `--profile=baseline` for the preceding recipe. Existing runs retain their
+saved settings when resumed.
+
+For walking training with a live robot preview, temperature/power readouts and
+learning curves, use one command:
+
+```sh
+bazel run --config=pc //sim:walk_train
+# Optional batched NVIDIA GPU physics, with CPU PPO:
+bazel run --config=pc //sim:walk_train -- --physics-device=gpu
+```
+
+Closing its window saves and stops its trainer. See
+[walking goals, thermal/effort rewards and evaluation](docs/walking.md).
 
 ## Active AVR firmware
 

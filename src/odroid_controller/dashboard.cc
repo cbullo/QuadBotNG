@@ -149,6 +149,21 @@ std::string Dashboard::Snapshot(const RobotSystem& robot, double time) const {
   out.Bool("homing_complete", robot.InitializationComplete());
   out.Bool("motion_enabled", allow_control_); out.Bool("remote_hold", remote_hold_);
   out.String("pose_fault", robot.GetPoseFault()); out.String("dashboard_reason", reason_);
+  if (robot.imu) {
+    Object imu, gyro, accel;
+    imu.Number("time", robot.imu->time); imu.Bool("valid", robot.imu->valid);
+    imu.String("frame", "base_link");
+    for (int i = 0; i < 3; ++i) {
+      const std::string axis(1, "xyz"[i]);
+      gyro.Number(axis, robot.imu->angular_velocity_rad_s[i]);
+      accel.Number(axis, robot.imu->specific_force_m_s2[i]);
+    }
+    imu.Raw("angular_velocity_rad_s", gyro.Finish());
+    imu.Raw("specific_force_m_s2", accel.Finish());
+    out.Raw("imu", imu.Finish());
+  } else {
+    out.Raw("imu", "null");
+  }
   for (const auto& [name, motor] : robot.motors) {
     Object m;
     const auto* b = motor->GetController();

@@ -1,0 +1,99 @@
+{
+  "torch": "2.8.0+cpu",
+  "cuda_available": false,
+  "cpu_count": 16,
+  "results": [
+    {
+      "task": "walk",
+      "num_envs": 1,
+      "transitions": 2560,
+      "steps_per_env": 512,
+      "startup_and_warmup_s": 5.221746236999934,
+      "elapsed_s": 14.225329609000255,
+      "rollout_s": 14.192492819999643,
+      "ppo_update_s": 0.032313234000412194,
+      "transitions_per_second": 179.9606807268851
+    },
+    {
+      "task": "walk",
+      "num_envs": 2,
+      "transitions": 2560,
+      "steps_per_env": 256,
+      "startup_and_warmup_s": 3.32788079599959,
+      "elapsed_s": 7.997996837999835,
+      "rollout_s": 7.964571739999428,
+      "ppo_update_s": 0.0330267209997146,
+      "transitions_per_second": 320.0801465483216
+    },
+    {
+      "task": "walk",
+      "num_envs": 4,
+      "transitions": 2560,
+      "steps_per_env": 128,
+      "startup_and_warmup_s": 2.778329454999948,
+      "elapsed_s": 4.256629935000092,
+      "rollout_s": 4.229826041000251,
+      "ppo_update_s": 0.026518431999647873,
+      "transitions_per_second": 601.4147433749006
+    },
+    {
+      "task": "walk",
+      "num_envs": 8,
+      "transitions": 2560,
+      "steps_per_env": 64,
+      "startup_and_warmup_s": 2.8303593519999595,
+      "elapsed_s": 3.340465052000127,
+      "rollout_s": 3.3080887369992524,
+      "ppo_update_s": 0.031990469999527704,
+      "transitions_per_second": 766.3603600544128
+    },
+    {
+      "task": "pose",
+      "num_envs": 1,
+      "transitions": 2560,
+      "steps_per_env": 512,
+      "startup_and_warmup_s": 2.874225311000373,
+      "elapsed_s": 13.292257427000095,
+      "rollout_s": 13.261353022999629,
+      "ppo_update_s": 0.030468644999928074,
+      "transitions_per_second": 192.59332089069852
+    },
+    {
+      "task": "pose",
+      "num_envs": 2,
+      "transitions": 2560,
+      "steps_per_env": 256,
+      "startup_and_warmup_s": 3.170806791999894,
+      "elapsed_s": 7.300312451000082,
+      "rollout_s": 7.250687017999553,
+      "ppo_update_s": 0.04909758900066663,
+      "transitions_per_second": 350.669922305764
+    },
+    {
+      "task": "pose",
+      "num_envs": 4,
+      "transitions": 2560,
+      "steps_per_env": 128,
+      "startup_and_warmup_s": 2.759546829000101,
+      "elapsed_s": 3.939986511999905,
+      "rollout_s": 3.893310847999601,
+      "ppo_update_s": 0.046199265999803174,
+      "transitions_per_second": 649.7484172098257
+    },
+    {
+      "task": "pose",
+      "num_envs": 8,
+      "transitions": 2560,
+      "steps_per_env": 64,
+      "startup_and_warmup_s": 2.7619998240002133,
+      "elapsed_s": 2.383517717000359,
+      "rollout_s": 2.326710252000339,
+      "ppo_update_s": 0.05651166100051341,
+      "transitions_per_second": 1074.0427821202616
+    }
+  ],
+  "date": "2026-10-26",
+  "cpu": "AMD Ryzen 7 5800H, 8 cores / 16 threads",
+  "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU, 4096 MiB",
+  "method": "One warm-up PPO rollout, then five updates of 512 total transitions. CPU policy and physics. No GUI, evaluation, checkpoint or snapshot I/O. Single measurement per case; trajectories differ across worker counts."
+}

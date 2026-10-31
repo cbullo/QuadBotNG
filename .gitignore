@@ -4,3 +4,7 @@ bazel-testlogs
 bazel-QuadBotNG
 .vscode/settings.json
 .bazelrc.local
+runs/
+
+__pycache__/
+*.py[cod]

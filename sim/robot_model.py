@@ -20,6 +20,10 @@ SIM_DIR = Path(__file__).resolve().parent
 PARAMETERS = json.loads((SIM_DIR / "robot_parameters.json").read_text())
 COLLISION_GEOMETRY = json.loads((SIM_DIR / "collision_geometry.json").read_text())
 LEGS = PARAMETERS["legs"]
+FOOT_FRICTION = [PARAMETERS["rubber_foot_contact"][key]
+                 for key in ("sliding", "torsional_m", "rolling_m")]
+if not np.isfinite(FOOT_FRICTION).all() or min(FOOT_FRICTION) < 0 or FOOT_FRICTION[0] == 0:
+    raise ValueError("Invalid rubber foot friction")
 ROBOT_CONFIG = yaml.safe_load((SIM_DIR.parent / "src/odroid_controller/controller/config/robot_config.yaml").read_text())
 LEG_LIMITS = {leg: {key: float(ROBOT_CONFIG["legs"][f"leg_{leg}"][key])
                     for key in ("min_gamma", "max_gamma", "min_z", "max_z")}
@@ -117,6 +121,8 @@ def build_xml(*, fixed_base=False, leg=None, meshdir="../meshes"):
                       conaffinity=affinity, rgba=rgba,
                       **({"solref": "0.002 1"} if name == "collision" else {}))
     assets = ET.SubElement(root, "asset")
+    ET.SubElement(assets, "material", name="rubber_sock", rgba="0.055 0.06 0.065 1",
+                  specular="0.1", shininess="0.1")
     ET.SubElement(assets, "texture", name="grid", type="2d", builtin="checker",
                   rgb1="0.16 0.19 0.23", rgb2="0.23 0.27 0.31", width="512", height="512")
     ET.SubElement(assets, "material", name="floor", texture="grid", texrepeat="8 8",
@@ -128,6 +134,9 @@ def build_xml(*, fixed_base=False, leg=None, meshdir="../meshes"):
     base = ET.SubElement(world, "body", name="base_link", pos="0 0 0.4" if fixed_base else "0 0 0.23")
     if not fixed_base:
         ET.SubElement(base, "freejoint", name="floating_base")
+    # Ideal six-axis IMU at the chassis origin, aligned with base_link.
+    # No framequat/position ground truth masquerading as an IMU measurement.
+    ET.SubElement(base, "site", name="imu", pos="0 0 0", size="0.005", group="4")
     bodies = {"base_link": base}
     mesh_names = set()
 
@@ -176,6 +185,12 @@ def build_xml(*, fixed_base=False, leg=None, meshdir="../meshes"):
                 attributes.update(contype=str(bit), conaffinity=str(affinity))
                 if kind == "self_collision":
                     attributes["rgba"] = "0.9 0.55 0.15 0.6"
+            rubber_foot = part == "arm_lower" and kind == "collision" and shape["type"] == "sphere"
+            if rubber_foot:
+                # The floor has priority 1. Rubber must win over it, while
+                # retaining the existing 6 ms normal ground-contact response.
+                attributes.update(friction=numbers(FOOT_FRICTION), priority="2", condim="6",
+                                  solref="0.006 1", solimp="0.95 0.99 0.001")
             for key in ("pos", "fromto"):
                 if key in shape:
                     values = list(shape[key])
@@ -183,6 +198,14 @@ def build_xml(*, fixed_base=False, leg=None, meshdir="../meshes"):
                         values[i] *= mirror
                     attributes[key] = numbers(values)
             ET.SubElement(body, "geom", attributes)
+            if rubber_foot:
+                # Render-only thin sock covering. The collision radius, mass
+                # and inertia remain those of the existing foot envelope.
+                ET.SubElement(body, "geom", name=f"{name}_rubber_sock", **{
+                    "class": "visual", "type": "sphere", "material": "rubber_sock",
+                    "rgba": "0.055 0.06 0.065 1", "pos": attributes["pos"],
+                    "size": numbers([shape["size"][0] + 0.0003]),
+                })
         for joint in children.get(name, []):
             child_name = joint.find("child").get("link")
             o = joint.find("origin")
@@ -221,6 +244,8 @@ def build_xml(*, fixed_base=False, leg=None, meshdir="../meshes"):
     tendons = ET.SubElement(root, "tendon")
     actuators = ET.SubElement(root, "actuator")
     sensors = ET.SubElement(root, "sensor")
+    ET.SubElement(sensors, "gyro", name="imu_gyro", site="imu")
+    ET.SubElement(sensors, "accelerometer", name="imu_accelerometer", site="imu")
     custom = ET.SubElement(root, "custom")
     for name in selected:
         p = LEGS[name]

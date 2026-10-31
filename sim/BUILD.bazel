@@ -56,6 +56,190 @@ py_binary(
     deps = [":robot_model"],
 )
 
+py_library(
+    name = "imu",
+    srcs = ["imu.py"],
+    deps = [requirement("numpy")],
+)
+
+py_test(
+    name = "imu_test",
+    size = "small",
+    srcs = ["imu_test.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        ":imu",
+        ":robot_model",
+    ],
+)
+
+py_library(
+    name = "gym_env",
+    srcs = [
+        "goals.py",
+        "gym_env.py",
+        "gym_motor.py",
+    ],
+    data = ["motor_model.yaml"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        ":controller_viewer_lib",
+        ":imu",
+        ":robot_model",
+        requirement("gymnasium"),
+        requirement("numpy"),
+        requirement("pyyaml"),
+    ],
+)
+
+py_binary(
+    name = "gym_rollout",
+    srcs = ["gym_rollout.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        ":gym_env",
+        requirement("pillow"),
+    ],
+)
+
+py_test(
+    name = "gym_env_test",
+    size = "medium",
+    srcs = ["gym_env_test.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":gym_env"],
+)
+
+py_library(
+    name = "training",
+    srcs = ["gpu_walk.py", "policy_initialization.py", "training.py", "training_compute.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        ":gym_env",
+        requirement("stable-baselines3"),
+        requirement("torch"),
+        requirement("mujoco-warp"),
+        requirement("warp-lang"),
+    ],
+)
+
+py_library(
+    name = "training_view",
+    srcs = ["training_view.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [
+        ":training",
+        "@rules_python//python/runfiles",
+        requirement("pyside6_essentials"),
+        requirement("pyqtgraph"),
+    ],
+)
+
+py_binary(
+    name = "train",
+    srcs = ["train.py"],
+    data = [":train_worker"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":training_view"],
+)
+
+py_binary(
+    name = "train_worker",
+    srcs = ["train.py"],
+    main = "train.py",
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":training"],
+)
+
+py_binary(
+    name = "evaluate_policy",
+    srcs = ["evaluate_policy.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":training"],
+)
+
+py_library(
+    name = "walk_training",
+    srcs = ["droq.py", "walk_env.py", "walk_training.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":training", requirement("sb3-contrib")],
+)
+
+py_test(
+    name = "droq_test",
+    size = "small",
+    srcs = ["droq_test.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training"],
+)
+
+py_test(
+    name = "gpu_walk_test",
+    size = "large",
+    srcs = ["gpu_walk_test.py"],
+    tags = ["manual", "local", "requires-gpu"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training"],
+)
+
+py_binary(
+    name = "walk_train",
+    srcs = ["walk_train.py"],
+    data = [":walk_train_worker"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training_view"],
+)
+
+py_binary(
+    name = "walk_train_worker",
+    srcs = ["walk_train.py"],
+    main = "walk_train.py",
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training"],
+)
+
+py_library(
+    name = "walk_training_view",
+    srcs = ["walk_training_view.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training", ":training_view"],
+)
+
+py_test(
+    name = "walk_training_view_test",
+    size = "medium",
+    srcs = ["walk_training_view_test.py"],
+    data = [":walk_train"],
+    env = {"QT_QPA_PLATFORM": "offscreen"},
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training_view"],
+)
+
+py_binary(
+    name = "walk_evaluate",
+    srcs = ["walk_evaluate.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training"],
+)
+
+py_test(
+    name = "walk_test",
+    size = "medium",
+    srcs = ["walk_test.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training"],
+)
+
+py_test(
+    name = "training_test",
+    size = "medium",
+    srcs = ["training_test.py"],
+    data = [":train"],
+    env = {"QT_QPA_PLATFORM": "offscreen"},
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":training_view"],
+)
+
 py_test(
     name = "robot_model_test",
     size = "small",
@@ -167,4 +351,19 @@ py_test(
         requirement("mujoco"),
         requirement("numpy"),
     ],
+)
+
+py_binary(
+    name = "benchmark_training",
+    srcs = ["benchmark_training.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training"],
+)
+
+py_test(
+    name = "training_compute_test",
+    size = "medium",
+    srcs = ["training_compute_test.py"],
+    target_compatible_with = PC_CONSTRAINTS,
+    deps = [":walk_training"],
 )

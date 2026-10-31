@@ -89,6 +89,14 @@ Velocity is the finite difference between snapshots and is unavailable when
 encoder feedback is stale. The table shows encoder age in ms; negative age
 means no valid sample. Values before initialization are not valid measurements.
 
+The IMU readout shows chassis-frame XYZ angular velocity (rad/s) and specific
+force (m/s²). It is currently an ideal simulated gyro/accelerometer, with no
+attitude estimate. It reports unavailable on hardware and stale connections,
+and waits while the artificial startup support fixture is active. TCP snapshots
+include an `imu` object with `time`, `valid`, `frame: "base_link"`, and XYZ
+objects `angular_velocity_rad_s` and `specific_force_m_s2`; absent sensors are
+`null`. See [sensor conventions and limitations](physical-model.md#simulated-imu).
+
 The 3D view uses persistent OpenGL meshes and updates their transforms/colors.
 It reconstructs the linkage from decoded leg coordinates, preserving the
 three-motor differential and FR/FL/BR/BL sign conventions. MuJoCo evaluates

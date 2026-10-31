@@ -1,7 +1,9 @@
 #pragma once
+#include <array>
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include "controller.h"
 
 class ScriptInput final : public EventNode {
@@ -13,6 +15,14 @@ class ScriptInput final : public EventNode {
 
 class RobotSystem {
  public:
+  struct ImuSample {
+    double time = 0;
+    bool valid = false;
+    std::array<double, 3> angular_velocity_rad_s{}, specific_force_m_s2{};
+  };
+  // Separate chassis sensor, not one of the motor-board protocol channels.
+  // Absent until a backend supplies it; serial hardware has no IMU driver yet.
+  std::optional<ImuSample> imu;
   using Factory = std::function<std::unique_ptr<BLDCDriverBoard>(const std::string&, const YAML::Node&)>;
   RobotSystem(const YAML::Node& config, Factory factory, bool joystick = false);
   void Connect();

@@ -2,9 +2,15 @@
 # bazel run --config=pc //sim/deps:requirements.update
 gymnasium[mujoco]==1.4.0
 mujoco==3.17.0
+mujoco-warp==3.17.0
+warp-lang==1.18.0
 numpy
 pyyaml
 # Native inspector: community Qt (LGPL/GPL), MIT plotting, BSD OpenGL bindings.
 PySide6-Essentials==6.12.0
 pyqtgraph==0.14.0
 PyOpenGL==3.1.10
+# CPU PPO training; use the official CPU wheel instead of CUDA runtime packages.
+stable-baselines3==2.9.0
+sb3-contrib==2.9.0
+torch @ https://download-r2.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl#sha256=cb9a8ba8137ab24e36bf1742cb79a1294bd374db570f09fc15a5e1318160db4e

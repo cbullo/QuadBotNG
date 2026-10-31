@@ -4,6 +4,12 @@
   "motor_damping_nm_s_per_rad": 0.00002,
   "demo_motor_torque_limit_nm": 0.2941995,
   "joint_damping_nm_s_per_rad": 0.002,
+  "rubber_foot_contact": {
+    "description": "Unmeasured dry rubber sock approximation. Sliding is dimensionless; torsional and rolling coefficients are effective lengths in metres. Tune against the actual sock/floor combination.",
+    "sliding": 1.2,
+    "torsional_m": 0.01,
+    "rolling_m": 0.001
+  },
   "joint_frictionloss_nm": {
     "description": "Estimated output-side dry friction, lumped at the three independent hinges. About 5% below CAD self-weight loads with the chassis upside down and main=crank=pi/4, shoulder=0; see docs/physical-model.md.",
     "shoulder_to_main": 0.0608,

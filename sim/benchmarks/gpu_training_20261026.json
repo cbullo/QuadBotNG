@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-26",
+  "hardware": {
+    "cpu": "AMD Ryzen 7 5800H",
+    "gpu": "RTX 3050 Laptop GPU",
+    "vram_mib": 4096
+  },
+  "notes": [
+    "Measured sequentially, no other trainer; desktop and editor indexing remained active.",
+    "CPU PyTorch is intentional: Warp handles GPU physics independently.",
+    "Excludes GUI, qualification, checkpoint writes and initialization/warm-up from timed throughput.",
+    "Short GPU runs do not cross a full 20-second episode. The long run includes 128 completed episodes.",
+    "Different environment counts change per-world rollout horizon; throughput does not establish learning speed."
+  ],
+  "results": [
+    {
+      "torch": "2.8.0+cpu",
+      "cpu_count": 16,
+      "results": [
+        {
+          "task": "walk",
+          "physics_device": "cpu",
+          "num_envs": 8,
+          "transitions": 32768,
+          "steps_per_env": 1024,
+          "startup_and_warmup_s": 14.978867477000676,
+          "elapsed_s": 34.05249225300031,
+          "rollout_s": 34.01718565599913,
+          "ppo_update_s": 0.03472379700087913,
+          "transitions_per_second": 962.2790530732112
+        }
+      ],
+      "torch_cuda_available": false,
+      "case": "cpu_8_before_contact_optimization"
+    },
+    {
+      "torch": "2.8.0+cpu",
+      "torch_cuda_available": false,
+      "cpu_count": 16,
+      "results": [
+        {
+          "task": "walk",
+          "physics_device": "cpu",
+          "num_envs": 8,
+          "transitions": 32768,
+          "steps_per_env": 1024,
+          "startup_and_warmup_s": 16.75460019899947,
+          "elapsed_s": 40.396139434999895,
+          "rollout_s": 40.356073495999226,
+          "ppo_update_s": 0.039428597000551235,
+          "transitions_per_second": 811.1666228087443
+        }
+      ],
+      "case": "cpu_8"
+    },
+    {
+      "torch": "2.8.0+cpu",
+      "cpu_count": 16,
+      "results": [
+        {
+          "task": "walk",
+          "physics_device": "gpu",
+          "num_envs": 128,
+          "transitions": 32768,
+          "steps_per_env": 64,
+          "startup_and_warmup_s": 28.97938330099987,
+          "elapsed_s": 35.25416651700016,
+          "rollout_s": 35.22767487599867,
+          "ppo_update_s": 0.02623502200094663,
+          "transitions_per_second": 929.4787889595607
+        }
+      ],
+      "torch_cuda_available": false,
+      "case": "gpu_128_initial"
+    },
+    {
+      "torch": "2.8.0+cpu",
+      "cpu_count": 16,
+      "results": [
+        {
+          "task": "walk",
+          "physics_device": "gpu",
+          "num_envs": 128,
+          "transitions": 32768,
+          "steps_per_env": 64,
+          "startup_and_warmup_s": 28.678513315999226,
+          "elapsed_s": 29.925732251000227,
+          "rollout_s": 29.900168377001137,
+          "ppo_update_s": 0.025275424999563256,
+          "transitions_per_second": 1094.9773835159797
+        }
+      ],
+      "torch_cuda_available": false,
+      "case": "gpu_128_optimized_short"
+    },
+    {
+      "torch": "2.8.0+cpu",
+      "cpu_count": 16,
+      "results": [
+        {
+          "task": "walk",
+          "physics_device": "gpu",
+          "num_envs": 256,
+          "transitions": 65536,
+          "steps_per_env": 64,
+          "startup_and_warmup_s": 49.90925786000025,
+          "elapsed_s": 54.68371733999993,
+          "rollout_s": 54.64362242600055,
+          "ppo_update_s": 0.03982925899890688,
+          "transitions_per_second": 1198.4554669633235
+        }
+      ],
+      "torch_cuda_available": false,
+      "case": "gpu_256_optimized_short"
+    },
+    {
+      "torch": "2.8.0+cpu",
+      "torch_cuda_available": false,
+      "cpu_count": 16,
+      "results": [
+        {
+          "task": "walk",
+          "physics_device": "gpu",
+          "num_envs": 128,
+          "transitions": 131072,
+          "steps_per_env": 64,
+          "startup_and_warmup_s": 30.352783315000124,
+          "completed_episodes": 128,
+          "elapsed_s": 134.93944021799962,
+          "rollout_s": 134.79623413300033,
+          "ppo_update_s": 0.14233942399914667,
+          "transitions_per_second": 971.3394378118686
+        }
+      ],
+      "case": "gpu_128_full_episode_resets"
+    }
+  ]
+}

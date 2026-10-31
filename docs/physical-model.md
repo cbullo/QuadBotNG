@@ -200,12 +200,31 @@ coaxial main/crank, and lower/link closure bearings, independently for each leg.
 The base exclusions also keep the suspended variant consistent with the floating
 one. Other leg/chassis and leg/leg pairs remain eligible to collide.
 
-Self-contact uses a 2 ms time constant with critical damping. The higher-priority
-floor keeps its 6 ms contact time constant; six-dimensional floor contacts enable
-the existing torsional/rolling friction values for rounded feet and capsules.
-Sliding/torsional/rolling friction remain candidate values `0.8, 0.005, 0.0001`.
-Priority selects the floor contact parameters as described in
+Self-contact uses a 2 ms time constant with critical damping. The floor has
+priority 1 and a 6 ms contact time constant; six-dimensional floor contacts
+enable sliding, torsional and rolling friction. Non-foot contacts retain
+candidate friction values `0.8, 0.005, 0.0001`.
+
+The four outer foot spheres have rubber socks: sliding friction **1.2**,
+torsional friction **0.01 m**, and rolling friction **0.001 m**, configured in
+`rubber_foot_contact` in [robot_parameters.json](../sim/robot_parameters.json).
+These are tunable dry-rubber approximations, not measurements for a particular
+rubber/floor combination. Torsional and rolling coefficients are effective
+lengths, not dimensionless sliding coefficients. Foot priority 2 overrides the
+floor's friction, while explicitly retaining the same 6 ms normal contact
+response. Merely increasing foot friction at priority 0 would be ignored by the
+floor. Contacts with other outer body shapes also use the rubber foot settings;
+the separate internal linkage proxies retain their original contact parameters.
+Priority selects contact parameters as described in
 [MuJoCo contact parameters](https://mujoco.readthedocs.io/en/latest/modeling.html#contact-parameters).
+
+Dark, non-colliding render spheres show the socks, offset 0.3 mm outside the
+existing foot envelope. Physical foot radius, robot mass and inertia remain
+unchanged. This models surface friction rather than deformable rubber. Tests
+inspect actual foot-floor contacts to verify that rubber friction takes effect,
+and belly-floor contacts to verify that the rest of the robot is unchanged.
+Finite friction still permits sliding under sufficient load; exploratory actions
+can also lift a foot or roll the robot. Higher grip is not a foot-pinning constraint.
 
 Tests sweep 101 gamma positions, including both configured endpoints, for every
 leg. The full sweep is contact-free at Z=0; repeating at both Z endpoints produces
@@ -231,6 +250,45 @@ bazel run --config=pc //sim:controller_viewer -- --scenario=stand --show-collisi
 Blue shapes show outer envelopes; orange shapes show within-leg proxies. Blue
 envelopes can overlap within the same leg because orange proxies determine those
 contacts. Both are visible to make the approximation inspectable.
+
+## Simulated IMU
+
+Both MJCF variants include an ideal six-axis IMU at the `base_link` origin,
+with site `imu` aligned to the chassis axes (X forward, Y left, Z up in the
+upright reference pose). This is an assumed mounting location, not measured
+hardware placement. The massless site does not change robot inertia.
+
+`imu_gyro` measures local angular velocity in rad/s; `imu_accelerometer`
+measures local **specific force** in m/s². An upright, stationary, supported
+robot reads approximately `[0, 0, 9.81]`; free fall reads approximately zero.
+It is not gravity-subtracted world acceleration. These are MuJoCo's
+[site-mounted gyro and accelerometer sensors](https://mujoco.readthedocs.io/en/latest/XMLreference.html#sensor-accelerometer).
+
+Python consumers can use `from sim.imu import read_imu` and
+`sample = read_imu(model, data)`. Samples contain `time`,
+`angular_velocity_rad_s`, and `specific_force_m_s2`, with copied arrays.
+Run `mujoco.mj_forward(model, data)` after a reset or physics step to sample
+the state at the current `data.time`. The helper and native runner correct
+the suspended variant's world-welded accelerometer to `-R.T @ gravity`:
+the pinned MuJoCo returns zero for a sensor on a static body. Floating-base
+readings use native sensor output directly.
+
+The native runner exposes the IMU separately from motor-board feedback,
+through the controller's `RobotSystem::imu`, TCP snapshots, and CSV columns
+`imu_valid`, `imu_gyro_{x,y,z}_rad_s`, `imu_accel_{x,y,z}_m_s2`.
+Readings during the artificial standing-startup fixture are marked invalid:
+that fixture freezes coordinates without simulating its support forces.
+The suspended model is physically fixed and has valid readings.
+
+There is no noise, bias, drift, saturation, filtering or sensor latency yet.
+Samples update at the physics rate (2 kHz by default); TCP and CSV downsample
+to their existing diagnostic rates. No absolute orientation, heading or
+position is presented as an IMU measurement, and no hardware IMU driver or
+attitude estimator is implemented. The serial backend reports no IMU.
+
+`//sim:imu_test` checks supported gravity, tilt, free fall, body-frame angular
+velocity, timestamps and sample ownership on the actual robot model. Native
+runner and dashboard integration tests check trace and telemetry delivery.
 
 ## Generation and inspection
 

@@ -19,6 +19,7 @@
     </default>
   </default>
   <asset>
+    <material name="rubber_sock" rgba="0.055 0.06 0.065 1" specular="0.1" shininess="0.1" />
     <texture name="grid" type="2d" builtin="checker" rgb1="0.16 0.19 0.23" rgb2="0.23 0.27 0.31" width="512" height="512" />
     <material name="floor" texture="grid" texrepeat="8 8" texuniform="true" reflectance="0.1" />
     <mesh name="base_link" file="base_link.stl" scale="0.001 0.001 0.001" />
@@ -38,6 +39,7 @@
     <light pos="0 -1 2" dir="0 0 -1" directional="true" />
     <geom name="ground" type="plane" size="2 2 0.1" material="floor" contype="1" conaffinity="62" priority="1" condim="6" />
     <body name="base_link" pos="0 0 0.4">
+      <site name="imu" pos="0 0 0" size="0.005" group="4" />
       <inertial pos="0.00014024235087096401 -0.0003890538127367371 -0.019060892954127925" mass="0.5621563017705747" fullinertia="0.001155 0.00653 0.006946 4e-06 -2.4e-05 2e-06" />
       <geom name="base_link_visual_0" class="visual" type="mesh" mesh="base_link" pos="0 0 0" euler="0 0 0" />
       <geom name="base_link_collision_0" class="collision" type="box" size="0.1965 0.042 0.0275" pos="0 0 -0.03" />
@@ -65,7 +67,8 @@
             <inertial pos="0.06322127393693497 4.99720667845871e-07 -0.0019199942850988" mass="0.03998924644154324" fullinertia="3e-06 6e-05 5.9e-05 -0.0 -2e-06 0.0" />
             <geom name="arm_lower_RF_1_visual_0" class="visual" type="mesh" mesh="arm_lower_RF_1" pos="-0.118702 0.1026 0.119915" euler="0 0 0" />
             <geom name="arm_lower_RF_1_collision_0" class="collision" type="capsule" size="0.0101" contype="4" conaffinity="59" fromto="0 0 -0.0045 0.1 0 -0.0045" />
-            <geom name="arm_lower_RF_1_collision_1" class="collision" type="sphere" size="0.019" contype="4" conaffinity="59" pos="0.1065 0 -0.00025" />
+            <geom name="arm_lower_RF_1_collision_1" class="collision" type="sphere" size="0.019" contype="4" conaffinity="59" friction="1.2 0.01 0.001" priority="2" condim="6" solref="0.006 1" solimp="0.95 0.99 0.001" pos="0.1065 0 -0.00025" />
+            <geom name="arm_lower_RF_1_rubber_sock" class="visual" type="sphere" material="rubber_sock" rgba="0.055 0.06 0.065 1" pos="0.1065 0 -0.00025" size="0.0193" />
             <geom name="arm_lower_RF_1_self_collision_0" class="collision" type="capsule" size="0.004" contype="64" conaffinity="64" rgba="0.9 0.55 0.15 0.6" fromto="0 0 -0.0045 0.1 0 -0.0045" />
             <geom name="arm_lower_RF_1_self_collision_1" class="collision" type="sphere" size="0.006" contype="64" conaffinity="64" rgba="0.9 0.55 0.15 0.6" pos="0.1065 0 -0.00025" />
             <site name="closure_lower_FR" pos="0.035 0 0" size="0.002" group="4" />
@@ -109,7 +112,8 @@
             <inertial pos="0.06322127393693497 -4.99720667845871e-07 -0.0019199942850988" mass="0.03998924644154324" fullinertia="3e-06 6e-05 5.9e-05 -0.0 -2e-06 0.0" />
             <geom name="arm_lower_LF_1_visual_0" class="visual" type="mesh" mesh="arm_lower_LF_1" pos="-0.118702 -0.1026 0.119915" euler="0 0 0" />
             <geom name="arm_lower_LF_1_collision_0" class="collision" type="capsule" size="0.0101" contype="8" conaffinity="55" fromto="0 0 -0.0045 0.1 0 -0.0045" />
-            <geom name="arm_lower_LF_1_collision_1" class="collision" type="sphere" size="0.019" contype="8" conaffinity="55" pos="0.1065 0 -0.00025" />
+            <geom name="arm_lower_LF_1_collision_1" class="collision" type="sphere" size="0.019" contype="8" conaffinity="55" friction="1.2 0.01 0.001" priority="2" condim="6" solref="0.006 1" solimp="0.95 0.99 0.001" pos="0.1065 0 -0.00025" />
+            <geom name="arm_lower_LF_1_rubber_sock" class="visual" type="sphere" material="rubber_sock" rgba="0.055 0.06 0.065 1" pos="0.1065 0 -0.00025" size="0.0193" />
             <geom name="arm_lower_LF_1_self_collision_0" class="collision" type="capsule" size="0.004" contype="128" conaffinity="128" rgba="0.9 0.55 0.15 0.6" fromto="0 0 -0.0045 0.1 0 -0.0045" />
             <geom name="arm_lower_LF_1_self_collision_1" class="collision" type="sphere" size="0.006" contype="128" conaffinity="128" rgba="0.9 0.55 0.15 0.6" pos="0.1065 0 -0.00025" />
             <site name="closure_lower_FL" pos="0.035 0 0" size="0.002" group="4" />
@@ -153,7 +157,8 @@
             <inertial pos="0.06322127393693497 4.99720667845871e-07 -0.0019199942850988" mass="0.03998924644154324" fullinertia="3e-06 6e-05 5.9e-05 -0.0 -2e-06 0.0" />
             <geom name="arm_lower_RB_1_visual_0" class="visual" type="mesh" mesh="arm_lower_RF_1" pos="-0.118702 0.1026 0.119915" euler="0 0 0" />
             <geom name="arm_lower_RB_1_collision_0" class="collision" type="capsule" size="0.0101" contype="16" conaffinity="47" fromto="0 0 -0.0045 0.1 0 -0.0045" />
-            <geom name="arm_lower_RB_1_collision_1" class="collision" type="sphere" size="0.019" contype="16" conaffinity="47" pos="0.1065 0 -0.00025" />
+            <geom name="arm_lower_RB_1_collision_1" class="collision" type="sphere" size="0.019" contype="16" conaffinity="47" friction="1.2 0.01 0.001" priority="2" condim="6" solref="0.006 1" solimp="0.95 0.99 0.001" pos="0.1065 0 -0.00025" />
+            <geom name="arm_lower_RB_1_rubber_sock" class="visual" type="sphere" material="rubber_sock" rgba="0.055 0.06 0.065 1" pos="0.1065 0 -0.00025" size="0.0193" />
             <geom name="arm_lower_RB_1_self_collision_0" class="collision" type="capsule" size="0.004" contype="256" conaffinity="256" rgba="0.9 0.55 0.15 0.6" fromto="0 0 -0.0045 0.1 0 -0.0045" />
             <geom name="arm_lower_RB_1_self_collision_1" class="collision" type="sphere" size="0.006" contype="256" conaffinity="256" rgba="0.9 0.55 0.15 0.6" pos="0.1065 0 -0.00025" />
             <site name="closure_lower_BR" pos="0.035 0 0" size="0.002" group="4" />
@@ -197,7 +202,8 @@
             <inertial pos="0.06322127393693497 -4.99720667845871e-07 -0.0019199942850988" mass="0.03998924644154324" fullinertia="3e-06 6e-05 5.9e-05 -0.0 -2e-06 0.0" />
             <geom name="arm_lower_LB_1_visual_0" class="visual" type="mesh" mesh="arm_lower_LF_1" pos="-0.118702 -0.1026 0.119915" euler="0 0 0" />
             <geom name="arm_lower_LB_1_collision_0" class="collision" type="capsule" size="0.0101" contype="32" conaffinity="31" fromto="0 0 -0.0045 0.1 0 -0.0045" />
-            <geom name="arm_lower_LB_1_collision_1" class="collision" type="sphere" size="0.019" contype="32" conaffinity="31" pos="0.1065 0 -0.00025" />
+            <geom name="arm_lower_LB_1_collision_1" class="collision" type="sphere" size="0.019" contype="32" conaffinity="31" friction="1.2 0.01 0.001" priority="2" condim="6" solref="0.006 1" solimp="0.95 0.99 0.001" pos="0.1065 0 -0.00025" />
+            <geom name="arm_lower_LB_1_rubber_sock" class="visual" type="sphere" material="rubber_sock" rgba="0.055 0.06 0.065 1" pos="0.1065 0 -0.00025" size="0.0193" />
             <geom name="arm_lower_LB_1_self_collision_0" class="collision" type="capsule" size="0.004" contype="512" conaffinity="512" rgba="0.9 0.55 0.15 0.6" fromto="0 0 -0.0045 0.1 0 -0.0045" />
             <geom name="arm_lower_LB_1_self_collision_1" class="collision" type="sphere" size="0.006" contype="512" conaffinity="512" rgba="0.9 0.55 0.15 0.6" pos="0.1065 0 -0.00025" />
             <site name="closure_lower_BL" pos="0.035 0 0" size="0.002" group="4" />
@@ -382,6 +388,8 @@
     <motor name="motor_BLZ" tendon="motor_BLZ" gear="1" ctrlrange="-0.2941995 0.2941995" />
   </actuator>
   <sensor>
+    <gyro name="imu_gyro" site="imu" />
+    <accelerometer name="imu_accelerometer" site="imu" />
     <actuatorpos name="motor_FRI_angle" actuator="motor_FRI" />
     <actuatorvel name="motor_FRI_velocity" actuator="motor_FRI" />
     <actuatorpos name="motor_FRO_angle" actuator="motor_FRO" />

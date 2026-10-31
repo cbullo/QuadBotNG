@@ -115,6 +115,8 @@ class InspectorWindow(QtWidgets.QMainWindow):
         self.status = QtWidgets.QLabel("Connecting…")
         self.pose_status = QtWidgets.QLabel("Waiting for referenced encoder feedback")
         self.pose_status.setWordWrap(True)
+        self.imu_status = QtWidgets.QLabel("IMU unavailable")
+        self.imu_status.setWordWrap(True)
         self.ack = QtWidgets.QLabel("Commands are acknowledged by the controller.")
         self.ack.setWordWrap(True)
         self.robot_view = RobotView(self.scene) if enable_3d else None
@@ -125,6 +127,7 @@ class InspectorWindow(QtWidgets.QMainWindow):
         if self.robot_view:
             column.addWidget(self.robot_view, 3)
         column.addWidget(self.pose_status)
+        column.addWidget(self.imu_status)
         self.table = QtWidgets.QTableWidget(len(MOTORS), 6)
         self.table.setHorizontalHeaderLabels(["Motor / plot", "Encoder", "Angle (rad)", "Voltage (V)", "Temp (°C)", "Age (ms)"])
         self.table.verticalHeader().hide()
@@ -255,6 +258,7 @@ class InspectorWindow(QtWidgets.QMainWindow):
         if state is None:
             return
         if not fresh:
+            self.imu_status.setText("IMU unavailable — telemetry stale")
             self.scene.invalidated = True
             self.pose_status.setText("Telemetry stale/disconnected — pose hidden; restart to re-reference")
             if self.robot_view:
@@ -263,6 +267,13 @@ class InspectorWindow(QtWidgets.QMainWindow):
         if self.robot_view:
             self.robot_view.show_state(state, self.scene.was_ready and self.scene.reference is not None and not self.scene.invalidated)
         self.pose_status.setText(self.scene.status)
+        imu = state.get("imu")
+        if imu and imu["valid"]:
+            gyro = ", ".join(f"{imu['angular_velocity_rad_s'][axis]:+.3f}" for axis in "xyz")
+            accel = ", ".join(f"{imu['specific_force_m_s2'][axis]:+.3f}" for axis in "xyz")
+            self.imu_status.setText(f"IMU (body XYZ): gyro [{gyro}] rad/s\nSpecific force [{accel}] m/s²")
+        else:
+            self.imu_status.setText("IMU unavailable" if not imu else "IMU waiting for startup support release")
         times, values = self.history.arrays()
         now = time.monotonic()
         update_axes = now >= self.next_axes
